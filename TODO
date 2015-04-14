@@ -1,0 +1,16 @@
+ 
+		some 'TODO' ideas
+
+
+ o [YD] When colnames/names are found in 'X_doe' and in 'center', these
+ should agree. When names are found in one of them and 'Xnames'
+ is null on input, the existing name should be used.	
+
+ o [YD] Add a "B" p*d matrix as optional argument in order to transform
+ the vector x of covariates according to u = t(B)*x as in dimension 
+ reduction (but 'p' must be 'ncol' of the design or trend matrix). 
+ The matrix could be reduced to a p vector for a single-index
+ model. The sections would then be specified with the t(B) %*% center 
+ vector in dim d < p.  
+ 
+ o [YR] Add a ggplot2 wrapper view.

@@ -1,0 +1,18 @@
+import("graphics","rgl","methods")
+import("DiceKriging","DiceEval")
+## importFrom("graphics", plot)
+
+export("view",
+       "sectionview.km",
+       "sectionview3d.km",
+       "contourview.km",
+       "sectionview.list",
+       "sectionview3d.list",
+       "contourview.list",
+       "sectionview.fun",
+       "sectionview3d.fun",
+       "contourview.fun",
+       "sectionview",
+       "sectionview3d",
+       "contourview")
+
