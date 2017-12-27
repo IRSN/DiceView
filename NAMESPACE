@@ -1,4 +1,4 @@
-import("graphics","rgl","methods")
+import("graphics","rgl","methods","grDevices","stats","utils")
 import("DiceKriging","DiceEval")
 ## importFrom("graphics", plot)
 
