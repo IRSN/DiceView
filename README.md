@@ -1,4 +1,8 @@
-#DiceView: Plot methods for computer experiments design and surrogate#
+[![Build Status](https://travis-ci.org/IRSN/DiceKriging.png)](https://travis-ci.org/IRSN/DiceView)
+[![codecov](https://codecov.io/gh/IRSN/DiceView/branch/master/graph/badge.svg)](https://codecov.io/gh/IRSN/DiceView)
+
+
+# DiceView: Plot methods for computer experiments design and surrogate#
 
 View 2D/3D sections or contours of computer experiments designs, surrogates or test functions.
 
