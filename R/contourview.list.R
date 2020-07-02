@@ -18,7 +18,12 @@
 #' @param yscale an optional factor to scale y.
 #' @param title an optional overload of main title.
 #' @param add to print graphics on an existing window.
-#' @param \dots optional arguments passed to the first call of \code{plot3d}.
+#' @param \dots optional arguments passed to the first call of \code{contour}.
+#' @import DiceEval
+#' @method contourview list
+#' @docType methods
+#' @rdname list-methods
+#' @export
 #' @details Experimental points are plotted with fading colors. Points that fall in the specified section (if any) have the color specified \code{col_points} while points far away from the center have shaded versions of the same color. The amount of fading is determined using the Euclidean distance between the plotted point and \code{center}. The variables chosen with their number are to be found in the \code{data$X} element of the model. Thus they are original data variables but not trend variables that may have been created using the model's formula.
 #' @author Yann Richet, IRSN
 #' @seealso \code{\link{sectionview.list}} for a 2D plot, and the \code{\link[DiceEval]{modelPredict}} function in the \pkg{DiceEval} package. The \code{\link{sectionview3d.km}} produces a similar plot for \code{km} objects.

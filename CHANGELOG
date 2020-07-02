@@ -1,3 +1,8 @@
+2020-06-01 richet
+
+    * add methods for mesh of sets
+    * add high level methods for functions (vectorization and memoization)
+
 2013-11-01 richet
 
     * add "filled" option for contourview*
@@ -9,35 +14,35 @@
 
 2012-03-26 richet
 
-    * add {sectionview,sectionview3d,contourview}.fun 
+    * add {sectionview,sectionview3d,contourview}.fun
 
 2011-08-25 richet
 
     * add contourview, contourview.km, contourview.list to display contour from >2-D models
 
-2010-11-15  yves  
+2010-11-15  yves
 
 	* all code changed with a normalized style (e.g. spacings between
-	'=' and args) and indentation . Used '<-' for affectations in place  
+	'=' and args) and indentation . Used '<-' for affectations in place
 	of '=' (recommandation given in manuals).
 
-	* 'doc' added liks to DeceKriging/DiceEval functions. Removed the 
-	\value{} sections as is usual for functions that do not return 
+	* 'doc' added liks to DeceKriging/DiceEval functions. Removed the
+	\value{} sections as is usual for functions that do not return
 	anything. Added doc for new args. Added first names for authors
 	for better citation.
-	
-	* sectionview3d* added 'col_points' and 'col_surf' args to change the 	
+
+	* sectionview3d* added 'col_points' and 'col_surf' args to change the
 	colors. Aded col_needles in order to add needles for 3D-plots (only).
-	Formal args with long names such as 'background_blending' 
-	were renamed to shorter names as 'bg_blend' in order to have better  
+	Formal args with long names such as 'background_blending'
+	were renamed to shorter names as 'bg_blend' in order to have better
 	looking documentation.
 
 	* sectionview3d*: used 'apply' and 'scale' function to avoid loops.
 
-	* 'translude' and 'fade'functions added to the package for a possible 
+	* 'translude' and 'fade'functions added to the package for a possible
 	general use. Not exported nor documented. Code in file 'Utils.R'.
 
 	* 'tryFormat' function added (still experimental) to format
 	the center vector in titles. It is nessary to get a good number
-	of decimals so that "colmeans" or random values in 'center' 
+	of decimals so that "colmeans" or random values in 'center'
 	should not have too many decimals.

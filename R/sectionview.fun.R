@@ -1,6 +1,6 @@
 #' Plot section views of a function
 #' @description Plot one section view per dimension of a function thus providing a better understanding of the model behaviour.
-#' @param fun an object of class \code{"function"}.
+#' @param model an object of class \code{"function"}.
 #' @param dim the dimension of fun arguments.
 #' @param center optional coordinates (as a list or data frame) of the center of the section  view if the model's dimension is > 1.
 #' @param axis optional matrix of 1-axis combinations to plot, one by row. The value \code{NULL} leads to all possible combinations i.e. \code{1:D}.
@@ -9,21 +9,27 @@
 #' @param mfrow an optional list to force \code{par(mfrow = ...)} call. The default value  \code{NULL} is automatically set for compact view.
 #' @param xlim a list to give x range for all plots.
 #' @param ylim an optional list to force y range for all plots.
-#' @param Xname an optional list of string to overload names for X. 
-#' @param yname an optional string to overload name for y. 
-#' @param Xscale an optional factor to scale X. 
-#' @param yscale an optional factor to scale y. 
-#' @param title an optional overload of main title. 
+#' @param Xname an optional list of string to overload names for X.
+#' @param yname an optional string to overload name for y.
+#' @param Xscale an optional factor to scale X.
+#' @param yscale an optional factor to scale y.
+#' @param title an optional overload of main title.
 #' @param add to print graphics on an existing window.
-#' @param \dots further arguments passed to the first call of \code{plot}. 
+#' @param ... further arguments passed to the first call of \code{plot}.
+#' @import utils
+#' @import graphics
+#' @method sectionview function
+#' @docType methods
+#' @rdname function-methods
+#' @export
 #' @details A multiple rows/columns plot is produced.
 #' @author Yann Richet, IRSN
-#' @seealso The function \code{\link{sectionview3d.fun}} produces a 3D version.
+#' @seealso The function \code{\link{sectionview3d}} produces a 3D version.
 #' @keywords models
 #' @examples
 #' ## A 2D example - Branin-Hoo function.
-#' sectionview.fun(branin,center=c(.5,.5))
-sectionview.fun <- function(fun, dim = ifelse(is.null(center),1,length(center)),
+#' sectionview(branin,center=c(.5,.5))
+sectionview.function <- function(model, dim = ifelse(is.null(center),1,length(center)),
                             center = NULL, axis = NULL,
                             npoints = 100,
                             col_surf = "blue",
@@ -34,26 +40,27 @@ sectionview.fun <- function(fun, dim = ifelse(is.null(center),1,length(center)),
                             title = NULL,
                             add = FALSE,
                             ...) {
-    
+    fun = model
+
     D <- dim
-    
+
     if (is.null(center)) {
         if (D != 1) stop("Section center in 'section' required for >1-D fun.")
     }
-    
+
     if (is.null(axis)) {
         axis <- matrix(1:D, ncol = 1)
     } else {
         ## added by YD for the vector case
         axis <- matrix(axis, ncol = 1)
     }
-    
+
     if (is.null(mfrow) && (D>1)) {
         nc <- round(sqrt(D))
         nl <- ceiling(D/nc)
         mfrow <- c(nc, nl)
     }
-    
+
     if (!isTRUE(add)) {
         if(D>1){
             close.screen( all.screens = TRUE )
@@ -61,41 +68,41 @@ sectionview.fun <- function(fun, dim = ifelse(is.null(center),1,length(center)),
         }
         assign(".split.screen.lim",matrix(NaN,ncol=4,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
-    
+
     ## find limits: 'rx' is matrix with mins in row 1 and maxs in row 2
     if(!is.null(xlim)) rx <- matrix(xlim,nrow=2,ncol=D)
     else stop("x bounds required for fun.")
     rownames(rx) <- c("min", "max")
     drx <- rx["max", ] - rx["min", ]
-    
+
     ## define X & y labels
     if (is.null(yname)) yname <-  "y"
     if (is.null(Xname)) Xname <- paste(sep = "", "X", 1:D)
-    
+
     ## try to find a good formatted value 'fcenter' for 'center'
     fcenter <- tryFormat(x = center, drx = drx)
-    
+
     for (id in 1:dim(axis)[1]) {
         if (D>1) screen(id, new=!add)
-        
-        d <- axis[id,]        
-        
+
+        d <- axis[id,]
+
         xdmin <- rx["min", d]
         xdmax <- rx["max", d]
         xlim = c(xdmin,xdmax)
-        
+
         xd <- seq(from = xdmin, to = xdmax, length.out = npoints)
         x <- data.frame(t(matrix(as.numeric(center), nrow = D, ncol = npoints)))
         if (!is.null(center)) if(!is.null(names(center))) names(x) <- names(center)
         x[ , d] <- xd
-        
+
         ## could be simplified in the future
         y <- array(0, npoints)
-        
+
         for (i in 1:npoints) {
             y[i] <- as.numeric(yscale * fun(x[i, ]))
         }
-        
+
         if (is.null(title)){
             if (D>1) {
                 title_d <- paste(collapse = ", ", paste(Xname[-d], '=', fcenter[-d]))
@@ -104,7 +111,7 @@ sectionview.fun <- function(fun, dim = ifelse(is.null(center),1,length(center)),
         } else {
             title_d <- title
         }
-        
+
         if (is.null(ylim)) {
             ylim <- c(min(y),max(y))
         }
@@ -131,7 +138,7 @@ sectionview.fun <- function(fun, dim = ifelse(is.null(center),1,length(center)),
             eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],"),nrow=1)")),envir=DiceView.env)
             plot(xd, y,
                  xlab = Xname[d], ylab = yname,
-                 xlim = xlim, ylim = ylim, 
+                 xlim = xlim, ylim = ylim,
                  main = title_d,
                  type = "l",
                  col = col_surf,
@@ -139,5 +146,16 @@ sectionview.fun <- function(fun, dim = ifelse(is.null(center),1,length(center)),
             if(D>1) abline(v=center[d],col='black',lty=2)
         }
     }
-    
 }
+
+# #' Alias to sectionview.function, for backward compatibility.
+# #' @param fun function object to view
+# #' @param ... arguments to pass to sectionview.function
+# #' @seealso sectionview.function
+# #' @method sectionview function
+# #' @docType methods
+# #' @rdname function-methods
+# #' @export
+# sectionview.fun <- function(fun,...) {
+#     sectionview.function(model=fun,...)
+# }

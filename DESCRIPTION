@@ -1,12 +1,12 @@
 Package: DiceView
-Title: Plot Methods for Computer Experiments Design and Surrogate
-Version: 1.3-2
-Date: 2012-03-29
+Title: Methods for visualization of Computer Experiments Design and Surrogate
+Version: 2.0-0
+Date: 2020-06-01
 Author: Yann Richet, Yves Deville, Clement Chevalier
 Maintainer: Yann Richet <yann.richet@irsn.fr>
-Description: View 2D/3D sections or contours of computer experiments designs, surrogates or test functions.
-Depends: methods, utils, stats, grDevices, DiceKriging, DiceEval, rgl
+Description: View 2D/3D sections, contour plots, mesh of excursion sets for computer experiments designs, surrogates or test functions.
+Depends: utils, stats, grDevices, graphics, DiceKriging, DiceEval, DiceDesign, rgl, R.cache, geometry, scatterplot3d
 License: GPL-3
-URL: http://promethee.irsn.org/
+URL: https://github.com/IRSN/DiceView
 Repository: CRAN
-RoxygenNote: 6.0.1
+RoxygenNote: 7.0.2

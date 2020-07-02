@@ -17,6 +17,11 @@
 #' @param title an optional overload of main title.
 #' @param add to print graphics on an existing window.
 #' @param \dots optional arguments passed to the first call of plot().
+#' @import DiceEval
+#' @method sectionview list
+#' @docType methods
+#' @rdname list-methods
+#' @export
 #' @details A multiple rows/columns plot is produced. Experimental points are plotted with fading colors. Points that fall in the specified section (if any) have the color specified \code{col_points} while points far away from the center have shaded versions of the same color. The amount of fading is determined using the Euclidean distance between the plotted point and \code{center}.
 #' @author Yann Richet, IRSN
 #' @seealso See \code{\link{sectionview3d.list}} for a 3d version, and the \code{\link[DiceEval]{modelPredict}} function in the \pkg{DiceEval} package.
@@ -32,7 +37,7 @@
 #' ## linear model
 #' m1 <- modelFit(design.fact, y[[1]], type = "Linear", formula = "Y~.")
 #'
-#' sectionview.list(m1, center = c(.333,.333))
+#' sectionview(m1, center = c(.333,.333))
 sectionview.list <- function(model,
                              center = NULL, axis = NULL,
                              npoints = 100,
