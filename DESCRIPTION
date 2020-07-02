@@ -9,4 +9,4 @@ Depends: utils, stats, grDevices, graphics, DiceKriging, DiceEval, DiceDesign, r
 License: GPL-3
 URL: https://github.com/IRSN/DiceView
 Repository: CRAN
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1

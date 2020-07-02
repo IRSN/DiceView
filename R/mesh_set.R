@@ -366,7 +366,7 @@ mesh_exsets = function(f, f.vectorized=FALSE, threshold, sign, intervals, mesh="
 
     f_0 <- function(...) return(f(...)-threshold)
     r <- mesh_roots(f=f_0, f.vectorized=f.vectorized, intervals=intervals,mesh=mesh,mesh.sizes=mesh.sizes,maxerror_f=maxerror_f, tol=tol,...)
-    if (is.na(r))
+    if (all(is.na(r)))
         all_points = attr(r,"mesh")$p
     else
         all_points = rbind(attr(r,"mesh")$p,r)
