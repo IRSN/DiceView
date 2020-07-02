@@ -18,11 +18,6 @@
 #' f=function(x) {cat("f");1-exp(x)}; f(root(f,lower=-1,upper=2))
 #' f=function(x) {cat("f");exp(x)-1}; f(root(f,lower=-1,upper=2))
 #'
-#' .f = function(x) 1-exp(1*x);
-#' f=function(x) {cat("f");y=.f(x);points(x,y,pch=20,col=rgb(0,0,0,.2));y}
-#' plot(.f,xlim=c(-1,2))
-#' f(uniroot(f,lower=-1,upper=2)$root)
-#'
 #' .f = function(x) 1-exp(1*x)
 #' f=function(x) {cat("f");y=.f(x);points(x,y,pch=20,col=rgb(0,0,0,.2));y}
 #' plot(.f,xlim=c(-1,2)); f(root(f,lower=-1,upper=2))
@@ -349,11 +344,13 @@ mesh_roots = function(f,f.vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,m
 #' plot(e$p,xlim=c(-1,1),ylim=c(-1,1));
 #' apply(e$tri,1,function(tri) polygon(e$p[tri,],col=rgb(.4,.4,.4,.4)))
 #'
+#' \dontrun{
 #' e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
 #'               threshold = .25,sign=-1, mesh="unif", mesh.sizes = 10,
 #'               intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2))
 #' rgl::plot3d(e$p,xlim=c(-1,1),ylim=c(-1,1),zlim=c(-1,1));
 #' apply(e$tri,1,function(tri)rgl::lines3d(e$p[tri,]))
+#' }
 mesh_exsets = function(f, f.vectorized=FALSE, threshold, sign, intervals, mesh="seq", mesh.sizes=11, maxerror_f=1E-9,tol=.Machine$double.eps^0.25,ex_filter.tri=all,...) {
     if (sign=="lower" || sign==-1 || sign=="inf" || sign=="<" || isFALSE(sign))
         return(mesh_exsets(f=function(...){-f(...)},
