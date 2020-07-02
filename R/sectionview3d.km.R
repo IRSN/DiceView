@@ -45,7 +45,7 @@
 #' y <- branin(design.fact)
 #'
 #' ## kriging model 1 : matern5_2 covariance structure, no trend, no nugget effect
-#'
+#' if (!exists("m1"))
 #' m1 <- km(design = design.fact, response = y)
 #'
 #' ## the same as sectionview3d.km
