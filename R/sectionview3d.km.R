@@ -21,6 +21,12 @@
 #' @param add to print graphics on an existing window.
 #' @param ... further arguments passed to the first call of \code{plot3d}.
 #' @importFrom DiceKriging predict
+#' @importFrom rgl surface3d
+#' @importFrom rgl points3d
+#' @importFrom rgl lines3d
+#' @importFrom rgl plot3d
+#' @importFrom rgl open3d
+#' @importFrom DiceKriging branin
 #' @method sectionview3d km
 #' @docType methods
 #' @rdname km-methods

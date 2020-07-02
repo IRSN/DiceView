@@ -18,6 +18,7 @@
 #' @param ... further arguments passed to the first call of \code{plot}.
 #' @import utils
 #' @import graphics
+#' @importFrom DiceKriging branin
 #' @method sectionview function
 #' @docType methods
 #' @rdname function-methods

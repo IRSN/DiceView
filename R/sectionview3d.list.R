@@ -16,8 +16,14 @@
 #' @param yscale an optional factor to scale y.
 #' @param title an optional overload of main title.
 #' @param add to print graphics on an existing window.
-#' @param \dots optional arguments passed to the first call of \code{plot3d}.
-#' @import DiceEval
+#' @param ... optional arguments passed to the first call of \code{plot3d}.
+#' @importFrom DiceEval modelPredict
+#' @importFrom DiceKriging branin
+#' @importFrom rgl surface3d
+#' @importFrom rgl points3d
+#' @importFrom rgl lines3d
+#' @importFrom rgl plot3d
+#' @importFrom rgl open3d
 #' @method sectionview3d list
 #' @docType methods
 #' @rdname list-methods

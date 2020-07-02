@@ -21,6 +21,7 @@
 #' @param add to print graphics on an existing window.
 #' @param ... further arguments passed to the first call of \code{plot}.
 #' @importFrom DiceKriging predict
+#' @importFrom DiceKriging branin
 #' @method sectionview km
 #' @docType methods
 #' @rdname km-methods

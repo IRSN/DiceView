@@ -5,7 +5,8 @@ Date: 2020-06-01
 Author: Yann Richet, Yves Deville, Clement Chevalier
 Maintainer: Yann Richet <yann.richet@irsn.fr>
 Description: View 2D/3D sections, contour plots, mesh of excursion sets for computer experiments designs, surrogates or test functions.
-Depends: utils, stats, grDevices, graphics, DiceKriging, DiceEval, DiceDesign, rgl, R.cache, geometry, scatterplot3d
+Depends: methods, utils, stats, grDevices, graphics, rgl, scatterplot3d, DiceKriging, DiceEval
+Imports: DiceDesign, R.cache, geometry
 License: GPL-3
 URL: https://github.com/IRSN/DiceView
 Repository: CRAN

@@ -16,8 +16,9 @@
 #' @param yscale an optional factor to scale y.
 #' @param title an optional overload of main title.
 #' @param add to print graphics on an existing window.
-#' @param \dots optional arguments passed to the first call of plot().
-#' @import DiceEval
+#' @param ... optional arguments passed to the first call of plot().
+#' @importFrom DiceEval modelPredict
+#' @importFrom DiceKriging branin
 #' @method sectionview list
 #' @docType methods
 #' @rdname list-methods

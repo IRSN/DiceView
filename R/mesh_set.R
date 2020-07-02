@@ -161,7 +161,7 @@ min_dist <- function (x, X, norm=rep(1,ncol(X))){
 #' @param tol the desired accuracy (convergence tolerance on f arg).
 #' @param ... Other args for f
 #' @import stats
-#' @import DiceDesign
+#' @importFrom DiceDesign lhsDesign
 #' @export
 #' @return matrix of x, so f(x)=0
 #' @examples
@@ -330,6 +330,7 @@ mesh_roots = function(f,f.vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,m
 #' @param ... parameters to forward to mesh_roots(...) call
 #' @param f.vectorized is f already vectorized ? (default: no)
 #' @param tol the desired accuracy (convergence tolerance on f arg).
+#' @importFrom geometry delaunayn
 #' @export
 #' @examples
 #' mesh_exsets(function(x) x, threshold=.51, sign=1, intervals=rbind(0,1))
@@ -434,8 +435,8 @@ plot2d_mesh = function(mesh,color='black',...){
 #' @param view 3d framework to use: 'rgl' or 'scatterplot3d' (default)
 #' @param color color of the mesh
 #' @param ... optional arguments passed to plot function
-#' @import scatterplot3d
-#' @import rgl
+#' @importFrom scatterplot3d scatterplot3d
+#' @importFrom rgl plot3d
 #' @export
 #' @examples
 #' plot2d_mesh(mesh_exsets(f = function(x) sin(pi*x[1])*sin(pi*x[2]),
@@ -486,7 +487,8 @@ combn.design <- function(X1,X2) {
 #' @param p points defining the hull
 #' @param h hull itself (built from p if given as NULL (default))
 #' @export
-#' @import geometry
+#' @importFrom geometry convhulln
+#' @importFrom geometry inhulln
 #' @examples
 #' is_in.p(x=-0.5,p=matrix(c(0,1),ncol=1))
 #' is_in.p(x=0.5,p=matrix(c(0,1),ncol=1))
@@ -509,14 +511,14 @@ is_in.p = function(x,p,h=NULL) {
 #' @import stats
 #' @export
 #' @examples
-#' is_in.mesh(-0.5,mesh=delaunayn(matrix(c(0,1),ncol=1),output.options =TRUE))
-#' is_in.mesh(0.5,mesh=delaunayn(matrix(c(0,1),ncol=1),output.options =TRUE))
+#' is_in.mesh(-0.5,mesh=geometry::delaunayn(matrix(c(0,1),ncol=1),output.options =TRUE))
+#' is_in.mesh(0.5,mesh=geometry::delaunayn(matrix(c(0,1),ncol=1),output.options =TRUE))
 #'
 #' x =matrix(-.5,ncol=2,nrow=1)
-#' is_in.mesh(x,mesh=delaunayn(matrix(c(0,0,1,1,0,0),ncol=2),output.options =TRUE))
+#' is_in.mesh(x,mesh=geometry::delaunayn(matrix(c(0,0,1,1,0,0),ncol=2),output.options =TRUE))
 #'
 #' x =matrix(.5,ncol=2,nrow=1)
-#' is_in.mesh(x,mesh=delaunayn(matrix(c(0,0,1,1,0,0),ncol=2),output.options =TRUE))
+#' is_in.mesh(x,mesh=geometry::delaunayn(matrix(c(0,0,1,1,0,0),ncol=2),output.options =TRUE))
 is_in.mesh = function(x,mesh) {
     for (i in 1:nrow(mesh$tri)) {
         # if (mesh$areas[i]>.Machine$double.eps) # otherwise, flat triangle NOT RELIABLE

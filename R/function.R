@@ -55,7 +55,8 @@ Vectorize.funD <- function(fund,d,.apply=base::apply) {
 #' @description Before each call of a function, check that the cache holds the results and returns it if available. Otherwise, compute f and cache the result for next evluations.
 #' @param fun function to memoize
 #' @return a function with same behavior than argument one, but using cache.
-#' @import R.cache
+#' @importFrom R.cache loadCache
+#' @importFrom R.cache saveCache
 #' @export
 #' @examples
 #' f=function(n) rnorm(n);

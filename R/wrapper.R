@@ -287,6 +287,7 @@ if(!isGeneric("sectionview")) {
 
 #' View the model in a section view.
 #' @param km kriging model
+#' @importFrom methods setMethod
 #' @method sectionview km
 #' @rdname km-methods
 #' @aliases sectionview,km,km-method
@@ -333,6 +334,7 @@ setMethod("sectionview", "km",
 
 #' View the model in a section view.
 #' @param list DiceEval model
+#' @importFrom methods setMethod
 #' @method sectionview list
 #' @rdname list-methods
 #' @aliases sectionview,list,list-method
@@ -373,6 +375,7 @@ setMethod("sectionview", "list",
 
 #' View the model in a section view.
 #' @param function function, taken as model
+#' @importFrom methods setMethod
 #' @method sectionview function
 #' @rdname function-methods
 #' @aliases sectionview,function,function-method
@@ -413,6 +416,7 @@ setMethod("sectionview", "function",
 #' @description Plot one section view per dimension of a kriging, \code{modelPredict} model or function. It is useful for a better understanding of a model behaviour (including uncertainty).
 #' @param model an object of class \code{"km"}, a list that can be used in a \code{"modelPredict"} call, or a function.
 #' @param ... other arguments of the \code{contourview.km}, \code{contourview.list} or \code{contourview.function} function
+#' @importFrom DiceKriging branin
 #' @export
 #' @examples
 #' ## A 2D example - Branin-Hoo function
@@ -442,6 +446,7 @@ if(!isGeneric("sectionview3d")) {
 
 #' View the model in a section (3D) view.
 #' @param km kriging model
+#' @importFrom methods setMethod
 #' @method sectionview3d km
 #' @rdname km-methods
 #' @aliases sectionview3d,km,km-method
@@ -486,6 +491,7 @@ setMethod("sectionview3d", "km",
 
 #' View the model in a section (3D) view.
 #' @param list DiceEval model
+#' @importFrom methods setMethod
 #' @method sectionview3d list
 #' @rdname list-methods
 #' @aliases sectionview3d,list,list-method
@@ -524,6 +530,7 @@ setMethod("sectionview3d", "list",
 
 #' View the model in a section (3D) view.
 #' @param function function, taken as model
+#' @importFrom methods setMethod
 #' @method sectionview3d function
 #' @rdname function-methods
 #' @aliases sectionview3d,function,function-method
@@ -561,6 +568,8 @@ setMethod("sectionview3d", "function",
 #' @description Plot a 3-D view of a kriging or modelPredict model. It is useful for a better understanding of a model behaviour.
 #' @param model an object of class \code{"km"}, a list that can be used in a \code{"modelPredict"} call, or a function.
 #' @param ... other arguments of the \code{contourview.km}, \code{contourview.list} or \code{contourview.function} function
+#' @importFrom methods setMethod
+#' @importFrom DiceKriging branin
 #' @export
 #' @examples
 #' ## A 2D example - Branin-Hoo function
@@ -589,6 +598,7 @@ if(!isGeneric("contourview")) {
 
 #' View the model in a contour (2D) view.
 #' @param km kriging model
+#' @importFrom methods setMethod
 #' @method contourview km
 #' @rdname km-methods
 #' @aliases contourview,km,km-method
@@ -629,6 +639,7 @@ setMethod("contourview", "km",
 
 #' View the model in a contour (2D) view.
 #' @param list DiceEval model
+#' @importFrom methods setMethod
 #' @method contourview list
 #' @rdname list-methods
 #' @aliases contourview,list,list-method
@@ -669,6 +680,7 @@ setMethod("contourview", "list",
 
 #' View the model in a contour (2D) view.
 #' @param function function, taken as model
+#' @importFrom methods setMethod
 #' @method contourview function
 #' @rdname function-methods
 #' @aliases contourview,function,function-method
@@ -707,6 +719,8 @@ setMethod("contourview", "function",
 #' @description Plot a contour view of a kriging or modelPredict model. It is useful for a better understanding of a model behaviour.
 #' @param model an object of class \code{"km"}, a list that can be used in a \code{"modelPredict"} call, or a function.
 #' @param ... other arguments of the \code{contourview.km}, \code{contourview.list} or \code{contourview.function} function
+#' @importFrom DiceKriging branin
+#' @importFrom DiceKriging km
 #' @export
 #' @examples
 #' ## A 2D example - Branin-Hoo function

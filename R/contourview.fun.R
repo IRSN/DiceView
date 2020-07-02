@@ -19,6 +19,7 @@
 #' @param ... further arguments passed to the first call of \code{contour}.
 #' @import utils
 #' @import graphics
+#' @importFrom DiceKriging branin
 #' @method contourview function
 #' @docType methods
 #' @rdname function-methods
