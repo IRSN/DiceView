@@ -51,12 +51,14 @@
 #' ## the same as sectionview3d.km
 #' sectionview3d(m1)
 #'
+#' \dontrun{
 #' ## change colors
 #' sectionview3d(m1, col_points = "firebrick", col_surf = "SpringGreen2")
 #'
 #' ## change colors,  use finer grid and add needles
 #' sectionview3d(m1, npoints = c(50, 30), col_points = "orange",
 #'   col_surf = "SpringGreen2", col_needles = "firebrick")
+#' }
 sectionview3d.km <- function(model, type = "UK",
         center = NULL, axis = NULL,
         npoints = 20,
