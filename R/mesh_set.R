@@ -436,7 +436,7 @@ plot2d_mesh = function(mesh,color='black',...){
 #' @param color color of the mesh
 #' @param ... optional arguments passed to plot function
 #' @importFrom scatterplot3d scatterplot3d
-#' @importFrom rgl plot3d
+# @importFrom rgl plot3d
 #' @export
 #' @examples
 #' plot2d_mesh(mesh_exsets(f = function(x) sin(pi*x[1])*sin(pi*x[2]),
@@ -452,14 +452,9 @@ plot2d_mesh = function(mesh,color='black',...){
 #'                         intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),mode='rgl')
 plot3d_mesh = function(mesh,view='scatterplot3d',color='black',...){
     col.rgb=col2rgb(color)/255
-    if (view=='scatterplot3d') {
-        p3d = scatterplot3d::scatterplot3d(mesh$p,color = rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4),...)
-        apply(mesh$tri,1,function(tri) polygon(p3d$xyz.convert(mesh$p[c(tri,tri[1]),]),border=color))
-        return(p3d)
-    } else if (view=='rgl') {
-        rgl::plot3d(mesh$p,col=rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4),...)
-        apply(mesh$tri,1,function(tri) rgl::quads3d(mesh$p[tri,],col=color,alpha=0.2)) #rgl::lines3d(mesh$p[t(combn(tri,2)),],col=color))
-    } else stop("unsupported view: ",view)
+    if (is.null(load3d())) return()
+    plot3d(mesh$p,col=rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4),...)
+    apply(mesh$tri,1,function(tri) triangles3d(mesh$p[tri,],col=color,alpha=0.2)) #rgl::lines3d(mesh$p[t(combn(tri,2)),],col=color))
 }
 
 

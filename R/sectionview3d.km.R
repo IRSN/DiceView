@@ -21,11 +21,11 @@
 #' @param add to print graphics on an existing window.
 #' @param ... further arguments passed to the first call of \code{plot3d}.
 #' @importFrom DiceKriging predict
-#' @importFrom rgl surface3d
-#' @importFrom rgl points3d
-#' @importFrom rgl lines3d
-#' @importFrom rgl plot3d
-#' @importFrom rgl open3d
+# @importFrom rgl surface3d
+# @importFrom rgl points3d
+# @importFrom rgl lines3d
+# @importFrom rgl plot3d
+# @importFrom rgl open3d
 #' @importFrom DiceKriging branin
 #' @method sectionview3d km
 #' @docType methods
@@ -74,9 +74,9 @@ sectionview3d.km <- function(model, type = "UK",
         title = NULL,
         add = FALSE,
         ...) {
+    if (is.null(load3d())) return()
 
     D <- model@d
-
     if (D == 1) stop("for a model with dim 1, use 'sectionview'")
 
     if (is.null(center)) {
