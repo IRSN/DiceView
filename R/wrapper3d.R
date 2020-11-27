@@ -1,4 +1,4 @@
-load3d = function(package = "scatterplot3d") {
+load3d = function(package = NULL) {
     if (!is.null(package)) { # prefered package defined
         if (!(package %in% rownames(installed.packages()))) {
             warning(paste0("Package ",package," should be available to use any DiceView::*3d functions."))
