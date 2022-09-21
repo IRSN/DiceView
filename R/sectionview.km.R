@@ -1,4 +1,4 @@
-#' Plot section views of a kriging model, including design points
+#' @title Plot section views of a kriging model, including design points
 #' @description Plot one section view per dimension of a kriging model thus providing a better understanding of the model behaviour including uncertainty.
 #' @param model an object of class "km".
 #' @param type the kriging type to use for model prediction.

@@ -1,4 +1,4 @@
-#' Plot a section view of a model, including design points
+#' @title Plot a section view of a model, including design points
 #' @description Plot one section view per dimension of a surrogate model. It is useful for a better understanding of a model behaviour.
 #' @param model a list that can be used as model with the \code{modelPredict} function of the \pkg{DiceEval} package.
 #' @param center optional coordinates (as a list or data frame) of the center of the section view if the model's dimension is > 1.

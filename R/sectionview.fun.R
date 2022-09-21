@@ -1,4 +1,4 @@
-#' Plot section views of a function
+#' @title Plot section views of a function
 #' @description Plot one section view per dimension of a function thus providing a better understanding of the model behaviour.
 #' @param model an object of class \code{"function"}.
 #' @param dim the dimension of fun arguments.

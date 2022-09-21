@@ -10,10 +10,10 @@ DiceView.env <- new.env()
 ##=========================================================
 
 #' @import grDevices
-translude <- function(colors, alpha = 0.6) {
+translude <- function(col, alpha = 0.6) {
 
-    alpha <- rep(alpha, length.out = length(colors))
-    rgb <- as.matrix(col2rgb(colors)/255)
+    alpha <- rep(alpha, length.out = length(col))
+    rgb <- as.matrix(col2rgb(col)/255)
     colors2 <- rgb(red = rgb["red", ],
                    green = rgb["green", ],
                    blue = rgb["blue", ],

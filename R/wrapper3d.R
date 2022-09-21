@@ -3,16 +3,23 @@ load3d = function(package = NULL) {
         if (!(package %in% rownames(installed.packages()))) {
             warning(paste0("Package ",package," should be available to use any DiceView::*3d functions."))
             return(NULL)
-        } else return(package)
-    } else { # auto select 3d package
-        packages = c("rgl","scatterplot3d")
-        for (package in packages) {
-            if (package %in% rownames(installed.packages())) {
-                return(package)
-            }
+        } else {
+            env3d$package <- package
+            return(package)
         }
-        warning(paste0("Cannot find any installed package for 3D: ",paste0(collapse=" or ",packages)))
-        return(NULL)
+    } else { # auto select 3d package
+        if (!is.null(env3d$package) && (env3d$package %in% rownames(installed.packages()))) {
+            return(env3d$package)
+        } else {
+            packages = c("rgl","scatterplot3d")
+            for (package in packages) {
+                if (package %in% rownames(installed.packages())) {
+                    return(package)
+                }
+            }
+            warning(paste0("Cannot find any installed package for 3D: ",paste0(collapse=" or ",packages)))
+            return(NULL)
+        }
     }
 }
 
@@ -29,6 +36,7 @@ open3d = function(...) {
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
+#' @test plot3d(runif(10),runif(10),runif(10))
 plot3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, add = FALSE,...) {
     package = load3d()
     if (is.null(y) & is.null(z)) {y = x[,2]; z = x[,3]; x=x[,1]}
@@ -47,6 +55,7 @@ plot3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, add = FALSE,...) {
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
+#' @test plot3d(runif(10),runif(10),runif(10)); points3d(runif(10),runif(10),runif(10),col='red')
 points3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, box=FALSE, ...) {
     package = load3d()
     if (is.null(y) & is.null(z)) {y = x[,2]; z = x[,3]; x=x[,1]}
@@ -60,6 +69,7 @@ points3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, box=FALSE, ...) 
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
+#' @test plot3d(runif(10),runif(10),runif(10)); lines3d(runif(10),runif(10),runif(10),col='red')
 lines3d = function(x, y=NULL, z=NULL,  col='black' , alpha=0.5, box=FALSE,...) {
     package = load3d()
     if (is.null(package)) {
@@ -72,9 +82,16 @@ lines3d = function(x, y=NULL, z=NULL,  col='black' , alpha=0.5, box=FALSE,...) {
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
+#' @test plot3d(runif(10),runif(10),runif(10)); triangles3d(runif(3),runif(3),runif(3),col='red')
 triangles3d = function(x, y=NULL, z=NULL, col='black', alpha=0.5, box=FALSE, ...) {
     package = load3d()
-    if (is.null(y) & is.null(z)) {y = x[,2]; z = x[,3]; x=x[,1]}
+    if (is.null(y) & is.null(z)) {
+        if (is.matrix(x)) {
+            y = x[,2]; z = x[,3]; x=x[,1]
+        } else {
+            y = x[2]; z = x[3]; x=x[1]
+        }
+    }
     if (is.null(package)) {
         stop("No 3D package available.")
     } else if (package=="rgl") {

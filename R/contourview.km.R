@@ -1,4 +1,4 @@
-#' Plot a contour view of a kriging model, including design points
+#' @title Plot a contour view of a kriging model, including design points
 #' @description Plot a contour view of a kriging model: mean response surface, fitted points and confidence surfaces. Provide a better understanding of the kriging model behaviour.
 #' @param model an object of class \code{"km"}.
 #' @param type the kriging type to use for model prediction.
@@ -23,8 +23,7 @@
 #' @importFrom DiceKriging predict
 #' @importFrom DiceKriging branin
 #' @method contourview km
-#' @docType methods
-#' @rdname km-methods
+#' @aliases contourview,km,km-method
 #' @export
 #' @details Experimental points are plotted with fading colors. Points that fall in the specified section (if any) have the color specified \code{col_points} while points far away from the center have shaded versions of the same color. The amount of fading is determined using the Euclidean distance between the plotted point and \code{center}. The variables chosen with their number are to be found in the \code{X} slot of the model. Thus they are 'spatial dimensions' but not 'trend variables'.
 #' @author Yann Richet, IRSN

@@ -1,4 +1,4 @@
-#' Plot a 3-D (using RGL) view of a kriging model, including design points
+#' @title Plot a 3-D (using RGL) view of a kriging model, including design points
 #' @description Plot a 3-D view of a kriging model: mean response surface, fitted points and confidence surfaces. Provide a better understanding of the kriging model behaviour.
 #' @param model an object of class \code{"km"}.
 #' @param type the kriging type to use for model prediction.
@@ -19,6 +19,7 @@
 #' @param yscale an optional factor to scale y.
 #' @param title an optional overload of main title.
 #' @param add to print graphics on an existing window.
+#' @param engine3d 3D view package to use. "rgl" if available, otherwise "scatterplot3d" by default.
 #' @param ... further arguments passed to the first call of \code{plot3d}.
 #' @importFrom DiceKriging predict
 # @importFrom rgl surface3d
@@ -51,14 +52,12 @@
 #' ## the same as sectionview3d.km
 #' sectionview3d(m1)
 #'
-#' \dontrun{
 #' ## change colors
 #' sectionview3d(m1, col_points = "firebrick", col_surf = "SpringGreen2")
 #'
 #' ## change colors,  use finer grid and add needles
 #' sectionview3d(m1, npoints = c(50, 30), col_points = "orange",
 #'   col_surf = "SpringGreen2", col_needles = "firebrick")
-#' }
 sectionview3d.km <- function(model, type = "UK",
         center = NULL, axis = NULL,
         npoints = 20,
@@ -73,8 +72,9 @@ sectionview3d.km <- function(model, type = "UK",
         xlim = NULL, ylim = NULL,
         title = NULL,
         add = FALSE,
+        engine3d = NULL,
         ...) {
-    if (is.null(load3d())) return()
+    if (is.null(load3d(engine3d))) return()
 
     D <- model@d
     if (D == 1) stop("for a model with dim 1, use 'sectionview'")

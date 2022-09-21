@@ -1,4 +1,4 @@
-#' Plot a contour view of a model, including design points
+#' @title Plot a contour view of a model, including design points
 #' @description Plot a contour view of a model, thus providing a better understanding of its behaviour.
 #' @param model a list that can be used in the \code{modelPredict} function of the \pkg{DiceEval} package.
 #' @param center optional coordinates (as a list or data frame) of the center of the section view if the model's dimension is > 2.
@@ -22,8 +22,7 @@
 #' @importFrom DiceEval modelPredict
 #' @importFrom DiceKriging branin
 #' @method contourview list
-#' @docType methods
-#' @rdname list-methods
+#' @aliases contourview,list,list-method
 #' @export
 #' @details Experimental points are plotted with fading colors. Points that fall in the specified section (if any) have the color specified \code{col_points} while points far away from the center have shaded versions of the same color. The amount of fading is determined using the Euclidean distance between the plotted point and \code{center}. The variables chosen with their number are to be found in the \code{data$X} element of the model. Thus they are original data variables but not trend variables that may have been created using the model's formula.
 #' @author Yann Richet, IRSN

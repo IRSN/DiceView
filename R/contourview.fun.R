@@ -1,4 +1,4 @@
-#' Plot a contour view of a function.
+#' @title Plot a contour view of a function.
 #' @param model an object of class \code{"function"}.
 #' @param dim the dimension of fun arguments.
 #' @param center optional coordinates (as a list or data frame) of the center of the section view if the model's dimension is > 2.
@@ -21,8 +21,7 @@
 #' @import graphics
 #' @importFrom DiceKriging branin
 #' @method contourview function
-#' @docType methods
-#' @rdname function-methods
+#' @aliases contourview,function,function-method
 #' @export
 #' @details Experimental points are plotted with fading colors. Points that fall in the specified section (if any) have the color specified \code{col_points} while points far away from the center have shaded versions of the same color. The amount of fading is determined using the Euclidean distance between the plotted point and \code{center}. The variables chosen with their number are to be found in the \code{X} slot of the model. Thus they are 'spatial dimensions' but not 'trend variables'.
 #' @author Yann Richet, IRSN

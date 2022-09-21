@@ -1,4 +1,4 @@
-#' Plot a 3-D (using RGL) view of a function
+#' @title Plot a 3-D (using RGL) view of a function
 #' @description Plot a 3-D view of a function. Provide a better understanding of the model behaviour.
 #' @param model an object of class \code{"function"}.
 #' @param dim the dimension of fun arguments.
@@ -14,6 +14,7 @@
 #' @param yscale an optional factor to scale y.
 #' @param title an optional overload of main title.
 #' @param add to print graphics on an existing window.
+#' @param engine3d 3D view package to use. "rgl" if available, otherwise "scatterplot3d" by default.
 #' @param ... further arguments passed to the first call of \code{plot3d}.
 #' @import utils
 # @importFrom rgl surface3d
@@ -40,8 +41,9 @@ sectionview3d.function <- function(model,dim = ifelse(is.null(center),2,length(c
         xlim = c(0,1), ylim = NULL,
         title = NULL,
         add = FALSE,
+        engine3d = NULL,
         ...) {
-    if (is.null(load3d())) return()
+    if (is.null(load3d(engine3d))) return()
 
     fun = model
 

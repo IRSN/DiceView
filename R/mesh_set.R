@@ -1,6 +1,6 @@
 #### Generalization of root finding ####
 
-#' One Dimensional Root (Zero) Finding
+#' @title One Dimensional Root (Zero) Finding
 #' @description Search one root with given precision (on y). Iterate over uniroot as long as necessary.
 #' @param f the function for which the root is sought.
 #' @param lower the lower end point of the interval to be searched.
@@ -80,7 +80,7 @@ root = function(f,lower,upper,maxerror_f=1E-7, f_lower = f(lower, ...),f_upper =
         r$root
 }
 
-#' One Dimensional Multiple Roots (Zero) Finding
+#' @title One Dimensional Multiple Roots (Zero) Finding
 #' @description Search multiple roots of 1D function, sampled/splitted by a (1D) mesh
 #' @param f Function to find roots
 #' @param interval bounds to inverse in
@@ -139,7 +139,7 @@ roots = function(f,interval, maxerror_f=1E-7,split="seq",split.size=11,tol=.Mach
     return(r)
 }
 
-#' Minimal distance between one point to many points
+#' @title Minimal distance between one point to many points
 #' @param x one point
 #' @param X matrix of points (same number of columns than x)
 #' @param norm normalization vecor of distance (same number of columns than x)
@@ -151,7 +151,7 @@ min_dist <- function (x, X, norm=rep(1,ncol(X))){
     return(min(sqrt(rowSums(((X - matrix(x, nrow = nrow(X), ncol = ncol(X), byrow = TRUE))/norm)^2))))
 }
 
-#' Multi Dimensional Multiple Roots (Zero) Finding, sampled by a mesh
+#' @title Multi Dimensional Multiple Roots (Zero) Finding, sampled by a mesh
 #' @param f Function (one or more dimensions) to find roots of
 #' @param intervals bounds to inverse in, each column contains min and max of each dimension
 #' @param mesh function or "unif" or "seq" (default) to preform interval partition
@@ -210,7 +210,7 @@ mesh_roots = function(f,f.vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,m
             ridge.points = combn.design(ridge.points, matrix(seq(f=lowers[i],to=uppers[i],length.out = mesh.size[i]),ncol=1))
         }
     } else if (mesh == "unif") {
-        ridge.points = matrix(runif(n = prod(mesh.size),min=0,max=1),ncol=d)
+        ridge.points = matrix(runif(n = d*prod(mesh.size),min=0,max=1),ncol=d)
         ridge.points = matrix(lowers,ncol=d,nrow=nrow(ridge.points),byrow = TRUE) + ridge.points * (matrix(uppers,ncol=d,nrow=nrow(ridge.points),byrow = TRUE) - matrix(lowers,ncol=d,nrow=nrow(ridge.points),byrow = TRUE))
     } else if (mesh == "LHS") {
         ridge.points = DiceDesign::lhsDesign(prod(mesh.size),dimension=d)$design
@@ -318,7 +318,7 @@ mesh_roots = function(f,f.vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,m
 
 #### Excursion sets ####
 
-#' Search excursion set of nD function, sampled by a mesh
+#' @title Search excursion set of nD function, sampled by a mesh
 #' @param f Function to inverse at 'threshold'
 #' @param threshold target value to inverse
 #' @param sign focus at conservative for above (sign=1) or below (sign=-1) the threshold
@@ -345,12 +345,12 @@ mesh_roots = function(f,f.vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,m
 #' plot(e$p,xlim=c(-1,1),ylim=c(-1,1));
 #' apply(e$tri,1,function(tri) polygon(e$p[tri,],col=rgb(.4,.4,.4,.4)))
 #'
-#' \dontrun{
-#' e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-#'               threshold = .25,sign=-1, mesh="unif", mesh.sizes = 10,
-#'               intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2))
-#' rgl::plot3d(e$p,xlim=c(-1,1),ylim=c(-1,1),zlim=c(-1,1));
-#' apply(e$tri,1,function(tri)rgl::lines3d(e$p[tri,]))
+#' if (requireNamespace("rgl")) {
+#'   e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
+#'                 threshold = .25,sign=-1, mesh="unif", mesh.sizes = 10,
+#'                 intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2))
+#'   rgl::plot3d(e$p,xlim=c(-1,1),ylim=c(-1,1),zlim=c(-1,1));
+#'   apply(e$tri,1,function(tri)rgl::lines3d(e$p[tri,]))
 #' }
 mesh_exsets = function(f, f.vectorized=FALSE, threshold, sign, intervals, mesh="seq", mesh.sizes=11, maxerror_f=1E-9,tol=.Machine$double.eps^0.25,ex_filter.tri=all,...) {
     if (sign=="lower" || sign==-1 || sign=="inf" || sign=="<" || isFALSE(sign))
@@ -359,6 +359,7 @@ mesh_exsets = function(f, f.vectorized=FALSE, threshold, sign, intervals, mesh="
                            threshold=-threshold,
                            sign=1,
                            intervals=intervals, mesh=mesh, mesh.sizes=mesh.sizes, maxerror_f=maxerror_f,tol=tol,...))
+
     if (sign!="upper" && sign!=1 && sign!="sup" && sign!=">" && !isTRUE(sign))
         stop("unknown sign: '",sign,"'")
 
@@ -396,7 +397,7 @@ mesh_exsets = function(f, f.vectorized=FALSE, threshold, sign, intervals, mesh="
 
 #### Plot meshes ####
 
-#' Plot a one dimensional mesh
+#' @title Plot a one dimensional mesh
 #' @param mesh 1-dimensional mesh to draw
 #' @param y ordinate value where to draw the mesh
 #' @param color color of the mesh
@@ -412,7 +413,7 @@ plot_mesh = function(mesh,y=0,color='black',...){
     apply(mesh$tri,1,function(tri) lines(mesh$p[tri,],y=rep(y,length(tri)),col=color))
 }
 
-#' Plot a two dimensional mesh
+#' @title Plot a two dimensional mesh
 #' @param mesh 2-dimensional mesh to draw
 #' @param color color of the mesh
 #' @param ... optional arguments passed to plot function
@@ -430,9 +431,9 @@ plot2d_mesh = function(mesh,color='black',...){
     # apply(mesh$tri,1,function(tri) points(mesh$p[tri,], col = rgb(0,0,0,1),pch=20))
 }
 
-#' Plot a three dimensional mesh
+#' @title Plot a three dimensional mesh
 #' @param mesh 3-dimensional mesh to draw
-#' @param view 3d framework to use: 'rgl' or 'scatterplot3d' (default)
+#' @param engine3d 3d framework to use: 'rgl' if installed or 'scatterplot3d' (default)
 #' @param color color of the mesh
 #' @param ... optional arguments passed to plot function
 #' @importFrom scatterplot3d scatterplot3d
@@ -444,23 +445,30 @@ plot2d_mesh = function(mesh,color='black',...){
 #'                         intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2)))
 #'
 #' plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-#'                         threshold = .25,sign=-1, mesh="unif", mesh.sizes = 10,
+#'                         threshold = .25,sign=-1, mesh="unif", mesh.sizes = 5,
 #'                         intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)))
 #'
-#' plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-#'                         threshold = .25,sign=-1, mesh="unif", mesh.sizes = 10,
-#'                         intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),mode='rgl')
-plot3d_mesh = function(mesh,view='scatterplot3d',color='black',...){
+#' if (requireNamespace("rgl")) {
+#'   plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
+#'                           threshold = .25,sign=-1, mesh="unif", mesh.sizes = 5,
+#'                           intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),engine3d='rgl')
+#' }
+plot3d_mesh = function(mesh,engine3d=NULL,color='black',...){
     col.rgb=col2rgb(color)/255
-    if (is.null(load3d())) return()
+    if (is.null(load3d(engine3d))) return()
     plot3d(mesh$p,col=rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4),...)
-    apply(mesh$tri,1,function(tri) triangles3d(mesh$p[tri,],col=color,alpha=0.2)) #rgl::lines3d(mesh$p[t(combn(tri,2)),],col=color))
+    apply(mesh$tri,1,function(tri) {
+        triangles3d(mesh$p[tri,][-1,],col=color,alpha=0.05)
+        triangles3d(mesh$p[tri,][-2,],col=color,alpha=0.05)
+        triangles3d(mesh$p[tri,][-3,],col=color,alpha=0.05)
+        triangles3d(mesh$p[tri,][-4,],col=color,alpha=0.05)
+    }) #rgl::lines3d(mesh$p[t(combn(tri,2)),],col=color))
 }
 
 
 #### Utility functions ####
 
-#' Generalize expand.grid() for multi-columns data. Build all combinations of lines from X1 and X2. Each line may hold multiple columns.
+#' @title Generalize expand.grid() for multi-columns data. Build all combinations of lines from X1 and X2. Each line may hold multiple columns.
 #' @param X1 variable values, possibly with many columns
 #' @param X2 variable values, possibly with many columns
 #' combn.design(matrix(c(10,20),ncol=1),matrix(c(1,2,3,4,5,6),ncol=2))
@@ -477,7 +485,7 @@ combn.design <- function(X1,X2) {
     C
 }
 
-#' Test if points are in a hull
+#' @title Test if points are in a hull
 #' @param x points to test
 #' @param p points defining the hull
 #' @param h hull itself (built from p if given as NULL (default))
@@ -528,7 +536,7 @@ is_in.mesh = function(x,mesh) {
     return(FALSE)
 }
 
-#' Checks if some points belong to a given mesh
+#' @title Checks if some points belong to a given mesh
 #' @param X points to check
 #' @param mesh mesh identifying the set which X may belong
 #' @export
@@ -544,7 +552,7 @@ are_in.mesh = function(X,mesh) {
     array(unlist(parallel::mclapply(X.list,is_in.mesh,mesh)))
 }
 
-#' Extract points of mesh which belong to the mesh triangulation (may not contain all points)
+#' @title Extract points of mesh which belong to the mesh triangulation (may not contain all points)
 #' @param mesh mesh (list(p,tri,...) from geometry)
 #' @return points coordinates inside the mesh triangulation
 #' @export
@@ -552,7 +560,7 @@ points_in.mesh = function(mesh) {
     if (is.null(mesh)) return(NULL)
     mesh$p[unique(array(mesh$tri)),, drop = FALSE]
 }
-#' Extract points of mesh which do not belong to the mesh triangulation (may not contain all points)
+#' @title Extract points of mesh which do not belong to the mesh triangulation (may not contain all points)
 #' @param mesh (list(p,tri,...) from geometry)
 #' @return points coordinates outside the mesh triangulation
 #' @export

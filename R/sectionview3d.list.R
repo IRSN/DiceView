@@ -1,4 +1,4 @@
-#' Plot a 3-D (using RGL) view of a model, including design points
+#' @title Plot a 3-D (using RGL) view of a model, including design points
 #' @description Plot a 3-D view of a model, thus providing a better understanding of its behaviour.
 #' @param model a list that can be used in the \code{modelPredict} function of the \pkg{DiceEval} package.
 #' @param center optional coordinates (as a list or data frame) of the center of the section view if the model's dimension is > 2.
@@ -16,6 +16,7 @@
 #' @param yscale an optional factor to scale y.
 #' @param title an optional overload of main title.
 #' @param add to print graphics on an existing window.
+#' @param engine3d 3D view package to use. "rgl" if available, otherwise "scatterplot3d" by default.
 #' @param ... optional arguments passed to the first call of \code{plot3d}.
 #' @importFrom DiceEval modelPredict
 #' @importFrom DiceKriging branin
@@ -57,8 +58,9 @@ sectionview3d.list <- function(model,
         xlim = NULL, ylim = NULL,
         title = NULL,
         add = FALSE,
+		engine3d = NULL,
         ...) {
-    if (is.null(load3d())) return()
+    if (is.null(load3d(engine3d))) return()
 
     D <- length(model$data$X)
     if (D == 1) stop("for a model with dim 1, use 'sectionview'")

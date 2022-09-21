@@ -1,4 +1,4 @@
-#' Apply Functions Over Array Margins, using custom vecorization (possibly using parallel)
+#' @title Apply Functions Over Array Margins, using custom vecorization (possibly using parallel)
 #' @description Emulate parallel apply on a function, from mclapply. Returns a vector or array or list of values obtained by applying a function to margins of an array or matrix.
 #' @param FUN function to apply on X
 #' @param X array of input values for FUN
@@ -30,7 +30,7 @@ Apply.fun <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclapply,.
     do.call(.combine,l)
 }
 
-#' Vectorize a multidimensional Function
+#' @title Vectorize a multidimensional Function
 #' @description Vectorize a d-dimensional (input) function, in the same way that base::Vectorize for 1-dimensional functions.
 #' @param fund d-dimensional function to Vectorize
 #' @param d dimension of input arguments of fund
@@ -51,7 +51,7 @@ Vectorize.funD <- function(fund,d,.apply=base::apply) {
     }
 }
 
-#' Memoize a function
+#' @title Memoize a function
 #' @description Before each call of a function, check that the cache holds the results and returns it if available. Otherwise, compute f and cache the result for next evluations.
 #' @param fun function to memoize
 #' @return a function with same behavior than argument one, but using cache.
