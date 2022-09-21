@@ -19,17 +19,13 @@ plot3d_mesh(mesh, engine3d = NULL, color = "black", ...)
 Plot a three dimensional mesh
 }
 \examples{
-plot2d_mesh(mesh_exsets(f = function(x) sin(pi*x[1])*sin(pi*x[2]),
-                        threshold=0,sign=1, mesh="unif",mesh.size=11,
-                        intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2)))
-
 plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-                        threshold = .25,sign=-1, mesh="unif", mesh.sizes = 5,
+                        threshold = .25,sign=-1, mesh="unif", mesh.sizes = 4,
                         intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)))
 
 if (requireNamespace("rgl")) {
   plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-                          threshold = .25,sign=-1, mesh="unif", mesh.sizes = 5,
+                          threshold = .25,sign=-1, mesh="unif", mesh.sizes = 4,
                           intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),engine3d='rgl')
 }
 }
