@@ -141,10 +141,10 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
         yd_mean <- matrix(NA,npoints[1], npoints[2])
         yd_sd <- matrix(0,npoints[1], npoints[2])
 
-        y <- Fun(x)
+        y <- Fun(as.matrix(x))
         if (is.list(y)) {
             if (!("mean" %in% names(y)) || !("se" %in% names(y)))
-                stop("If function returns a list, it must have 'mean' and 'se'.")
+                stop(paste0("If function returns a list, it must have 'mean' and 'se', while had ",paste0(collapse=",",names(y))))
             y_mean <- as.numeric(y$mean)
             y_sd <- as.numeric(y$se)
         } else { # simple function, not a list

@@ -117,10 +117,10 @@ sectionview.function <- function(fun, vectorized=FALSE,
         y_mean <- array(NA, npoints)
         y_sd <- array(0, npoints)
 
-        y <- Fun(x)
+        y <- Fun(as.matrix(x))
         if (is.list(y)) {
             if (!("mean" %in% names(y)) || !("se" %in% names(y)))
-                stop("If function returns a list, it must have 'mean' and 'se'.")
+                stop(paste0("If function returns a list, it must have 'mean' and 'se', while had ",paste0(collapse=",",names(y))))
             y_mean <- as.numeric(y$mean)
             y_sd <- as.numeric(y$se)
         } else { # simple function, not a list
@@ -303,17 +303,28 @@ sectionview.km <- function(km_model, type = "UK",
         if (!km_model@noise.flag) {
             plot(X_doe[,d], y_doe,
                    col = fade(color = col_points, alpha = alpha),
-                   pch = 20,
-                 type='p', xlab="",ylab="", xlim=xlim, ylim=ylim) # Cannot use 'points' so use 'plot' with these neutral args
+                   pch = 20,type='p')
+                 # , xlab="",ylab="", xlim=xlim, ylim=ylim) # Cannot use 'points' so use 'plot' with these neutral args
+        } else {
+            plot(X_doe[,d], y_doe,
+                 col = fade(color = col_points, alpha = alpha),
+                 pch = 20,type='n')
+            # , xlab="",ylab="", xlim=xlim, ylim=ylim) # Cannot use 'points' so use 'plot' with these neutral args
         }
 
+        if (km_model@noise.flag)
         for (p in 1:length(conf_lev)) {
             for (i in 1:n) {
-                lines(c(X_doe[i,d],X_doe[i,d]),
-                      c(qnorm((1+conf_lev[p])/2, y_doe[i], sdy_doe[i]),
-                        qnorm((1-conf_lev[p])/2, y_doe[i], sdy_doe[i])),
-                      col = rgb(1,1-alpha[i], 1-alpha[i], alpha[i]*conf_blend[p]),
-                      lwd = 5, lend = 1)
+                if (sdy_doe[i]>0)
+                    lines(x=c(X_doe[i,d],X_doe[i,d]),
+                          y=c(qnorm((1+conf_lev[p])/2, y_doe[i], sdy_doe[i]),
+                              qnorm((1-conf_lev[p])/2, y_doe[i], sdy_doe[i])),
+                          col = rgb(1,1-alpha[i], 1-alpha[i], alpha[i]*conf_blend[p]),
+                          lwd = 5, lend = 1)
+                else
+                    points(x=X_doe[i,d],y=y_doe[i],
+                           col = rgb(1,1-alpha[i], 1-alpha[i], alpha[i]*conf_blend[p]),
+                           pch = 15, lwd = 5)
             }
         }
     }
@@ -417,19 +428,20 @@ sectionview.libKriging <- function(libKriging_model,
         .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
         xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
         ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
-            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
+        zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
         if (inherits(libKriging_model,"Kriging")) {
-            plot(X_doe[,d], y_doe,
+            points(X_doe[,d], y_doe,
                    col = fade(color = col_points, alpha = alpha),
-                   pch = 20,
-                 type='p', xlab="",ylab="", xlim=xlim, ylim=ylim) # Cannot use 'points' so use 'plot' with these neutral args
+                   pch = 20, type='p')
+                   # , xlab="",ylab="", xlim=xlim, ylim=ylim) # Cannot use 'points' so use 'plot' with these neutral args
         } else {
-            plot(X_doe[,d], y_doe,
+            points(X_doe[,d], y_doe,
                      col = fade(color = col_points, alpha = alpha),
-                     pch = 20,
-                     type='n', xlab="",ylab="", xlim=xlim, ylim=ylim) # Cannot use 'points' so use 'plot' with these neutral args
+                     pch = 20, type='n')
+                     # , xlab="",ylab="", xlim=xlim, ylim=ylim) # Cannot use 'points' so use 'plot' with these neutral args
         }
 
+        if (!inherits(libKriging_model,"Kriging"))
         for (p in 1:length(conf_lev)) {
             for (i in 1:n) {
                 if (sdy_doe[i]>0)
