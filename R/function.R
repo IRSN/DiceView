@@ -35,6 +35,7 @@ Apply.function <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclap
 #' @param fun 'dim'-dimensional function to Vectorize
 #' @param dim dimension of input arguments of fund
 #' @param .apply which vectorization to use (default is base::apply)
+#' @param ... optional args to pass to 'fun'
 #' @return a vectorized function (to be called on matrix argument, on each row)
 #' @export
 #' @examples
@@ -43,7 +44,7 @@ Apply.function <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclap
 #'
 #' f2 = function(x)x[1]+x[2]; f2(1:10); F = Vectorize.function(f2,2);
 #' F(cbind(1:10,11:20)); #F = Vectorize(f); F(1:10);
-Vectorize.function <- function(fun, dim, .apply=base::apply) {
+Vectorize.function <- function(fun, dim, .apply=base::apply,...) {
     function(X,...) {
         X = unlist(X)
         if (!is.matrix(X)) X = matrix(X,ncol=dim)
