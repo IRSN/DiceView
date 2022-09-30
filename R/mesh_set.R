@@ -162,6 +162,7 @@ min_dist <- function (x, X, norm=rep(1,ncol(X))){
 #' @param ... Other args for f
 #' @import stats
 #' @importFrom DiceDesign lhsDesign
+#' @importFrom parallel mclapply
 #' @export
 #' @return matrix of x, so f(x)=0
 #' @examples
@@ -237,25 +238,114 @@ mesh_roots = function(f,f.vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,m
     else if (is.function(f.vectorized))
         f_vec=function(x,...) f.vectorized(x,...)
     else
-        f_vec=Vectorize.funD(f,d=ncol(ridge.points))
+        f_vec=Vectorize.function(f,dim=ncol(ridge.points))
     ridge.y = f_vec(ridge.points,...)
 
-    # Get all ridges where we will do uniroot later
-    # ridges = t(combn(simplexes$tri[1,],2))
-    # for (i in 1:nrow(simplexes$tri)) {
-    #     more_ridges = t(combn(simplexes$tri[i,],2))
-    #     for (j in 1:nrow(more_ridges))
-    #         if (min_dist(more_ridges[j,], ridges)>.Machine$double.eps)
-    #             ridges = rbind(ridges,more_ridges[j,])
+    ############### Benchmark: find ridges that crosses zero ###################
+    # library(microbenchmark)
+    #
+    # f = function(x) exp(-x^2)-0.5
+    # Npoints = 1000
+    # ridge.points = matrix(runif(2*Npoints,-1,1),ncol=2)
+    # simplexes <- geometry::delaunayn(ridge.points,output.options = TRUE)
+    # ridge.y = f(simplexes$p)
+    #
+    # tcombn2 = function(x) (utils::combn(x,2))
+    # tcombn2_arrangements = function(x) t(arrangements::combinations(x,2))
+    # cbind.list = function(l)
+    #     matrix(unlist(l),ncol=length(l),byrow=F) #do.call(cbind,l)
+    # tcombn2_my = function(x){
+    #     l=length(x)
+    #     #C = matrix(NA,nrow=2,factorial(l-1))
+    #     #i = 1
+    #     #for (j in 1:(l-1)) {
+    #     #    for (k in (j+1):l) {
+    #     #        C[,i] = x[c(j,k)]
+    #     #        i = i+1
+    #     #    }
+    #     #}
+    #     #C
+    #     do.call(cbind,lapply(1:(l-1),
+    #                function(j) cbind.list(lapply((j+1):l,
+    #                                       function(k) x[c(j,k)]))))
     # }
-    ridges = Apply.fun(X=simplexes$tri,MARGIN=1,FUN=function(tri_i) {
-        more_ridges=NULL
-        all_ridges = t(combn(tri_i,2))
-        for (j in 1:nrow(all_ridges))
-            if (ridge.y[all_ridges[j,1]]*ridge.y[all_ridges[j,2]]<0) # not same sign
-                more_ridges = rbind(more_ridges,all_ridges[j,])
-        return(more_ridges)
-    },.combine=rbind,.lapply=base::lapply)
+    #
+    # microbenchmark({tcombn2(1:5)})
+    # microbenchmark({tcombn2_arrangements(1:5)})
+    # microbenchmark({tcombn2_my(1:5)})
+    #
+    # tcombn2 = function(x) t(arrangements::combinations(x,2)) # faster !
+    #
+    # # for x for (baseline)
+    # microbenchmark({
+    #   ridges = NULL
+    #   for (i in 1:nrow(simplexes$tri)) {
+    #       #if (!all(ridge.y[simplexes$tri[i,]]<0)) {
+    #       more_ridges = tcombn2(simplexes$tri[i,])
+    #       for (j in 1:nrow(more_ridges))
+    #           if (ridge.y[more_ridges[j,1]]*ridge.y[more_ridges[j,2]]<0)
+    #               ridges = rbind(ridges,more_ridges[j,])
+    #      #}
+    #   }
+    # },times=10)
+    #
+    # # lapply x for
+    # microbenchmark({
+    #     ridges = lapply(X=as.list(as.data.frame(t(simplexes$tri))),FUN=function(tri_i) {
+    #         #if (all(ridge.y[tri_i]<0)) return()
+    #         all_ridges = tcombn2(simplexes$tri[i,])
+    #         more_ridges=NULL
+    #         for (j in 1:nrow(all_ridges))
+    #             if (ridge.y[all_ridges[j,1]]*ridge.y[all_ridges[j,2]]<0) # not same sign
+    #                 more_ridges = rbind(more_ridges,all_ridges[j,])
+    #         return(more_ridges)
+    #     })
+    #     ridges = do.call(rbind,ridges)
+    # },times=10)
+    #
+    # # lapply x apply
+    # microbenchmark({
+    #   ridges = lapply(X=as.list(as.data.frame(t(simplexes$tri))),FUN=function(tri_i) {
+    #       #if (all(ridge.y[tri_i]<0)) return()
+    #       all_ridges = tcombn2(simplexes$tri[i,])
+    #       #yprod_all_ridges = apply(all_ridges,1,function(r) ridge.y[r[1]] * ridge.y[r[2]])
+    #       #yprod_all_ridges = apply(all_ridges,1,function(r) prod(ridge.y[r]))
+    #       yprod_all_ridges = all_ridges[
+    #           unlist(lapply(1:nrow(all_ridges),
+    #                  function(i)
+    #                      if (ridge.y[all_ridges[i,1]] * ridge.y[all_ridges[i,2]]<0)
+    #                          return(i)
+    #                         else return(NULL))),]
+    #       return(all_ridges[which(yprod_all_ridges<0),])
+    #   })
+    #   ridges = do.call(rbind,ridges)
+    # },times=10)
+    #
+    ############################################################################
+
+    if (requireNamespace("arrangements"))
+        tcombn2 = function(x) arrangements::combinations(x,2)
+    else
+        tcombn2 = function(x) t(utils::combn(x,2))
+
+    #Get all ridges where we will do uniroot later
+    ridges = NULL
+    for (i in 1:nrow(simplexes$tri)) {
+        #if (!all(ridge.y[simplexes$tri[i,]]<0)) {
+        more_ridges = tcombn2(simplexes$tri[i,])
+        for (j in 1:nrow(more_ridges))
+            if (ridge.y[more_ridges[j,1]]*ridge.y[more_ridges[j,2]]<0)
+                ridges = rbind(ridges,more_ridges[j,])
+       #}
+    }
+
+    if (is.null(ridges)) {
+        r = NA
+        if (!is.null(ridge.points)) {
+            attr(r,"mesh") <- simplexes
+        }
+        return(r)
+    }
 
     ridges = unique(as.matrix(ridges))
 
@@ -289,7 +379,7 @@ mesh_roots = function(f,f.vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,m
     #                         })
     # r = do.call("rbind",r)
 
-    r = Apply.fun(X=ridges,MARGIN=1,FUN=function(ridge_i) {
+    r = Apply.function(X=ridges,MARGIN=1,FUN=function(ridge_i) {
         X = ridge.points[ridge_i,,drop=FALSE]
         y = ridge.y[ridge_i]
         if (isFALSE((all(y>0) || all(y<0)))) {
@@ -333,31 +423,33 @@ mesh_roots = function(f,f.vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,m
 #' @importFrom geometry delaunayn
 #' @export
 #' @examples
-#' mesh_exsets(function(x) x, threshold=.51, sign=1, intervals=rbind(0,1),
-#'   maxerror_f=1E-3,tol=1E-3) # for faster testing
-#' mesh_exsets(function(x) x, threshold=.50000001, sign=1, intervals=rbind(0,1),
-#'   maxerror_f=1E-3,tol=1E-3) # for faster testing
-#' mesh_exsets(function(x) sum(x), threshold=.51,sign=1, intervals=cbind(rbind(0,1),rbind(0,1)),
-#'   maxerror_f=1E-3,tol=1E-3) # for faster testing
-#' mesh_exsets(sin,threshold=0,sign="sup",interval=c(pi/2,5*pi/2),
-#'   maxerror_f=1E-3,tol=1E-3) # for faster testing
-#' mesh_exsets(f = function(x) sin(pi*x[1])*sin(pi*x[2]),
-#'             threshold=0,sign=1, intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2),
-#'             maxerror_f=1E-3,tol=1E-3) # for faster testing
+#' # mesh_exsets(function(x) x, threshold=.51, sign=1, intervals=rbind(0,1),
+#' #   maxerror_f=1E-2,tol=1E-2) # for faster testing
+#' # mesh_exsets(function(x) x, threshold=.50000001, sign=1, intervals=rbind(0,1),
+#' #   maxerror_f=1E-2,tol=1E-2) # for faster testing
+#' # mesh_exsets(function(x) sum(x), threshold=.51,sign=1, intervals=cbind(rbind(0,1),rbind(0,1)),
+#' #   maxerror_f=1E-2,tol=1E-2) # for faster testing
+#' # mesh_exsets(sin,threshold=0,sign="sup",interval=c(pi/2,5*pi/2),
+#' #   maxerror_f=1E-2,tol=1E-2) # for faster testing
 #'
-#' e = mesh_exsets(function(x) (0.25+x[1])^2+(0.5+x[2])^2 ,
-#'               threshold =0.25,sign=-1, intervals=matrix(c(-1,1,-1,1),nrow=2),
-#'               maxerror_f=1E-3,tol=1E-3) # for faster testing
-#' plot(e$p,xlim=c(-1,1),ylim=c(-1,1));
-#' apply(e$tri,1,function(tri) polygon(e$p[tri,],col=rgb(.4,.4,.4,.4)))
+#' if (identical(Sys.getenv("NOT_CRAN"), "true")) { # too long for CRAN on Windows
 #'
-#' if (requireNamespace("rgl")) {
-#'   e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-#'                 threshold = .25,sign=-1, mesh="unif", mesh.sizes = 10,
-#'                 intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
-#'                 maxerror_f=1E-3,tol=1E-3) # for faster testing
-#'   rgl::plot3d(e$p,xlim=c(-1,1),ylim=c(-1,1),zlim=c(-1,1));
-#'   apply(e$tri,1,function(tri)rgl::lines3d(e$p[tri,]))
+#'   e = mesh_exsets(function(x) (0.25+x[1])^2+(0.5+x[2])^2 ,
+#'                 threshold =0.25,sign=-1, intervals=matrix(c(-1,1,-1,1),nrow=2),
+#'                 maxerror_f=1E-2,tol=1E-2) # for faster testing
+#'
+#'   plot(e$p,xlim=c(-1,1),ylim=c(-1,1));
+#'   apply(e$tri,1,function(tri) polygon(e$p[tri,],col=rgb(.4,.4,.4,.4)))
+#'
+#'   if (requireNamespace("rgl")) {
+#'     e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
+#'                   threshold = .25,sign=-1, mesh="unif",
+#'                   intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
+#'                   maxerror_f=1E-2,tol=1E-2) # for faster testing
+#'
+#'     rgl::plot3d(e$p,xlim=c(-1,1),ylim=c(-1,1),zlim=c(-1,1));
+#'     apply(e$tri,1,function(tri)rgl::lines3d(e$p[tri,]))
+#'   }
 #' }
 mesh_exsets = function(f, f.vectorized=FALSE, threshold, sign, intervals, mesh="seq", mesh.sizes=11, maxerror_f=1E-9,tol=.Machine$double.eps^0.25,ex_filter.tri=all,...) {
     if (sign=="lower" || sign==-1 || sign=="inf" || sign=="<" || isFALSE(sign))
@@ -383,7 +475,7 @@ mesh_exsets = function(f, f.vectorized=FALSE, threshold, sign, intervals, mesh="
     else if (is.function(f.vectorized))
         f_vec=function(x,...) f.vectorized(x,...)
     else
-        f_vec=Vectorize.funD(f,d=ncol(new_mesh$p))
+        f_vec=Vectorize.function(f,dim=ncol(new_mesh$p))
     new_mesh$y = f_vec(new_mesh$p,...)
     # I = foreach (i.I = 1:nrow(new_mesh$tri)) %do% {
     #     X = new_mesh$p[new_mesh$tri[i.I,],,drop=FALSE] # NEVER USE "drop=F" => if "F" object exists, it will not crash but do a mess !!!
@@ -443,28 +535,35 @@ plot2d_mesh = function(mesh,color='black',...){
 #' @param engine3d 3d framework to use: 'rgl' if installed or 'scatterplot3d' (default)
 #' @param color color of the mesh
 #' @param ... optional arguments passed to plot function
-#' @importFrom scatterplot3d scatterplot3d
-# @importFrom rgl plot3d
 #' @export
 #' @examples
-#' plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-#'                         threshold = .25,sign=-1, mesh="unif", mesh.sizes = 4,
-#'                         intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)))
+#' if (identical(Sys.getenv("NOT_CRAN"), "true")) { # too long for CRAN on Windows
 #'
-#' if (requireNamespace("rgl")) {
 #'   plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-#'                           threshold = .25,sign=-1, mesh="unif", mesh.sizes = 4,
-#'                           intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),engine3d='rgl')
+#'                           threshold = .25,sign=-1, mesh="unif",
+#'                           maxerror_f=1E-2,tol=1E-2, # faster display
+#'                           intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),
+#'                           engine3d='scatterplot3d')
+#'
+#'   if (requireNamespace("rgl")) {
+#'     plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
+#'                             threshold = .25,sign=-1, mesh="unif",
+#'                             maxerror_f=1E-2,tol=1E-2, # faster display
+#'                             intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),engine3d='rgl')
+#'   }
 #' }
 plot3d_mesh = function(mesh,engine3d=NULL,color='black',...){
     col.rgb=col2rgb(color)/255
-    if (is.null(load3d(engine3d))) return()
-    plot3d(mesh$p,col=rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4),...)
+    package = load3d(engine3d)
+    if (is.null(package)) return()
+    plot3d(mesh$p,col=rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4), package=package,...)
     apply(mesh$tri,1,function(tri) {
-        triangles3d(mesh$p[tri,][-1,],col=color,alpha=0.05)
-        triangles3d(mesh$p[tri,][-2,],col=color,alpha=0.05)
-        triangles3d(mesh$p[tri,][-3,],col=color,alpha=0.05)
-        triangles3d(mesh$p[tri,][-4,],col=color,alpha=0.05)
+        quads3d(mesh$p[tri,],col=color,alpha=0.05, package=package)
+        quads3d(mesh$p[tri,][c(4,3,2,1),],col=color,alpha=0.05, package=package)
+        # triangles3d(mesh$p[tri,][-1,],col=color,alpha=0.05, package=package)
+        # triangles3d(mesh$p[tri,][-2,],col=color,alpha=0.05, package=package)
+        # triangles3d(mesh$p[tri,][-3,],col=color,alpha=0.05, package=package)
+        # triangles3d(mesh$p[tri,][-4,],col=color,alpha=0.05, package=package)
     }) #rgl::lines3d(mesh$p[t(combn(tri,2)),],col=color))
 }
 

@@ -45,30 +45,32 @@ mesh_exsets(
 Search excursion set of nD function, sampled by a mesh
 }
 \examples{
-mesh_exsets(function(x) x, threshold=.51, sign=1, intervals=rbind(0,1),
-  maxerror_f=1E-3,tol=1E-3) # for faster testing
-mesh_exsets(function(x) x, threshold=.50000001, sign=1, intervals=rbind(0,1),
-  maxerror_f=1E-3,tol=1E-3) # for faster testing
-mesh_exsets(function(x) sum(x), threshold=.51,sign=1, intervals=cbind(rbind(0,1),rbind(0,1)),
-  maxerror_f=1E-3,tol=1E-3) # for faster testing
-mesh_exsets(sin,threshold=0,sign="sup",interval=c(pi/2,5*pi/2),
-  maxerror_f=1E-3,tol=1E-3) # for faster testing
-mesh_exsets(f = function(x) sin(pi*x[1])*sin(pi*x[2]),
-            threshold=0,sign=1, intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2),
-            maxerror_f=1E-3,tol=1E-3) # for faster testing
+# mesh_exsets(function(x) x, threshold=.51, sign=1, intervals=rbind(0,1),
+#   maxerror_f=1E-2,tol=1E-2) # for faster testing
+# mesh_exsets(function(x) x, threshold=.50000001, sign=1, intervals=rbind(0,1),
+#   maxerror_f=1E-2,tol=1E-2) # for faster testing
+# mesh_exsets(function(x) sum(x), threshold=.51,sign=1, intervals=cbind(rbind(0,1),rbind(0,1)),
+#   maxerror_f=1E-2,tol=1E-2) # for faster testing
+# mesh_exsets(sin,threshold=0,sign="sup",interval=c(pi/2,5*pi/2),
+#   maxerror_f=1E-2,tol=1E-2) # for faster testing
 
-e = mesh_exsets(function(x) (0.25+x[1])^2+(0.5+x[2])^2 ,
-              threshold =0.25,sign=-1, intervals=matrix(c(-1,1,-1,1),nrow=2),
-              maxerror_f=1E-3,tol=1E-3) # for faster testing
-plot(e$p,xlim=c(-1,1),ylim=c(-1,1));
-apply(e$tri,1,function(tri) polygon(e$p[tri,],col=rgb(.4,.4,.4,.4)))
+if (identical(Sys.getenv("NOT_CRAN"), "true")) { # too long for CRAN on Windows
 
-if (requireNamespace("rgl")) {
-  e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-                threshold = .25,sign=-1, mesh="unif", mesh.sizes = 10,
-                intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
-                maxerror_f=1E-3,tol=1E-3) # for faster testing
-  rgl::plot3d(e$p,xlim=c(-1,1),ylim=c(-1,1),zlim=c(-1,1));
-  apply(e$tri,1,function(tri)rgl::lines3d(e$p[tri,]))
+  e = mesh_exsets(function(x) (0.25+x[1])^2+(0.5+x[2])^2 ,
+                threshold =0.25,sign=-1, intervals=matrix(c(-1,1,-1,1),nrow=2),
+                maxerror_f=1E-2,tol=1E-2) # for faster testing
+
+  plot(e$p,xlim=c(-1,1),ylim=c(-1,1));
+  apply(e$tri,1,function(tri) polygon(e$p[tri,],col=rgb(.4,.4,.4,.4)))
+
+  if (requireNamespace("rgl")) {
+    e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
+                  threshold = .25,sign=-1, mesh="unif",
+                  intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
+                  maxerror_f=1E-2,tol=1E-2) # for faster testing
+
+    rgl::plot3d(e$p,xlim=c(-1,1),ylim=c(-1,1),zlim=c(-1,1));
+    apply(e$tri,1,function(tri)rgl::lines3d(e$p[tri,]))
+  }
 }
 }

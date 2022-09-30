@@ -1,4 +1,4 @@
-#' @title Apply Functions Over Array Margins, using custom vecorization (possibly using parallel)
+#' @title Apply Functions Over Array Margins, using custom vectorization (possibly using parallel)
 #' @description Emulate parallel apply on a function, from mclapply. Returns a vector or array or list of values obtained by applying a function to margins of an array or matrix.
 #' @param FUN function to apply on X
 #' @param X array of input values for FUN
@@ -11,17 +11,17 @@
 #' @examples
 #' X = matrix(runif(10),ncol=2);
 #'   rowSums(X) == apply(X,1,sum)
-#'   apply(X,1,sum) == Apply.fun(sum,X)
+#'   apply(X,1,sum) == Apply.function(sum,X)
 #'
 #' X = matrix(runif(10),ncol=1)
 #'   rowSums(X) == apply(X,1,sum)
-#'   apply(X,1,sum) == Apply.fun(sum,X)
+#'   apply(X,1,sum) == Apply.function(sum,X)
 #'
 #' X = matrix(runif(10),ncol=2)
 #' f = function(X) X[1]/X[2]
-#' apply(X,1,f) == Apply.fun(f,X)
-Apply.fun <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclapply,...) {
-    if (MARGIN==2) return(FUN, X=t(Apply.fun(t(X), MARGIN=1, .combine=.combine, .lapply=.lapply,...)))
+#' apply(X,1,f) == Apply.function(f,X)
+Apply.function <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclapply,...) {
+    if (MARGIN==2) return(FUN, X=t(Apply.function(t(X), MARGIN=1, .combine=.combine, .lapply=.lapply,...)))
     if (MARGIN != 1) stop("Do not (yet) support MARGIN != 1")
 
     X.list = lapply(seq_len(nrow(X)), function(i) X[i,])
@@ -32,22 +32,22 @@ Apply.fun <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclapply,.
 
 #' @title Vectorize a multidimensional Function
 #' @description Vectorize a d-dimensional (input) function, in the same way that base::Vectorize for 1-dimensional functions.
-#' @param fund d-dimensional function to Vectorize
-#' @param d dimension of input arguments of fund
+#' @param fun 'dim'-dimensional function to Vectorize
+#' @param dim dimension of input arguments of fund
 #' @param .apply which vectorization to use (default is base::apply)
 #' @return a vectorized function (to be called on matrix argument, on each row)
 #' @export
 #' @examples
-#' f = function(x)x[1]+1; f(1:10); F = Vectorize.funD(f,1);
+#' f = function(x)x[1]+1; f(1:10); F = Vectorize.function(f,1);
 #' F(1:10); #F = Vectorize(f); F(1:10);
 #'
-#' f2 = function(x)x[1]+x[2]; f2(1:10); F = Vectorize.funD(f2,2);
+#' f2 = function(x)x[1]+x[2]; f2(1:10); F = Vectorize.function(f2,2);
 #' F(cbind(1:10,11:20)); #F = Vectorize(f); F(1:10);
-Vectorize.funD <- function(fund,d,.apply=base::apply) {
+Vectorize.function <- function(fun, dim, .apply=base::apply) {
     function(X,...) {
         X = unlist(X)
-        if (!is.matrix(X)) X = matrix(X,ncol=d)
-        matrix(.apply(X,1,fund,...),ncol=1)
+        if (!is.matrix(X)) X = matrix(X,ncol=dim)
+        matrix(.apply(X,1,fun,...),ncol=1)
     }
 }
 
@@ -60,9 +60,9 @@ Vectorize.funD <- function(fund,d,.apply=base::apply) {
 #' @export
 #' @examples
 #' f=function(n) rnorm(n);
-#' F=Memoize.fun(f);
+#' F=Memoize.function(f);
 #' F(5); F(6); F(5)
-Memoize.fun <- function(fun) {
+Memoize.function <- function(fun) {
     function(...) {
         arg = list(...)
         res <- loadCache(arg)
