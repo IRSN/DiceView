@@ -2,6 +2,9 @@
 % Please edit documentation in R/contourview.R
 \name{contourview.function}
 \alias{contourview.function}
+\alias{contourview,function,function-method}
+\alias{contourview.matrix}
+\alias{contourview,matrix,matrix-method}
 \alias{contourview.km}
 \alias{contourview,km,km-method}
 \alias{contourview.Kriging}
@@ -27,6 +30,23 @@
   nlevels = 10,
   col_surf = "blue",
   filled = FALSE,
+  mfrow = NULL,
+  Xlab = NULL,
+  ylab = NULL,
+  Xlim = NULL,
+  title = NULL,
+  add = FALSE,
+  ...
+)
+
+\method{contourview}{matrix}(
+  X,
+  y,
+  sdy = NULL,
+  center = NULL,
+  axis = NULL,
+  col_points = "red",
+  bg_blend = 1,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -184,15 +204,21 @@ contourview(...)
 
 \item{add}{to print graphics on an existing window.}
 
-\item{...}{optional arguments passed to the first call of \code{contour}.}
+\item{...}{arguments of the \code{contourview.km}, \code{contourview.glm}, \code{contourview.Kriging} or \code{contourview.function} function}
 
-\item{km_model}{an object of class \code{"km"}.}
+\item{X}{the matrix of input design.}
 
-\item{type}{the kriging type to use for model prediction.}
+\item{y}{the array of output values.}
+
+\item{sdy}{optional array of output standard error.}
 
 \item{col_points}{color of points.}
 
 \item{bg_blend}{an optional factor of alpha (color channel) blending used to plot design points outside from this section.}
+
+\item{km_model}{an object of class \code{"km"}.}
+
+\item{type}{the kriging type to use for model prediction.}
 
 \item{Kriging_model}{an object of class \code{"Kriging"}.}
 
@@ -228,6 +254,11 @@ contourview(function(x) {
                       p = predict.lm(model, newdata=x, se.fit=TRUE)
                       list(mean=p$fit, se=p$se.fit)
                     }, vectorized=TRUE, dim=2, Xlim=cbind(range(x1),range(x2)), add=TRUE)
+
+X = matrix(runif(15*2),ncol=2)
+y = apply(X,1,branin)
+
+contourview(X, y)
 
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin)
@@ -305,6 +336,8 @@ contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
 \seealso{
 \code{\link{sectionview.function}} for a section plot, and \code{\link{sectionview3d.function}} for a 2D section plot.
 \code{\link{Vectorize.function}} to wrap as vectorized a non-vectorized function.
+
+\code{\link{sectionview.matrix}} for a section plot, and \code{\link{sectionview3d.matrix}} for a 2D section plot.
 
 \code{\link{sectionview.km}} for a section plot, and \code{\link{sectionview3d.km}} for a 2D section plot.
 

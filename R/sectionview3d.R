@@ -5,6 +5,8 @@
 #' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
 #' @template sectionview3d-doc
 #' @rdname sectionview3d
+#' @method sectionview3d function
+#' @aliases sectionview3d,function,function-method
 #' @export
 #' @seealso \code{\link{sectionview.function}} for a section plot, and \code{\link{sectionview3d.function}} for a 2D section plot.
 #' \code{\link{Vectorize.function}} to wrap as vectorized a non-vectorized function.
@@ -69,14 +71,16 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
         axis <- matrix(axis, ncol = 2)
     }
 
-    if (is.null(mfrow) && (D>2)) {
-        nc <- round(sqrt(nrow(axis)))
-        nl <- ceiling(nrow(axis)/nc)
-        mfrow <- c(nc, nl)
+    if (D>2 && engine3d!="rgl") {
+        if (is.null(mfrow) && (D>1)) {
+            nc <- round(sqrt(D))
+            nl <- ceiling(D/nc)
+            mfrow <- c(nc, nl)
+        }
     }
 
     if (!isTRUE(add)) {
-        if (D>2) {
+        if(D>2){
             close.screen( all.screens = TRUE )
             split.screen(figs = mfrow)
         }
@@ -177,12 +181,9 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
             xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
             ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
             zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
-
         } else {
             eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
-
             open3d()
-
             plot3d(x = x[ , 1], y = x[ , 2], z = y_mean,
                 xlab = Xlab[d[1]], ylab = Xlab[d[2]], zlab = ylab,
                 xlim = xlim, ylim = ylim, zlim = zlim, type = "n",
@@ -212,6 +213,162 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
                     box = FALSE)
 
         }
+    }
+}
+
+
+#' @param X the matrix of input design.
+#' @param y the array of output values.
+#' @param sdy optional array of output standard error.
+#' @param col_points color of points.
+#' @param conf_lev an optional list of confidence interval values to display.
+#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
+#' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @template sectionview3d-doc
+#' @rdname sectionview3d
+#' @method sectionview3d matrix
+#' @aliases sectionview3d,matrix,matrix-method
+#' @export
+#' @import DiceKriging
+#' @seealso \code{\link{sectionview.matrix}} for a section plot, and \code{\link{sectionview3d.matrix}} for a 2D section plot.
+#' @examples
+#' X = matrix(runif(15*2),ncol=2)
+#' y = apply(X,1,branin)
+#'
+#' sectionview3d(X, y)
+#'
+sectionview3d.matrix <- function(X, y, sdy = NULL,
+                             center = NULL,
+                             axis = NULL,
+                             col_points = "red",
+                             conf_lev = c(0.95),
+                             conf_blend = NULL,
+                             bg_blend = 1,
+                             mfrow = NULL,
+                             Xlab = NULL, ylab = NULL,
+                             Xlim = NULL, ylim = NULL,
+                             title = NULL,
+                             add = FALSE,
+                             engine3d = NULL,
+                             ...) {
+    load3d(engine3d)
+
+    X_doe <- X
+    y_doe <- y
+
+    D <- ncol(X_doe)
+    n <- nrow(X_doe)
+
+    if (is.null(sdy)) {
+        sdy_doe <- rep(0, n)
+    } else {
+        sdy_doe <- rep_len(sdy, n)
+    }
+
+    ## find limits: rx is matrix with min in row 1 and max in row 2
+    rx <- apply(X_doe, 2, range)
+    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
+    rownames(rx) <- c("min", "max")
+    drx <- rx["max", ] - rx["min", ]
+
+    ## define X & y labels
+    if (is.null(ylab)) ylab <- names(y_doe)
+    if (is.null(Xlab)) Xlab <- names(X_doe)
+
+    if (is.null(axis)) {
+        axis <- t(utils::combn(D, 2))
+    } else {
+        axis <- matrix(axis, ncol = 2)
+    }
+
+    if (D>2 && engine3d!="rgl") {
+        if (is.null(mfrow) && (D>1)) {
+            nc <- round(sqrt(D))
+            nl <- ceiling(D/nc)
+            mfrow <- c(nc, nl)
+        }
+    }
+
+    if (!isTRUE(add)) {
+        if(D>2){
+            close.screen( all.screens = TRUE )
+            split.screen(figs = mfrow)
+        }
+        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
+    }
+
+    if (is.null(conf_blend) || length(conf_blend) != length(conf_lev)) {
+        conf_blend <- rep(0.5/length(conf_lev), length(conf_lev))
+    }
+
+    ## Each 'id' will produce a plot
+    for (id in 1:dim(axis)[1]) {
+        if (D>2 && engine3d!="rgl") screen(id, new=!add)
+
+        d <- axis[id,]
+
+        ## fading colors for points
+        if (D>2) {
+            xrel <- scale(x = as.matrix(X_doe),
+                          center = center,
+                          scale = drx)
+
+            ## ind.nonfix flags the non fixed dims
+            ind.nonfix <- (1:D) %in% c(d[1], d[2])
+            ind.nonfix <- !ind.nonfix
+
+            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
+                           MARGIN = 1,
+                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
+        } else {
+            alpha <- rep(1, n)
+        }
+
+        if (add) {
+            .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
+            xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
+            ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
+            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
+            points3d(x = X_doe[ , d[1]], y = X_doe[ , d[2]], z = y_doe,
+                     col = col_points,
+                     alpha = alpha,
+                     pch = 20, size=if (is.null(sdy)) 3 else 0, box = FALSE,
+                     xlim=xlim, ylim=ylim, zlim=zlim)
+        } else {
+            xlim = rx[,d[1]]
+            ylim = rx[,d[2]]
+            zlim = range(y_doe)
+            eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
+            open3d()
+            plot3d(x = X_doe[ , d[1]], y = X_doe[ , d[2]], z = y_doe,
+                     col = col_points,
+                     alpha = alpha,
+                     pch = 20, size=if (is.null(sdy)) 3 else 0, box = TRUE,
+                     xlab=Xlab[d], ylab=ylab,
+                     xlim=xlim, ylim=ylim, zlim=zlim)
+        }
+
+        if (!is.null(sdy))
+            for (p in 1:length(conf_lev)) {
+                for (i in 1:n) {
+                    lines3d(x = c(X_doe[i, d[1]], X_doe[i, d[1]]),
+                    y = c(X_doe[i, d[2]], X_doe[i, d[2]]),
+                    z = c(qnorm((1+conf_lev[p])/2, y_doe[i], sdy_doe[i]),
+                          qnorm((1-conf_lev[p])/2, y_doe[i], sdy_doe[i])),
+                    col = col_points,
+                    alpha = alpha[i]*conf_blend[p],
+                    lwd = 5, lend = 1, box = FALSE)
+                }}
+        # else
+        #     for (p in 1:length(conf_lev)) {
+        #         for (i in 1:n) {
+        #             points3d(x = X_doe[i, d[1]],
+        #              y = X_doe[i, d[2]],
+        #              z = y_doe[i],
+        #              col = col_points,
+        #              alpha = alpha[i]*conf_blend[p],
+        #              pch = 15, box = FALSE)
+        #         }}
     }
 }
 
@@ -296,52 +453,12 @@ sectionview3d.km <- function(km_model, type = "UK",
     mfrow = mfrow, Xlab = Xlab, ylab = ylab,
     Xlim = rx, ylim=ylim,title = title, add = add, engine3d=engine3d, ...)
 
-    ## Each 'id' will produce a plot
-    for (id in 1:dim(axis)[1]) {
-        if (D>2 && engine3d!="rgl") screen(id, new=FALSE)
-
-        d <- axis[id,]
-
-        ## fading colors for points
-        if (D>2) {
-            xrel <- scale(x = as.matrix(X_doe),
-                          center = center,
-                          scale = drx)
-
-            ## ind.nonfix flags the non fixed dims
-            ind.nonfix <- (1:D) %in% c(d[1], d[2])
-            ind.nonfix <- !ind.nonfix
-
-            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
-                           MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
-        } else {
-            alpha <- rep(1, n)
-        }
-
-        .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
-        xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
-        ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
-            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
-        if (!km_model@noise.flag) {
-            points3d(x = X_doe[ , d[1]], y = X_doe[ , d[2]], z = y_doe,
-                    col = col_points,
-                    alpha = alpha,
-                    pch = 20, box = FALSE)
-        }
-
-        for (p in 1:length(conf_lev)) {
-            for (i in 1:n) {
-                lines3d(x = c(X_doe[i, d[1]], X_doe[i, d[1]]),
-                        y = c(X_doe[i, d[2]], X_doe[i, d[2]]),
-                        z = c(qnorm((1+conf_lev[p])/2, y_doe[i], sdy_doe[i]),
-                                qnorm((1-conf_lev[p])/2, y_doe[i], sdy_doe[i])),
-                        col = col_points,
-                        alpha = alpha[i]*conf_blend[p],
-                        lwd = 5, lend = 1, box = FALSE)
-            }
-        }
-    }
+    sectionview3d.matrix(X = X_doe, y = y_doe, sdy = sdy_doe,
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points, conf_lev = conf_lev, conf_blend = conf_blend, bg_blend = bg_blend,
+                       mfrow = mfrow,
+                       Xlim = rx, ylim=ylim, engine3d=engine3d,
+                       add=TRUE)
 }
 
 
@@ -411,61 +528,12 @@ sectionview3d.libKriging <- function(libKriging_model,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, ylim=ylim, title = title, add = add, engine3d=engine3d, ...)
 
-    ## Each 'id' will produce a plot
-    for (id in 1:dim(axis)[1]) {
-        if (D>2 && engine3d!="rgl") screen(id, new=FALSE)
-
-        d <- axis[id,]
-
-        ## fading colors for points in latent space
-        if (D>2) {
-            xrel <- scale(x = as.matrix(X_doe),
-                          center = center,
-                          scale = drx)
-
-            ## ind.nonfix flags the non fixed dims
-            ind.nonfix <- (1:D) %in% c(d[1], d[2])
-            ind.nonfix <- !ind.nonfix
-
-            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
-                           MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
-        } else {
-            alpha <- rep(1, n)
-        }
-
-        .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
-        xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
-        ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
-            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
-        if (inherits(libKriging_model,"Kriging")) {
-            points3d(x = X_doe[ , d[1]], y = X_doe[ , d[2]], z = y_doe,
-                    col = col_points,
-                    alpha = alpha,
-                    pch = 20, box = FALSE)
-        }
-
-        for (p in 1:length(conf_lev)) {
-            for (i in 1:n) {
-                if (sdy_doe[i]>0)
-                    lines3d(x = c(X_doe[i, d[1]], X_doe[i, d[1]]),
-                            y = c(X_doe[i, d[2]], X_doe[i, d[2]]),
-                            z = c(qnorm((1+conf_lev[p])/2, y_doe[i], sdy_doe[i]),
-                                    qnorm((1-conf_lev[p])/2, y_doe[i], sdy_doe[i])),
-                            col = col_points,
-                            alpha = alpha[i]*conf_blend[p],
-                            lwd = 5, lend = 1, box = FALSE)
-                else
-                    points3d(x = X_doe[i, d[1]],
-                            y = X_doe[i, d[2]],
-                            z = y_doe[i],
-                            col = col_points,
-                            alpha = alpha[i]*conf_blend[p],
-                            pch = 15, box = FALSE)
-            }
-        }
-
-    }
+    sectionview3d.matrix(X = X_doe, y = y_doe, sdy = sdy_doe,
+                         dim = D, center = center, axis = axis,
+                         col_points = col_points, conf_lev = conf_lev, conf_blend = conf_blend, bg_blend = bg_blend,
+                         mfrow = mfrow,
+                         Xlim = rx, ylim=ylim, engine3d=engine3d,
+                         add=TRUE)
 }
 
 #' @param Kriging_model an object of class \code{"Kriging"}.
@@ -666,40 +734,12 @@ sectionview3d.glm <- function(glm_model,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, ylim=ylim, title = title, add = add, engine3d=engine3d, ...)
 
-
-    ## Each 'id' will produce a plot
-    for (id in 1:dim(axis)[1]) {
-        if (D>2 && engine3d!="rgl") screen(id, new=FALSE)
-
-        d <- axis[id,]
-
-        ## fading colors for points
-        if (D>2) {
-            xrel <- scale(x = as.matrix(X_doe),
-                          center = center,
-                          scale = drx)
-
-            ## ind.nonfix flags the non fixed dims
-            ind.nonfix <- (1:D) %in% c(d[1], d[2])
-            ind.nonfix <- !ind.nonfix
-
-            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
-                           MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
-        } else {
-            alpha <- rep(1, n)
-        }
-
-        .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
-        xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
-        ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
-            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
-        points3d(x = X_doe[ , d[1]], y = X_doe[ , d[2]], z = y_doe,
-                col = col_points,
-                alpha = alpha,
-                pch = 20, box = FALSE)
-
-    }
+    sectionview3d.matrix(X = X_doe, y = y_doe, sdy = NULL,
+                         dim = D, center = center, axis = axis,
+                         col_points = col_points, conf_lev = conf_lev, conf_blend = conf_blend, bg_blend = bg_blend,
+                         mfrow = mfrow,
+                         Xlim = rx, ylim=ylim, engine3d=engine3d,
+                         add=TRUE)
 }
 
 
@@ -771,41 +811,13 @@ sectionview3d.list <- function(modelFit_model,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, ylim=ylim, title = title, add = add, engine3d=engine3d, ...)
 
-    ## Each 'id' will produce a plot
-    for (id in 1:dim(axis)[1]) {
-        if (D>2 && engine3d!="rgl") screen(id, new=FALSE)
-
-        d <- axis[id,]
-
-        ## fading colors for points
-        if (D>2) {
-            xrel <- scale(x = as.matrix(X_doe),
-                          center = center,
-                          scale = drx)
-
-            ## ind.nonfix flags the non fixed dims
-            ind.nonfix <- (1:D) %in% c(d[1], d[2])
-            ind.nonfix <- !ind.nonfix
-
-            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
-                           MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
-        } else {
-            alpha <- rep(1, n)
-        }
-
-        .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
-        xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
-        ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
-            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
-        points3d(x = X_doe[ , d[1]], y = X_doe[ , d[2]], z = y_doe,
-                col = col_points,
-                alpha = alpha,
-                pch = 20, box = FALSE)
-    }
+    sectionview3d.matrix(X = X_doe, y = y_doe, sdy = NULL,
+                         dim = D, center = center, axis = axis,
+                         col_points = col_points, conf_lev = NULL, conf_blend = NULL, bg_blend = bg_blend,
+                         mfrow = mfrow,
+                         Xlim = rx, ylim=ylim, engine3d=engine3d,
+                         add=TRUE)
 }
-
-
 
 
 
@@ -820,7 +832,7 @@ if(!isGeneric("sectionview3d")) {
 
 #' @title Plot a contour view of a prediction model or function, including design points if available.
 #' @details If available, experimental points are plotted with fading colors. Points that fall in the specified section (if any) have the color specified \code{col_points} while points far away from the center have shaded versions of the same color. The amount of fading is determined using the Euclidean distance between the plotted point and \code{center}.
-#' @param ... arguments of the \code{sectionview3d.km}, \code{sectionview3d.glm} }, \code{sectionview3d.Kriging} or \code{sectionview3d.function} function
+#' @param ... arguments of the \code{sectionview3d.km}, \code{sectionview3d.glm}, \code{sectionview3d.Kriging} or \code{sectionview3d.function} function
 #' @export
 #' @examples
 #' ## A 2D example - Branin-Hoo function

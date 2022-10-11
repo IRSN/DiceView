@@ -2,6 +2,9 @@
 % Please edit documentation in R/sectionview3d.R
 \name{sectionview3d.function}
 \alias{sectionview3d.function}
+\alias{sectionview3d,function,function-method}
+\alias{sectionview3d.matrix}
+\alias{sectionview3d,matrix,matrix-method}
 \alias{sectionview3d.km}
 \alias{sectionview3d,km,km-method}
 \alias{sectionview3d.Kriging}
@@ -27,6 +30,27 @@
   col_surf = "blue",
   conf_lev = c(0.95),
   conf_blend = NULL,
+  mfrow = NULL,
+  Xlab = NULL,
+  ylab = NULL,
+  Xlim = NULL,
+  ylim = NULL,
+  title = NULL,
+  add = FALSE,
+  engine3d = NULL,
+  ...
+)
+
+\method{sectionview3d}{matrix}(
+  X,
+  y,
+  sdy = NULL,
+  center = NULL,
+  axis = NULL,
+  col_points = "red",
+  conf_lev = c(0.95),
+  conf_blend = NULL,
+  bg_blend = 1,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -200,15 +224,21 @@ sectionview3d(...)
 
 \item{engine3d}{3D view package to use. "rgl" if available, otherwise "scatterplot3d" by default.}
 
-\item{...}{optional arguments passed to the first call of \code{contour}.}
+\item{...}{arguments of the \code{sectionview3d.km}, \code{sectionview3d.glm}, \code{sectionview3d.Kriging} or \code{sectionview3d.function} function}
 
-\item{km_model}{an object of class \code{"km"}.}
+\item{X}{the matrix of input design.}
 
-\item{type}{the kriging type to use for model prediction.}
+\item{y}{the array of output values.}
+
+\item{sdy}{optional array of output standard error.}
 
 \item{col_points}{color of points.}
 
 \item{bg_blend}{an optional factor of alpha (color channel) blending used to plot design points outside from this section.}
+
+\item{km_model}{an object of class \code{"km"}.}
+
+\item{type}{the kriging type to use for model prediction.}
 
 \item{Kriging_model}{an object of class \code{"Kriging"}.}
 
@@ -244,6 +274,11 @@ sectionview3d(function(x) {
                       p = predict.lm(model, newdata=x, se.fit=TRUE)
                       list(mean=p$fit, se=p$se.fit)
                     }, vectorized=TRUE, dim=2, Xlim=cbind(range(x1),range(x2)), add=TRUE)
+
+X = matrix(runif(15*2),ncol=2)
+y = apply(X,1,branin)
+
+sectionview3d(X, y)
 
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin)
@@ -321,6 +356,8 @@ sectionview3d(branin, dim=2, col='red', add=TRUE)
 \seealso{
 \code{\link{sectionview.function}} for a section plot, and \code{\link{sectionview3d.function}} for a 2D section plot.
 \code{\link{Vectorize.function}} to wrap as vectorized a non-vectorized function.
+
+\code{\link{sectionview.matrix}} for a section plot, and \code{\link{sectionview3d.matrix}} for a 2D section plot.
 
 \code{\link{sectionview.km}} for a section plot, and \code{\link{sectionview3d.km}} for a 2D section plot.
 

@@ -4,7 +4,7 @@
 \alias{Vectorize.function}
 \title{Vectorize a multidimensional Function}
 \usage{
-Vectorize.function(fun, dim, .apply = base::apply)
+Vectorize.function(fun, dim, .apply = base::apply, ...)
 }
 \arguments{
 \item{fun}{'dim'-dimensional function to Vectorize}
@@ -12,6 +12,8 @@ Vectorize.function(fun, dim, .apply = base::apply)
 \item{dim}{dimension of input arguments of fund}
 
 \item{.apply}{which vectorization to use (default is base::apply)}
+
+\item{...}{optional args to pass to 'fun'}
 }
 \value{
 a vectorized function (to be called on matrix argument, on each row)

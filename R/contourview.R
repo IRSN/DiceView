@@ -3,6 +3,8 @@
 #' @param dim input variables dimension of the model or function.
 #' @template contourview-doc
 #' @rdname contourview
+#' @method contourview function
+#' @aliases contourview,function,function-method
 #' @export
 #' @seealso \code{\link{sectionview.function}} for a section plot, and \code{\link{sectionview3d.function}} for a 2D section plot.
 #' \code{\link{Vectorize.function}} to wrap as vectorized a non-vectorized function.
@@ -209,6 +211,126 @@ contourview.function <- function(fun, vectorized=FALSE,
     }
 }
 
+
+#' @param X the matrix of input design.
+#' @param y the array of output values.
+#' @param sdy optional array of output standard error.
+#' @param col_points color of points.
+#' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @template contourview-doc
+#' @rdname contourview
+#' @method contourview matrix
+#' @aliases contourview,matrix,matrix-method
+#' @export
+#' @import DiceKriging
+#' @seealso \code{\link{sectionview.matrix}} for a section plot, and \code{\link{sectionview3d.matrix}} for a 2D section plot.
+#' @examples
+#' X = matrix(runif(15*2),ncol=2)
+#' y = apply(X,1,branin)
+#'
+#' contourview(X, y)
+#'
+contourview.matrix <- function(X, y, sdy=NULL,
+                           center = NULL,
+                           axis = NULL,
+                           col_points = "red",
+                           bg_blend = 1,
+                           mfrow = NULL,
+                           Xlab = NULL, ylab = NULL,
+                           Xlim = NULL,
+                           title = NULL,
+                           add = FALSE,
+                           ...) {
+    X_doe <- X
+    y_doe <- y
+
+    D <- ncol(X_doe)
+    n <- nrow(X_doe)
+
+    if (is.null(sdy)) {
+        sdy_doe <- rep(0, n)
+    } else {
+        sdy_doe <- rep_len(sdy, n)
+    }
+
+    ## find limits: rx is matrix with min in row 1 and max in row 2
+    rx <- apply(X_doe, 2, range)
+    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
+    rownames(rx) <- c("min", "max")
+    drx <- rx["max", ] - rx["min", ]
+
+    ## define X & y labels
+    if (is.null(ylab)) ylab <- names(y_doe)
+    if (is.null(Xlab)) Xlab <- names(X_doe)
+
+    if (is.null(axis)) {
+        axis <- t(utils::combn(D, 2))
+    } else {
+        axis <- matrix(axis, ncol = 2)
+    }
+
+    if (is.null(mfrow) && (D>1)) {
+        nc <- round(sqrt(D))
+        nl <- ceiling(D/nc)
+        mfrow <- c(nc, nl)
+    }
+
+    if (!isTRUE(add)) {
+        if(D>1){
+            close.screen( all.screens = TRUE )
+            split.screen(figs = mfrow)
+        }
+        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
+    }
+
+    ## Each 'id' will produce a plot
+    for (id in 1:dim(axis)[1]) {
+        if (D>2) screen(id, new=!add)
+
+        d <- axis[id,]
+
+        ## fading colors for points
+        if (D>2) {
+            xrel <- scale(x = as.matrix(X_doe),
+                          center = center,
+                          scale = drx)
+
+            ## ind.nonfix flags the non fixed dims
+            ind.nonfix <- (1:D) %in% c(d[1], d[2])
+            ind.nonfix <- !ind.nonfix
+
+            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
+                           MARGIN = 1,
+                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
+        } else {
+            alpha <- rep(1, n)
+        }
+
+        if (isTRUE(add)) {
+            # re-use global settings for limits of this screen
+            .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
+            xlim <- c(.split.screen.lim[id,1],.split.screen.lim[id,2])
+            ylim <- c(.split.screen.lim[id,3],.split.screen.lim[id,4])
+            zlim <- c(.split.screen.lim[id,5],.split.screen.lim[id,6])
+        } else {
+            xlim = rx[,d[1]]
+            ylim = rx[,d[2]]
+            zlim = range(y)
+            eval(parse(text=paste(".split.screen.lim[",id,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
+
+            if(D>2) {
+                abline(v=center[d[1]],col='black',lty=2)
+                abline(h=center[d[2]],col='black',lty=2)
+            }
+        }
+
+        points(X_doe[,d],
+               col = fade(color = col_points, alpha = alpha),
+               xlim=xlim,ylim=ylim,
+               pch = 20)
+    }
+}
+
 #' @param km_model an object of class \code{"km"}.
 #' @param type the kriging type to use for model prediction.
 #' @param col_points color of points.
@@ -278,43 +400,19 @@ contourview.km <- function(km_model, type = "UK",
             p = DiceKriging::predict.km(km_model,type=type,newdata=x,checkNames=FALSE)
             list(mean=p$mean, se=p$sd)
         }, vectorized=TRUE,
-    dim = D, center = center,axis = axis,npoints = npoints,nlevels = nlevels,
+    dim = D, center = center,axis = axis,npoints = npoints, nlevels = nlevels,
     col_surf = col_surf,filled = filled,
     mfrow = mfrow, Xlab = Xlab, ylab = ylab,
     Xlim = rx, title = title, add = add, ...)
 
-    ## Each 'id' will produce a plot
-    for (id in 1:dim(axis)[1]) {
-        if (D>2) screen(id, new=FALSE)
+    contourview.matrix(X = X_doe, y = y_doe, sdy = sdy_doe,
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points,
+                       bg_blend = bg_blend,
+                       mfrow = mfrow,
+                       Xlim = rx,
+                       add=TRUE)
 
-        d <- axis[id,]
-
-        ## fading colors for points
-        if (D>2) {
-            xrel <- scale(x = as.matrix(X_doe),
-                          center = center,
-                          scale = drx)
-
-            ## ind.nonfix flags the non fixed dims
-            ind.nonfix <- (1:D) %in% c(d[1], d[2])
-            ind.nonfix <- !ind.nonfix
-
-            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
-                           MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
-        } else {
-            alpha <- rep(1, n)
-        }
-
-        col1 <- fade(color = col_points, alpha = alpha)
-        #cat("faded colors\n"); print(col1)
-
-        points(X_doe[,d],
-               col = col1,
-               ## col = rgb(1, 1-alpha, 1-alpha, alpha),
-               pch = 20)
-
-    }
 }
 
 #' @param libKriging_model an object of class \code{"Kriging"}, \code{"NuggetKriging"} or \code{"NoiseKriging"}.
@@ -378,35 +476,13 @@ contourview.libKriging <- function(libKriging_model,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 
-    ## Each 'id' will produce a plot
-    for (id in 1:dim(axis)[1]) {
-        if (D>2) screen(id, new=FALSE)
-
-        d <- axis[id,]
-
-        ## fading colors for points
-        if (D>2) {
-            xrel <- scale(x = as.matrix(X_doe),
-                          center = center,
-                          scale = drx)
-
-            ## ind.nonfix flags the non fixed dims
-            ind.nonfix <- (1:D) %in% c(d[1], d[2])
-            ind.nonfix <- !ind.nonfix
-
-            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
-                           MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
-        } else {
-            alpha <- rep(1, n)
-        }
-
-        points(X_doe[,d],
-               col = fade(color = col_points, alpha = alpha),
-               ## col = rgb(1, 1-alpha, 1-alpha, alpha),
-               pch = 20)
-
-    }
+    contourview.matrix(X = X_doe, y = y_doe, sdy = sdy_doe,
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points,
+                       bg_blend = bg_blend,
+                       mfrow = mfrow,
+                       Xlim = rx,
+                       add=TRUE)
 }
 
 #' @param Kriging_model an object of class \code{"Kriging"}.
@@ -561,7 +637,6 @@ contourview.glm <- function(glm_model,
     D <- length(Xlab)
     n <- length(glm_model$residuals)
 
-
     X_doe <- do.call(cbind,lapply(Xlab,function(Xn)glm_model$data[[Xn]]))
     colnames(X_doe) <- Xlab
     y_doe <- do.call(cbind,lapply(ylab,function(yn)glm_model$data[[yn]]))
@@ -591,34 +666,13 @@ contourview.glm <- function(glm_model,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 
-
-    ## Each 'id' will produce a plot
-    for (id in 1:dim(axis)[1]) {
-        if (D>2) screen(id, new=FALSE)
-
-        d <- axis[id,]
-
-        ## fading colors for points
-        if (D>2) {
-            xrel <- scale(x = as.matrix(X_doe),
-                          center = center,
-                          scale = drx)
-
-            ## ind.nonfix flags the non fixed dims
-            ind.nonfix <- (1:D) %in% c(d[1], d[2])
-            ind.nonfix <- !ind.nonfix
-
-            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
-                           MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
-        } else {
-            alpha <- rep(1, n)
-        }
-
-        points(X_doe[,d],
-               col = fade(color = col_points, alpha = alpha),
-               pch = 20)
-    }
+    contourview.matrix(X = X_doe, y = y_doe, sdy = NULL,
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points,
+                       bg_blend = bg_blend,
+                       mfrow = mfrow,
+                       Xlim = rx,
+                       add=TRUE)
 }
 
 
@@ -691,35 +745,13 @@ contourview.list <- function(modelFit_model,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 
-    ## Each 'id' will produce a plot
-    for (id in 1:dim(axis)[1]) {
-        if (D>2) screen(id, new=FALSE)
-
-        d <- axis[id,]
-
-        ## fading colors for points
-        if (D>2) {
-            xrel <- scale(x = as.matrix(X_doe),
-                          center = center,
-                          scale = drx)
-
-            ## ind.nonfix flags the non fixed dims
-            ind.nonfix <- (1:D) %in% c(d[1], d[2])
-            ind.nonfix <- !ind.nonfix
-
-            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
-                           MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
-        } else {
-            alpha <- rep(1, n)
-        }
-
-        points(X_doe[,d],
-               col = fade(color = col_points, alpha = alpha),
-               ## col = rgb(1, 1-alpha, 1-alpha, alpha),
-               pch = 20)
-
-    }
+    contourview.matrix(X = X_doe, y = y_doe, sdy = NULL,
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points,
+                       bg_blend = bg_blend,
+                       mfrow = mfrow,
+                       Xlim = rx,
+                       add=TRUE)
 }
 
 
@@ -737,7 +769,7 @@ if(!isGeneric("contourview")) {
 
 #' @title Plot a contour view of a prediction model or function, including design points if available.
 #' @details If available, experimental points are plotted with fading colors. Points that fall in the specified section (if any) have the color specified \code{col_points} while points far away from the center have shaded versions of the same color. The amount of fading is determined using the Euclidean distance between the plotted point and \code{center}.
-#' @param ... arguments of the \code{contourview.km}, \code{contourview.glm} }, \code{contourview.Kriging} or \code{contourview.function} function
+#' @param ... arguments of the \code{contourview.km}, \code{contourview.glm}, \code{contourview.Kriging} or \code{contourview.function} function
 #' @export
 #' @examples
 #' ## A 2D example - Branin-Hoo function
