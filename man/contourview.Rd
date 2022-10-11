@@ -267,12 +267,18 @@ model <- km(design = X, response = y, covtype="matern3_2")
 
 contourview(model)
 
+if (requireNamespace("rlibkriging")) { library(rlibkriging)
+
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin)
 
 model <- Kriging(X = X, y = y, kernel="matern3_2")
 
 contourview(model)
+
+}
+
+if (requireNamespace("rlibkriging")) { library(rlibkriging)
 
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin) + 5*rnorm(15)
@@ -281,12 +287,18 @@ model <- NuggetKriging(X = X, y = y, kernel="matern3_2")
 
 contourview(model)
 
+}
+
+if (requireNamespace("rlibkriging")) { library(rlibkriging)
+
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin) + 5*rnorm(15)
 
 model <- NoiseKriging(X = X, y = y, kernel="matern3_2", noise=rep(5^2,15))
 
 contourview(model)
+
+}
 
 x1 <- rnorm(15)
 x2 <- rnorm(15)
@@ -318,9 +330,11 @@ contourview(model, nlevels=30)
 contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
 
 ## model: Kriging
-model <- rlibkriging::Kriging(X = as.matrix(design.fact), y = as.matrix(y), kernel="matern3_2")
+if (requireNamespace("rlibkriging")) { library(rlibkriging)
+model <- Kriging(X = as.matrix(design.fact), y = as.matrix(y), kernel="matern3_2")
 contourview(model, nlevels=30)
 contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
+}
 
 ## model: glm
 model <- glm(y ~ 1+ x1 + x2 + I(x1^2) + I(x2^2) + x1*x2, data=cbind(y,design.fact))

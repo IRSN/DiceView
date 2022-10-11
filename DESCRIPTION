@@ -18,7 +18,7 @@ Authors@R:
              email = "clement.chevalier1@gmail.com"))
 Maintainer: Yann Richet <yann.richet@irsn.fr>
 Description: View 2D/3D sections, contour plots, mesh of excursion sets for computer experiments designs, surrogates or test functions.
-Depends: methods, utils, stats, grDevices, graphics, DiceKriging, DiceEval, rlibkriging
+Depends: methods, utils, stats, grDevices, graphics, DiceKriging, DiceEval
 Imports: DiceDesign, R.cache, geometry, scatterplot3d, parallel
 Enhances: rgl, arrangements
 License: GPL-3

@@ -465,7 +465,6 @@ sectionview3d.km <- function(km_model, type = "UK",
 #' @param libKriging_model an object of class \code{"Kriging"}, \code{"NuggetKriging"} or \code{"NoiseKriging"}.
 #' @param col_points color of points.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
-#' @import rlibkriging
 sectionview3d.libKriging <- function(libKriging_model,
                            center = NULL,
                            axis = NULL,
@@ -548,12 +547,16 @@ sectionview3d.libKriging <- function(libKriging_model,
 #' @export
 #' @seealso \code{\link{sectionview.Kriging}} for a section plot, and \code{\link{sectionview3d.Kriging}} for a 2D section plot.
 #' @examples
+#' if (requireNamespace("rlibkriging")) { library(rlibkriging)
+#'
 #' X = matrix(runif(15*2),ncol=2)
 #' y = apply(X,1,branin)
 #'
 #' model <- Kriging(X = X, y = y, kernel="matern3_2")
 #'
 #' sectionview3d(model)
+#'
+#' }
 #'
 sectionview3d.Kriging <- function(Kriging_model,
                                    center = NULL,
@@ -624,12 +627,16 @@ sectionview3d.NuggetKriging <- function(NuggetKriging_model,
 #' @export
 #' @seealso \code{\link{sectionview.NoiseKriging}} for a section plot, and \code{\link{sectionview3d.NoiseKriging}} for a 2D section plot.
 #' @examples
+#' if (requireNamespace("rlibkriging")) { library(rlibkriging)
+#'
 #' X = matrix(runif(15*2),ncol=2)
 #' y = apply(X,1,branin) + 5*rnorm(15)
 #'
 #' model <- NoiseKriging(X = X, y = y, kernel="matern3_2", noise=rep(5^2,15))
 #'
 #' sectionview3d(model)
+#'
+#' }
 #'
 sectionview3d.NoiseKriging <- function(NoiseKriging_model,
                                       center = NULL,
@@ -849,10 +856,12 @@ if(!isGeneric("sectionview3d")) {
 #' sectionview3d(model)
 #' sectionview3d(branin, dim=2, col='red', add=TRUE)
 #'
+#' if (requireNamespace("rlibkriging")) { library(rlibkriging)
 #' ## model: Kriging
 #' model <- rlibkriging::Kriging(X = as.matrix(design.fact), y = as.matrix(y), kernel="matern3_2")
 #' sectionview3d(model)
 #' sectionview3d(branin, dim=2, col='red', add=TRUE)
+#' }
 #'
 #' ## model: glm
 #' model <- glm(y ~ 1+ x1 + x2 + I(x1^2) + I(x2^2) + x1*x2, data=cbind(y,design.fact))

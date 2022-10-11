@@ -287,12 +287,16 @@ model <- km(design = X, response = y, covtype="matern3_2")
 
 sectionview3d(model)
 
+if (requireNamespace("rlibkriging")) { library(rlibkriging)
+
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin)
 
 model <- Kriging(X = X, y = y, kernel="matern3_2")
 
 sectionview3d(model)
+
+}
 
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin) + 5*rnorm(15)
@@ -301,12 +305,16 @@ model <- NuggetKriging(X = X, y = y, kernel="matern3_2")
 
 sectionview3d(model)
 
+if (requireNamespace("rlibkriging")) { library(rlibkriging)
+
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin) + 5*rnorm(15)
 
 model <- NoiseKriging(X = X, y = y, kernel="matern3_2", noise=rep(5^2,15))
 
 sectionview3d(model)
+
+}
 
 x1 <- rnorm(15)
 x2 <- rnorm(15)
@@ -337,10 +345,12 @@ model <- DiceKriging::km(design = design.fact, response = y)
 sectionview3d(model)
 sectionview3d(branin, dim=2, col='red', add=TRUE)
 
+if (requireNamespace("rlibkriging")) { library(rlibkriging)
 ## model: Kriging
 model <- rlibkriging::Kriging(X = as.matrix(design.fact), y = as.matrix(y), kernel="matern3_2")
 sectionview3d(model)
 sectionview3d(branin, dim=2, col='red', add=TRUE)
+}
 
 ## model: glm
 model <- glm(y ~ 1+ x1 + x2 + I(x1^2) + I(x2^2) + x1*x2, data=cbind(y,design.fact))
