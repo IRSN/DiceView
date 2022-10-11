@@ -21,7 +21,7 @@ Description: View 2D/3D sections, contour plots, mesh of excursion sets for comp
 Depends: methods, utils, stats, grDevices, graphics, DiceKriging, DiceEval
 Imports: DiceDesign, R.cache, geometry, scatterplot3d, parallel
 Suggests: rlibkriging
-Remotes: git::https://github.com/libKriging/rlibkriging.git
+#Remotes: https://github.com/libKriging/rlibkriging.git
 Enhances: rgl, arrangements
 License: GPL-3
 URL: https://github.com/IRSN/DiceView
