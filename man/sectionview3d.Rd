@@ -298,12 +298,16 @@ sectionview3d(model)
 
 }
 
+if (requireNamespace("rlibkriging")) { library(rlibkriging)
+
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin) + 5*rnorm(15)
 
 model <- NuggetKriging(X = X, y = y, kernel="matern3_2")
 
 sectionview3d(model)
+
+}
 
 if (requireNamespace("rlibkriging")) { library(rlibkriging)
 

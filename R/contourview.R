@@ -815,11 +815,5 @@ if(!isGeneric("contourview")) {
 #' contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
 #'
 contourview <- function(...){
-    # if (requireNamespace("rlibkriging") &&
-    #     (inherits(unlist(...)[1],"Kriging") ||
-    #      inherits(unlist(...)[1],"NuggetKriging") ||
-    #      inherits(unlist(...)[1],"NoiseKriging") ) ) {
-    #     UseMethod("contourview.libKriging",...)
-    # } else
     UseMethod("contourview")
 }

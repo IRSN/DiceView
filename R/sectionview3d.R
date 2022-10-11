@@ -589,12 +589,16 @@ sectionview3d.Kriging <- function(Kriging_model,
 #' @export
 #' @seealso \code{\link{sectionview.NuggetKriging}} for a section plot, and \code{\link{sectionview3d.NuggetKriging}} for a 2D section plot.
 #' @examples
+#' if (requireNamespace("rlibkriging")) { library(rlibkriging)
+#'
 #' X = matrix(runif(15*2),ncol=2)
 #' y = apply(X,1,branin) + 5*rnorm(15)
 #'
 #' model <- NuggetKriging(X = X, y = y, kernel="matern3_2")
 #'
 #' sectionview3d(model)
+#'
+#' }
 #'
 sectionview3d.NuggetKriging <- function(NuggetKriging_model,
                                 center = NULL,
