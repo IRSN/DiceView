@@ -701,7 +701,7 @@ contourview.glm <- function(glm_model,
 #' X = matrix(runif(15*2),ncol=2)
 #' y = apply(X,1,branin)
 #'
-#' model <- modelFit(X, y, type = "PolyMARS", gcv=1)
+#' model <- modelFit(X, y, type = "StepLinear")
 #'
 #' contourview(model)
 #'
@@ -810,7 +810,7 @@ if(!isGeneric("contourview")) {
 #' contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
 #'
 #' ## model: PolyMARS
-#' model <- modelFit(design.fact, y, type = "PolyMARS", gcv=1)
+#' model <- modelFit(design.fact, y, type = "StepLinear")
 #' contourview(model, nlevels=30)
 #' contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
 #'

@@ -327,7 +327,7 @@ sectionview3d(model)
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin)
 
-model <- modelFit(X, y, type = "PolyMARS", gcv=1)
+model <- modelFit(X, y, type = "StepLinear")
 
 sectionview3d(model)
 
@@ -358,7 +358,7 @@ sectionview3d(model)
 sectionview3d(branin, dim=2, col='red', add=TRUE)
 
 ## model: PolyMARS
-model <- modelFit(design.fact, y, type = "PolyMARS", gcv=1)
+model <- modelFit(design.fact, y, type = "StepLinear")
 sectionview3d(model)
 sectionview3d(branin, dim=2, col='red', add=TRUE)
 
