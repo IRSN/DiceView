@@ -6,7 +6,7 @@
 \usage{
 mesh_exsets(
   f,
-  f.vectorized = FALSE,
+  vectorized = FALSE,
   threshold,
   sign,
   intervals,
@@ -21,7 +21,7 @@ mesh_exsets(
 \arguments{
 \item{f}{Function to inverse at 'threshold'}
 
-\item{f.vectorized}{is f already vectorized ? (default: no)}
+\item{vectorized}{is f already vectorized ? (default: no)}
 
 \item{threshold}{target value to inverse}
 

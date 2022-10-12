@@ -6,7 +6,7 @@
 \usage{
 mesh_roots(
   f,
-  f.vectorized = FALSE,
+  vectorized = FALSE,
   intervals,
   mesh = "seq",
   mesh.sizes = 11,
@@ -18,7 +18,7 @@ mesh_roots(
 \arguments{
 \item{f}{Function (one or more dimensions) to find roots of}
 
-\item{f.vectorized}{is f already vectorized ? (default: no)}
+\item{vectorized}{is f already vectorized ? (default: no)}
 
 \item{intervals}{bounds to inverse in, each column contains min and max of each dimension}
 
