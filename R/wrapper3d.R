@@ -52,6 +52,7 @@ plot3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, add = FALSE, packa
             p3d = get(".p3d",envir = env3d)
             p3d$points3d(x=x, y=y, z=z, color=translude(col,alpha),...)
         }
+        return(p3d)
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
