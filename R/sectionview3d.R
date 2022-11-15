@@ -420,7 +420,7 @@ sectionview3d.km <- function(km_model, type = "UK",
     } else if (km_model@covariance@nugget.flag) {
         sdy_doe <- rep(sqrt(km_model@covariance@nugget), n)
     } else {
-        sdy_doe <- rep(0, n)
+        sdy_doe <- NULL
     }
 
     ## find limits: rx is matrix with min in row 1 and max in row 2
@@ -488,7 +488,7 @@ sectionview3d.libKriging <- function(libKriging_model,
     n <- nrow(X_doe)
 
     if (inherits(libKriging_model, "Kriging")) {
-        sdy_doe <- rep(0, n)
+        sdy_doe <- NULL
     } else if (inherits(libKriging_model, "NuggetKriging")) {
         sdy_doe <- rep(sqrt(libKriging_model$nugget()),n)
     } else if (inherits(libKriging_model, "NoiseKriging")) {
