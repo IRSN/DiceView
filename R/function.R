@@ -35,7 +35,6 @@ Apply.function <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclap
 #' @description Vectorize a d-dimensional (input) function, in the same way that base::Vectorize for 1-dimensional functions.
 #' @param fun 'dim'-dimensional function to Vectorize
 #' @param dim dimension of input arguments of fun
-#' @param .apply which vectorization to use (default is base::apply)
 #' @param ... optional args to pass to 'Apply.function()', including .combine, .lapply, or optional args passed to 'fun'.
 #' @return a vectorized function (to be called on matrix argument, on each row)
 #' @export
