@@ -222,7 +222,6 @@ contourview.function <- function(fun, vectorized=FALSE,
 #' @method contourview matrix
 #' @aliases contourview,matrix,matrix-method
 #' @export
-#' @import DiceKriging
 #' @seealso \code{\link{sectionview.matrix}} for a section plot, and \code{\link{sectionview3d.matrix}} for a 2D section plot.
 #' @examples
 #' X = matrix(runif(15*2),ncol=2)
@@ -340,15 +339,18 @@ contourview.matrix <- function(X, y, sdy=NULL,
 #' @method contourview km
 #' @aliases contourview,km,km-method
 #' @export
-#' @import DiceKriging
 #' @seealso \code{\link{sectionview.km}} for a section plot, and \code{\link{sectionview3d.km}} for a 2D section plot.
 #' @examples
+#' if (requireNamespace("DiceKriging")) { library(DiceKriging)
+#'
 #' X = matrix(runif(15*2),ncol=2)
 #' y = apply(X,1,branin)
 #'
 #' model <- km(design = X, response = y, covtype="matern3_2")
 #'
 #' contourview(model)
+#'
+#' }
 #'
 contourview.km <- function(km_model, type = "UK",
                            center = NULL,
@@ -695,15 +697,18 @@ contourview.glm <- function(glm_model,
 #' @method contourview list
 #' @aliases contourview,list,list-method
 #' @export
-#' @import DiceEval
 #' @seealso \code{\link{sectionview.glm}} for a section plot, and \code{\link{sectionview3d.glm}} for a 2D section plot.
 #' @examples
+#' if (requireNamespace("DiceEval")) { library(DiceEval)
+#'
 #' X = matrix(runif(15*2),ncol=2)
 #' y = apply(X,1,branin)
 #'
 #' model <- modelFit(X, y, type = "StepLinear")
 #'
 #' contourview(model)
+#'
+#' }
 #'
 contourview.list <- function(modelFit_model,
                             center = NULL,
@@ -786,16 +791,19 @@ if(!isGeneric("contourview")) {
 #' ## A 2D example - Branin-Hoo function
 #' contourview(branin, dim=2, nlevels=30, col='black')
 #'
+#' \dontrun{
 #' ## a 16-points factorial design, and the corresponding response
 #' d <- 2; n <- 16
 #' design.fact <- expand.grid(seq(0, 1, length = 4), seq(0, 1, length = 4))
 #' design.fact <- data.frame(design.fact); names(design.fact) <- c("x1", "x2")
 #' y <- branin(design.fact); names(y) <- "y"
 #'
+#' if (requireNamespace("DiceKriging")) { library(DiceKriging)
 #' ## model: km
 #' model <- DiceKriging::km(design = design.fact, response = y)
 #' contourview(model, nlevels=30)
 #' contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
+#' }
 #'
 #' ## model: Kriging
 #' if (requireNamespace("rlibkriging")) { library(rlibkriging)
@@ -809,10 +817,13 @@ if(!isGeneric("contourview")) {
 #' contourview(model, nlevels=30)
 #' contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
 #'
-#' ## model: PolyMARS
+#' if (requireNamespace("DiceEval")) { library(DiceEval)
+#' ## model: StepLinear
 #' model <- modelFit(design.fact, y, type = "StepLinear")
 #' contourview(model, nlevels=30)
 #' contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
+#' }
+#' }
 #'
 contourview <- function(...){
     UseMethod("contourview")

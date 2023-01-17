@@ -260,12 +260,16 @@ y = apply(X,1,branin)
 
 contourview(X, y)
 
+if (requireNamespace("DiceKriging")) { library(DiceKriging)
+
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin)
 
 model <- km(design = X, response = y, covtype="matern3_2")
 
 contourview(model)
+
+}
 
 if (requireNamespace("rlibkriging")) { library(rlibkriging)
 
@@ -308,6 +312,8 @@ model <- glm(y ~ x1 + I(x2^2))
 
 contourview(model)
 
+if (requireNamespace("DiceEval")) { library(DiceEval)
+
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin)
 
@@ -315,19 +321,24 @@ model <- modelFit(X, y, type = "StepLinear")
 
 contourview(model)
 
+}
+
 ## A 2D example - Branin-Hoo function
 contourview(branin, dim=2, nlevels=30, col='black')
 
+\dontrun{
 ## a 16-points factorial design, and the corresponding response
 d <- 2; n <- 16
 design.fact <- expand.grid(seq(0, 1, length = 4), seq(0, 1, length = 4))
 design.fact <- data.frame(design.fact); names(design.fact) <- c("x1", "x2")
 y <- branin(design.fact); names(y) <- "y"
 
+if (requireNamespace("DiceKriging")) { library(DiceKriging)
 ## model: km
 model <- DiceKriging::km(design = design.fact, response = y)
 contourview(model, nlevels=30)
 contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
+}
 
 ## model: Kriging
 if (requireNamespace("rlibkriging")) { library(rlibkriging)
@@ -341,10 +352,13 @@ model <- glm(y ~ 1+ x1 + x2 + I(x1^2) + I(x2^2) + x1*x2, data=cbind(y,design.fac
 contourview(model, nlevels=30)
 contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
 
-## model: PolyMARS
+if (requireNamespace("DiceEval")) { library(DiceEval)
+## model: StepLinear
 model <- modelFit(design.fact, y, type = "StepLinear")
 contourview(model, nlevels=30)
 contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
+}
+}
 
 }
 \seealso{

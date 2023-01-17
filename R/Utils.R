@@ -108,3 +108,17 @@ tryFormat <- function(x, drx) {
     fx <- sprintf(formats, x)
 
 }
+
+#' This is a simple copy of the Branin-Hoo 2-dimensional test function, as provided in DiceKriging package.
+#' The Branin-Hoo function is defined here over [0,1] x [0,1], instead of [-5,0] x [10,15] as usual.
+#' It has 3 global minima : x1 = c(0.9616520, 0.15); x2 = c(0.1238946, 0.8166644); x3 = c(0.5427730, 0.15)
+#'
+#' @param x a 2-dimensional vector specifying the location where the function is to be evaluated.
+#'
+#' @return A real number equal to the Branin-Hoo function values at x
+#' @export
+branin <- function(x) {
+    x1 <- x[1] * 15 - 5
+    x2 <- x[2] * 15
+    (x2 - 5/(4 * pi^2) * (x1^2) + 5/pi * x1 - 6)^2 + 10 * (1 - 1/(8 * pi)) * cos(x1) + 10
+}
