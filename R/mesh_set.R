@@ -468,6 +468,12 @@ mesh_exsets = function(f, vectorized=FALSE, threshold, sign, intervals, mesh="se
         all_points = attr(r,"mesh")$p
     else
         all_points = rbind(attr(r,"mesh")$p,r)
+    
+    f_inf <- function(...) return(f(...)-(threshold-maxerror_f))
+    r_inf <- mesh_roots(f=f_inf, vectorized=vectorized, intervals=intervals,mesh=mesh,mesh.sizes=mesh.sizes,maxerror_f=maxerror_f, tol=tol,...)
+    if (! all(is.na(r_inf)))
+      all_points = rbind(all_points, r_inf)
+    
     new_mesh <- geometry::delaunayn(all_points,output.options=TRUE)
 
     if (isTRUE(vectorized))
@@ -487,7 +493,7 @@ mesh_exsets = function(f, vectorized=FALSE, threshold, sign, intervals, mesh="se
     #     }
     # }
     # I = unlist(Filter(Negate(is.null), I))
-    I = which(apply(new_mesh$tri,1,function(i) ex_filter.tri(new_mesh$y[i]>=(threshold-10*maxerror_f))))
+    I = which(apply(new_mesh$tri,1,function(i) ex_filter.tri(new_mesh$y[i]>=(threshold-2*maxerror_f))))
 
     colnames(new_mesh$p) <- colnames(intervals)
 
@@ -556,7 +562,7 @@ plot3d_mesh = function(mesh,engine3d=NULL,color='black',...){
     col.rgb=col2rgb(color)/255
     package = load3d(engine3d)
     if (is.null(package)) return()
-    plot3d(mesh$p,col=rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4), package=package,...)
+    p3d = plot3d(mesh$p,col=rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4), package=package,...)
     apply(mesh$tri,1,function(tri) {
         quads3d(mesh$p[tri,],col=color,alpha=0.05, package=package)
         quads3d(mesh$p[tri,][c(4,3,2,1),],col=color,alpha=0.05, package=package)
@@ -565,6 +571,7 @@ plot3d_mesh = function(mesh,engine3d=NULL,color='black',...){
         # triangles3d(mesh$p[tri,][-3,],col=color,alpha=0.05, package=package)
         # triangles3d(mesh$p[tri,][-4,],col=color,alpha=0.05, package=package)
     }) #rgl::lines3d(mesh$p[t(combn(tri,2)),],col=color))
+    return(p3d)
 }
 
 
