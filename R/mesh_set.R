@@ -571,7 +571,7 @@ plot3d_mesh = function(mesh,engine3d=NULL,color='black',...){
         # triangles3d(mesh$p[tri,][-3,],col=color,alpha=0.05, package=package)
         # triangles3d(mesh$p[tri,][-4,],col=color,alpha=0.05, package=package)
     }) #rgl::lines3d(mesh$p[t(combn(tri,2)),],col=color))
-    return(p3d)
+    invisible(p3d)
 }
 
 
