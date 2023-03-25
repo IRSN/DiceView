@@ -32,13 +32,14 @@
 #'
 #' f=function(x) {cat("f");exp(100*x)-1}; f(root(f,lower=-1,upper=2))
 root = function(f,lower,upper,maxerror_f=1E-7, f_lower = f(lower, ...),f_upper = f(upper, ...), tol = .Machine$double.eps^0.25, convexity=0, ...) {
+    tol = max(tol,.Machine$double.eps^0.25) # ensure suitable tol for later uniroot
     if (upper < lower)
         return(root(f,lower=upper,upper=lower,maxerror_f=maxerror_f, f_lower = f(upper, ...), f_upper=f(lower, ...), tol = tol, convexity=convexity, ...))
 
     r = NULL
     try(
         r <- uniroot(f,lower=lower,upper=upper,f.lower = f_lower,f.upper = f_upper,tol=tol,...)
-        ,silent=T)
+        ,silent=FALSE)
     if (is.null(r)) {
         warning(paste0("No root found in [",lower,",",upper,"] -> [",f_lower,",",f_upper,"]"))
         return(NULL)
@@ -122,17 +123,22 @@ roots = function(f,interval, maxerror_f=1E-7,split="seq",split.size=11,tol=.Mach
     #     try({r = root(f,lower=lower.i,upper=upper.i,maxerror_f = maxerror_f,...)},silent = T)
     #     r
     # }
-    I.list = lapply(seq_len(length(intervals)-1), function(i) c(intervals[i],intervals[i+1]))
-    roots = parallel::mclapply(I.list,
+
+    intervals <- sort(unique(intervals))
+    I.list <- lapply(seq_len(length(intervals) - 1), function(i) if(f(intervals[i]) * f(intervals[i+1])<0) 
+                                                                   c(intervals[i],intervals[i + 1]) 
+                                                                 else NULL)
+    I.list <- Filter(Negate(is.null),I.list)
+    I.roots = parallel::mclapply(I.list,
                                function(I) {
                                    r = NULL;
                                    try({r = root(f,lower=I[1],upper=I[2],maxerror_f = maxerror_f,tol=tol,...)},silent = F);
                                    r
                                 })
-    roots = unlist(Filter(Negate(is.null), roots))
+    I.roots = unlist(Filter(Negate(is.null), I.roots))
 
-    if (length(roots)>0)
-        r = matrix(unlist(roots),ncol=1)
+    if (length(I.roots)>0)
+        r = matrix(unlist(I.roots),ncol=1)
     else
         r = NA
     attr(r,"mesh") <- list(p=matrix(intervals,ncol=1))
