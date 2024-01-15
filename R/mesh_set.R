@@ -1,417 +1,3 @@
-#### Generalization of root finding ####
-
-#' @title One Dimensional Root (Zero) Finding
-#' @description Search one root with given precision (on y). Iterate over uniroot as long as necessary.
-#' @param f the function for which the root is sought.
-#' @param lower the lower end point of the interval to be searched.
-#' @param upper the upper end point of the interval to be searched.
-#' @param maxerror_f the maximum error on f evaluation (iterates over uniroot to converge).
-#' @param f_lower the same as f(lower).
-#' @param f_upper the same as f(upper).
-#' @param tol the desired accuracy (convergence tolerance on f arg).
-#' @param convexity the learned convexity factor of the function, used to reduce the boundaries for uniroot.
-#' @param ... additional named or unnamed arguments to be passed to f.
-#' @import stats
-#' @export
-#' @author Yann Richet, IRSN
-#' @examples
-#' f=function(x) {cat("f");1-exp(x)}; f(root(f,lower=-1,upper=2))
-#' f=function(x) {cat("f");exp(x)-1}; f(root(f,lower=-1,upper=2))
-#'
-#' .f = function(x) 1-exp(1*x)
-#' f=function(x) {cat("f");y=.f(x);points(x,y,pch=20,col=rgb(0,0,0,.2));y}
-#' plot(.f,xlim=c(-1,2)); f(root(f,lower=-1,upper=2))
-#'
-#' .f = function(x) exp(10*x)-1
-#' f=function(x) {cat("f");y=.f(x);points(x,y,pch=20);y}
-#' plot(.f,xlim=c(-1,2)); f(root(f,lower=-1,upper=2))
-#'
-#' .f = function(x) exp(100*x)-1
-#' f=function(x) {cat("f");y=.f(x);points(x,y,pch=20);y}
-#' plot(.f,xlim=c(-1,2)); f(root(f,lower=-1,upper=2))
-#'
-#' f=function(x) {cat("f");exp(100*x)-1}; f(root(f,lower=-1,upper=2))
-root = function(f,lower,upper,maxerror_f=1E-7, f_lower = f(lower, ...),f_upper = f(upper, ...), tol = .Machine$double.eps^0.25, convexity=0, ...) {
-    tol = max(tol,.Machine$double.eps^0.25) # ensure suitable tol for later uniroot
-    if (upper < lower)
-        return(root(f,lower=upper,upper=lower,maxerror_f=maxerror_f, f_lower = f(upper, ...), f_upper=f(lower, ...), tol = tol, convexity=convexity, ...))
-
-    r = NULL
-    try(
-        r <- uniroot(f,lower=lower,upper=upper,f.lower = f_lower,f.upper = f_upper,tol=tol,...)
-        ,silent=FALSE)
-    if (is.null(r)) {
-        warning(paste0("No root found in [",lower,",",upper,"] -> [",f_lower,",",f_upper,"]"))
-        return(NULL)
-    }
-
-    r_root = r$root
-    f_root = f(r_root, ...)
-    err = abs(f_root)/maxerror_f
-
-    # cat(paste0("[ ",lower," | ",r_root," | ",upper," ] -> ^",exp(convexity)," -> [ ",f_lower," | ",f_root," | ",f_upper," ]\n"))
-
-    if (err>1) {
-        if (f_lower*f_root<0) {
-            # cat("<")
-            x0 = r_root - (r_root-lower) * max(1E-3,(f_root/(f_root-f_lower))^exp(convexity))
-            f_x0 = f(x0, ...)
-            # cat(paste0(" x0:",x0," -> ",f_x0))
-            if (f_x0*f_root<0){
-                # cat("+")
-                return(root(f, lower=x0,upper=r_root,maxerror_f=maxerror_f,f_lower=f_x0,f_upper=f_root, convexity=convexity-f_x0/(f_root-f_lower) ,tol=tol,...))
-            } else {
-                # cat("-")
-                return(root(f, lower=lower,upper=x0,maxerror_f=maxerror_f,f_lower=f_lower,f_upper=f_x0, convexity=convexity-f_x0/(f_root-f_lower) ,tol=tol,...))
-            }
-        } else { #(f_upper*f_root<0)
-            # cat(">")
-            x0 = r_root + (upper-r_root) * max(1E-3,(f_root/(f_root-f_upper))^exp(convexity))
-            f_x0 = f(x0, ...)
-            # cat(paste0(" x0:",x0," -> ",f_x0))
-            if (f_x0*f_root<0){
-                # cat("-")
-                return(root(f, lower=r_root,upper=x0,maxerror_f=maxerror_f,f_lower=f_root,f_upper=f_x0, convexity=convexity-f_x0/(f_upper-f_root) ,tol=tol,...))
-            }else{
-                # cat("+")
-                return(root(f, lower=x0,upper=upper,maxerror_f=maxerror_f,f_lower=f_x0,f_upper=f_upper, convexity=convexity-f_x0/(f_upper-f_root) ,tol=tol,...))
-            }
-        }
-    } else
-        r$root
-}
-
-#' @title One Dimensional Multiple Roots (Zero) Finding
-#' @description Search multiple roots of 1D function, sampled/splitted by a (1D) mesh
-#' @param f Function to find roots
-#' @param interval bounds to inverse in
-#' @param split.size number of parts to perform uniroot inside
-#' @param split function or "unif" or "seq" (default) to preform interval partition
-#' @param maxerror_f the maximum error on f evaluation (iterates over uniroot to converge).
-#' @param tol the desired accuracy (convergence tolerance on f arg).
-#' @param ... additional named or unnamed arguments to be passed to f.
-#' @return array of x, so f(x)=target
-#' @import stats
-#' @export
-#' @examples
-#' roots(sin,interval=c(pi/2,5*pi/2))
-#' roots(sin,interval=c(pi/2,1.5*pi/2))
-#'
-#' f=function(x)exp(x)-1;
-#' f(roots(f,interval=c(-1,2)))
-#'
-#' f=function(x)exp(1000*x)-1;
-#' f(roots(f,interval=c(-1,2)))
-roots = function(f,interval, maxerror_f=1E-7,split="seq",split.size=11,tol=.Machine$double.eps^0.25,...) {
-    lower = min(interval)
-    upper = max(interval)
-
-    if (is.function(split))
-        intervals = split(min=lower,max=upper,n=split.size)
-    else if (is.numeric(split))
-        intervals = split
-    else if (split=="seq")
-        intervals = seq(from=lower,to=upper,length.out=split.size)
-    else if (split=="unif")
-        intervals = runif(min=lower,max=upper,n=split.size)
-    else stop("unsupported mesh: function(min,max,n)/array/'seq'/'fun': type is ",typeof(split)," : ",paste0(split,collapse=";",sep=","))
-
-    # roots = foreach (i = 1:(length(intervals)-1)) %dopar% {
-    #     lower.i = intervals[i]
-    #     upper.i = intervals[i+1]
-    #     r = NULL
-    #     try({r = root(f,lower=lower.i,upper=upper.i,maxerror_f = maxerror_f,...)},silent = T)
-    #     r
-    # }
-
-    intervals <- sort(unique(intervals))
-    I.list <- lapply(seq_len(length(intervals) - 1), function(i) if(f(intervals[i]) * f(intervals[i+1])<0) 
-                                                                   c(intervals[i],intervals[i + 1]) 
-                                                                 else NULL)
-    I.list <- Filter(Negate(is.null),I.list)
-    I.roots = parallel::mclapply(I.list,
-                               function(I) {
-                                   r = NULL;
-                                   try({r = root(f,lower=I[1],upper=I[2],maxerror_f = maxerror_f,tol=tol,...)},silent = F);
-                                   r
-                                })
-    I.roots = unlist(Filter(Negate(is.null), I.roots))
-
-    if (length(I.roots)>0)
-        r = matrix(unlist(I.roots),ncol=1)
-    else
-        r = NA
-    attr(r,"mesh") <- list(p=matrix(intervals,ncol=1))
-    return(r)
-}
-
-#' @title Minimal distance between one point to many points
-#' @param x one point
-#' @param X matrix of points (same number of columns than x)
-#' @param norm normalization vecor of distance (same number of columns than x)
-#' @return minimal distance
-#' @export
-#' @examples
-#' min_dist(runif(3),matrix(runif(30),ncol=3))
-min_dist <- function (x, X, norm=rep(1,ncol(X))){
-    return(min(sqrt(rowSums(((X - matrix(x, nrow = nrow(X), ncol = ncol(X), byrow = TRUE))/norm)^2))))
-}
-
-#' @title Multi Dimensional Multiple Roots (Zero) Finding, sampled by a mesh
-#' @param f Function (one or more dimensions) to find roots of
-#' @param intervals bounds to inverse in, each column contains min and max of each dimension
-#' @param mesh function or "unif" or "seq" (default) to preform interval partition
-#' @param mesh.sizes number of parts for mesh (duplicate for each dimension if using "seq")
-#' @param vectorized is f already vectorized ? (default: no)
-#' @param maxerror_f the maximum error on f evaluation (iterates over uniroot to converge).
-#' @param tol the desired accuracy (convergence tolerance on f arg).
-#' @param ... Other args for f
-#' @import stats
-#' @importFrom DiceDesign lhsDesign
-#' @importFrom parallel mclapply
-#' @export
-#' @return matrix of x, so f(x)=0
-#' @examples
-#' mesh_roots(function(x) x-.51, intervals=rbind(0,1))
-#' mesh_roots(function(x) sum(x)-.51, intervals=cbind(rbind(0,1),rbind(0,1)))
-#' mesh_roots(sin,intervals=c(pi/2,5*pi/2))
-#' mesh_roots(f = function(x) sin(pi*x[1])*sin(pi*x[2]),
-#'            intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2))
-#'
-#' r = mesh_roots(function(x) (0.25+x[1])^2+(0.5+x[2])^2-.25,
-#'                intervals=matrix(c(-1,1,-1,1),nrow=2))
-#' plot(r,xlim=c(-1,1),ylim=c(-1,1))
-#'
-#' r = mesh_roots(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2- .25,
-#'                mesh.sizes = 11,
-#'                intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2))
-#' scatterplot3d::scatterplot3d(r,xlim=c(-1,1),ylim=c(-1,1),zlim=c(-1,1))
-#'
-#' mesh_roots(function(x)exp(x)-1,intervals=c(-1,2))
-#' mesh_roots(function(x)exp(1000*x)-1,intervals=c(-1,2))
-mesh_roots = function(f,vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,maxerror_f=1E-7,tol=.Machine$double.eps^0.25,...) {
-    if (is.matrix(intervals)) {
-        lowers = apply(intervals,2,min)
-        uppers = apply(intervals,2,max)
-        d = ncol(intervals)
-    } else if (is.null(intervals) && is.matrix(mesh)) {
-        lowers = apply(mesh,2,min)
-        uppers = apply(mesh,2,max)
-        d = ncol(mesh)
-    } else { d=1 }
-
-    if (d==1)
-        return(roots(f,interval = intervals,split = mesh,split.size = mesh.sizes,maxerror_f=maxerror_f,tol=tol,...))
-
-    if (length(mesh.sizes)!=d)
-        mesh.size = rep(mesh.sizes,d)
-
-    # Create mesh points matrix
-    if (is.matrix(mesh)) {
-        ridge.points = mesh
-    } else if (is.function(mesh)) {
-        ridge.points = mesh(prod(mesh.size), lowers, uppers)
-    } else if (mesh == "seq") {
-        ridge.points = matrix(seq(f=lowers[1],to=uppers[1],length.out = mesh.size[1]),ncol=1)
-        for (i in 2:d) {
-            ridge.points = combn.design(ridge.points, matrix(seq(f=lowers[i],to=uppers[i],length.out = mesh.size[i]),ncol=1))
-        }
-    } else if (mesh == "unif") {
-        ridge.points = matrix(runif(n = d*prod(mesh.size),min=0,max=1),ncol=d)
-        ridge.points = matrix(lowers,ncol=d,nrow=nrow(ridge.points),byrow = TRUE) + ridge.points * (matrix(uppers,ncol=d,nrow=nrow(ridge.points),byrow = TRUE) - matrix(lowers,ncol=d,nrow=nrow(ridge.points),byrow = TRUE))
-    } else if (mesh == "LHS") {
-        ridge.points = DiceDesign::lhsDesign(prod(mesh.size),dimension=d)$design
-        ridge.points = matrix(lowers,ncol=d,nrow=nrow(ridge.points),byrow = TRUE) + ridge.points * (matrix(uppers,ncol=d,nrow=nrow(ridge.points),byrow = TRUE) - matrix(lowers,ncol=d,nrow=nrow(ridge.points),byrow = TRUE))
-    } else stop("unsupported mesh : ",mesh)
-
-    # Add bounds if needed
-    b = c(lowers[1], uppers[1])
-    for (id in 1:(d-1)) {
-        b = rbind(cbind(b, lowers[id+1]), cbind(b, uppers[id+1]))
-    }
-    for (i in 1:nrow(b))
-        if (min_dist(b[i,], ridge.points)>.Machine$double.eps)
-            ridge.points = rbind(ridge.points,b[i,])
-
-    # y = apply(ridge.points,1,f,...)
-    # plot(ridge.points,col=rgb(y>0,0,y<0))
-
-    simplexes <- geometry::delaunayn(ridge.points,output.options = TRUE)
-
-    # Now find ridges where target is bounded, and then root it
-    if (isTRUE(vectorized))
-        f_vec=function(x,...) f(x,...)
-    else if (is.function(vectorized))
-        f_vec=function(x,...) vectorized(x,...)
-    else
-        f_vec=Vectorize.function(f,dim=ncol(ridge.points))
-    ridge.y = f_vec(ridge.points,...)
-
-    ############### Benchmark: find ridges that crosses zero ###################
-    # library(microbenchmark)
-    #
-    # f = function(x) exp(-x^2)-0.5
-    # Npoints = 1000
-    # ridge.points = matrix(runif(2*Npoints,-1,1),ncol=2)
-    # simplexes <- geometry::delaunayn(ridge.points,output.options = TRUE)
-    # ridge.y = f(simplexes$p)
-    #
-    # tcombn2 = function(x) (utils::combn(x,2))
-    # tcombn2_arrangements = function(x) t(arrangements::combinations(x,2))
-    # cbind.list = function(l)
-    #     matrix(unlist(l),ncol=length(l),byrow=F) #do.call(cbind,l)
-    # tcombn2_my = function(x){
-    #     l=length(x)
-    #     #C = matrix(NA,nrow=2,factorial(l-1))
-    #     #i = 1
-    #     #for (j in 1:(l-1)) {
-    #     #    for (k in (j+1):l) {
-    #     #        C[,i] = x[c(j,k)]
-    #     #        i = i+1
-    #     #    }
-    #     #}
-    #     #C
-    #     do.call(cbind,lapply(1:(l-1),
-    #                function(j) cbind.list(lapply((j+1):l,
-    #                                       function(k) x[c(j,k)]))))
-    # }
-    #
-    # microbenchmark({tcombn2(1:5)})
-    # microbenchmark({tcombn2_arrangements(1:5)})
-    # microbenchmark({tcombn2_my(1:5)})
-    #
-    # tcombn2 = function(x) t(arrangements::combinations(x,2)) # faster !
-    #
-    # # for x for (baseline)
-    # microbenchmark({
-    #   ridges = NULL
-    #   for (i in 1:nrow(simplexes$tri)) {
-    #       #if (!all(ridge.y[simplexes$tri[i,]]<0)) {
-    #       more_ridges = tcombn2(simplexes$tri[i,])
-    #       for (j in 1:nrow(more_ridges))
-    #           if (ridge.y[more_ridges[j,1]]*ridge.y[more_ridges[j,2]]<0)
-    #               ridges = rbind(ridges,more_ridges[j,])
-    #      #}
-    #   }
-    # },times=10)
-    #
-    # # lapply x for
-    # microbenchmark({
-    #     ridges = lapply(X=as.list(as.data.frame(t(simplexes$tri))),FUN=function(tri_i) {
-    #         #if (all(ridge.y[tri_i]<0)) return()
-    #         all_ridges = tcombn2(simplexes$tri[i,])
-    #         more_ridges=NULL
-    #         for (j in 1:nrow(all_ridges))
-    #             if (ridge.y[all_ridges[j,1]]*ridge.y[all_ridges[j,2]]<0) # not same sign
-    #                 more_ridges = rbind(more_ridges,all_ridges[j,])
-    #         return(more_ridges)
-    #     })
-    #     ridges = do.call(rbind,ridges)
-    # },times=10)
-    #
-    # # lapply x apply
-    # microbenchmark({
-    #   ridges = lapply(X=as.list(as.data.frame(t(simplexes$tri))),FUN=function(tri_i) {
-    #       #if (all(ridge.y[tri_i]<0)) return()
-    #       all_ridges = tcombn2(simplexes$tri[i,])
-    #       #yprod_all_ridges = apply(all_ridges,1,function(r) ridge.y[r[1]] * ridge.y[r[2]])
-    #       #yprod_all_ridges = apply(all_ridges,1,function(r) prod(ridge.y[r]))
-    #       yprod_all_ridges = all_ridges[
-    #           unlist(lapply(1:nrow(all_ridges),
-    #                  function(i)
-    #                      if (ridge.y[all_ridges[i,1]] * ridge.y[all_ridges[i,2]]<0)
-    #                          return(i)
-    #                         else return(NULL))),]
-    #       return(all_ridges[which(yprod_all_ridges<0),])
-    #   })
-    #   ridges = do.call(rbind,ridges)
-    # },times=10)
-    #
-    ############################################################################
-
-    if (requireNamespace("arrangements"))
-        tcombn2 = function(x) arrangements::combinations(x,2)
-    else
-        tcombn2 = function(x) t(utils::combn(x,2))
-
-    #Get all ridges where we will do uniroot later
-    ridges = NULL
-    for (i in 1:nrow(simplexes$tri)) {
-        #if (!all(ridge.y[simplexes$tri[i,]]<0)) {
-        more_ridges = tcombn2(simplexes$tri[i,])
-        for (j in 1:nrow(more_ridges))
-            if (ridge.y[more_ridges[j,1]]*ridge.y[more_ridges[j,2]]<0)
-                ridges = rbind(ridges,more_ridges[j,])
-       #}
-    }
-
-    if (is.null(ridges)) {
-        r = NA
-        if (!is.null(ridge.points)) {
-            attr(r,"mesh") <- simplexes
-        }
-        return(r)
-    }
-
-    ridges = unique(as.matrix(ridges))
-
-    # for (i in 1:nrow(ridges))
-    #     lines(x=rbind(ridge.points[ridges[i,1],],ridge.points[ridges[i,2],]))
-
-
-    # r = foreach(i.r = 1:nrow(ridges),.combine = rbind,.verbose = FALSE,.errorhandling='stop') %dopar% { # No error expected, so stop if occurs
-    #     X = ridge.points[ridges[i.r,],,drop=FALSE]
-    #     #y=f_vec(X,...)
-    #     y = ridge.y[ridges[i.r,]]
-    #     if (isFALSE((all(y>0) || all(y<0)))) {
-    #         f.r = function(alpha,...)
-    #             as.numeric(f(alpha*X[1,] + (1-alpha)*X[2,],...))
-    #         alpha_i = root(f.r,lower=0,upper=1, maxerror_f=maxerror_f,...)
-    #         return(alpha_i*X[1,] + (1-alpha_i)*X[2,])
-    #     } else return(NULL)
-    # }
-
-    # r.list = lapply(seq_len(nrow(ridges)), function(i.r) ridges[i.r,])
-    # r = parallel::mclapply(r.list,
-    #                        function(ridge_i) {
-    #                             X = ridge.points[ridge_i,,drop=FALSE]
-    #                             y = ridge.y[ridge_i]
-    #                             if (isFALSE((all(y>0) || all(y<0)))) {
-    #                                 f.r = function(alpha,...)
-    #                                     as.numeric(f(alpha*X[1,] + (1-alpha)*X[2,],...))
-    #                                 alpha_i = root(f.r,lower=0,upper=1, maxerror_f=maxerror_f,tol=tol,...)
-    #                                 return(alpha_i*X[1,] + (1-alpha_i)*X[2,])
-    #                             } else return(NULL)
-    #                         })
-    # r = do.call("rbind",r)
-
-    r = Apply.function(X=ridges,MARGIN=1,FUN=function(ridge_i) {
-        X = ridge.points[ridge_i,,drop=FALSE]
-        y = ridge.y[ridge_i]
-        if (isFALSE((all(y>0) || all(y<0)))) {
-            f.r = function(alpha,...)
-                as.numeric(f(alpha*X[1,] + (1-alpha)*X[2,],...))
-            alpha_i = root(f.r,lower=0,upper=1, maxerror_f=maxerror_f,tol=tol,...)
-            return(alpha_i*X[1,] + (1-alpha_i)*X[2,])
-        } else return(NULL)
-    },.combine = rbind)
-
-    if (is.null(r) || length(r)==0)
-        r = NA
-    else {
-        colnames(r) <- colnames(intervals)
-        rownames(r) <- NULL
-    }
-    if (!is.null(ridge.points)) {
-        attr(r,"mesh") <- simplexes
-    }
-    # TODO attr(r,"values") <- y
-
-    # points(r,pch=20)
-    return(r)
-}
-
-
 #### Excursion sets ####
 
 #' @title Search excursion set of nD function, sampled by a mesh
@@ -424,7 +10,7 @@ mesh_roots = function(f,vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,max
 #' @param maxerror_f maximal tolerance on f precision
 #' @param ex_filter.tri boolean function to validate a geometry::tri as considered in excursion : 'any' or 'all'
 #' @param ... parameters to forward to mesh_roots(...) call
-#' @param vectorized is f already vectorized ? (default: no)
+#' @param vectorized boolean: is f already vectorized ? (default: FALSE) or if function: vectorized version of f.
 #' @param tol the desired accuracy (convergence tolerance on f arg).
 #' @importFrom geometry delaunayn
 #' @export
@@ -457,53 +43,72 @@ mesh_roots = function(f,vectorized=FALSE,intervals, mesh="seq",mesh.sizes=11,max
 #'     apply(e$tri,1,function(tri)rgl::lines3d(e$p[tri,]))
 #'   }
 #' }
-mesh_exsets = function(f, vectorized=FALSE, threshold, sign, intervals, mesh="seq", mesh.sizes=11, maxerror_f=1E-9,tol=.Machine$double.eps^0.25,ex_filter.tri=all,...) {
-    if (sign=="lower" || sign==-1 || sign=="inf" || sign=="<" || isFALSE(sign))
-        return(mesh_exsets(f=function(...){-f(...)},
-                           vectorized=vectorized,
-                           threshold=-threshold,
-                           sign=1,
-                           intervals=intervals, mesh=mesh, mesh.sizes=mesh.sizes, maxerror_f=maxerror_f,tol=tol,...))
+mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
+          mesh = "seq", mesh.sizes = 11, maxerror_f = 1e-09, tol = .Machine$double.eps^0.25,
+          ex_filter.tri = all, ...) {
+    if (sign == "lower" || sign == -1 || sign == "inf" || sign == "<" || isFALSE(sign))
+        return(
+            mesh_exsets(f = function(...) { -f(...) }, vectorized = vectorized, threshold = -threshold, sign = 1,
+            intervals = intervals, mesh = mesh, mesh.sizes = mesh.sizes,
+            maxerror_f = maxerror_f, tol = tol, ...))
+    if (sign != "upper" && sign != 1 && sign != "sup" && sign != ">" && !isTRUE(sign))
+        stop("unknown sign: '", sign, "'")
 
-    if (sign!="upper" && sign!=1 && sign!="sup" && sign!=">" && !isTRUE(sign))
-        stop("unknown sign: '",sign,"'")
+    if (is.matrix(mesh))
+        d = ncol(mesh)
+    else if (is.matrix(intervals))
+        d = ncol(intervals)
+    else if (is.array(intervals))
+        d = 1
+    else
+        stop("cannot identify ncol of mesh")
 
-    f_0 <- function(...) return(f(...)-threshold)
-    r <- mesh_roots(f=f_0, vectorized=vectorized, intervals=intervals,mesh=mesh,mesh.sizes=mesh.sizes,maxerror_f=maxerror_f, tol=tol,...)
+    if (isTRUE(vectorized) && is.function(f))
+        f_vec = function(x, ...) f(x, ...)
+    else if (is.function(vectorized)) {
+        f_vec = function(x, ...) vectorized(x, ...)
+        if (is.null(f)) f = f_vec
+    } else if (isFALSE(vectorized) && !is.null(f))
+        f_vec = Vectorize.function(f, dim = d)
+    else
+        stop("Cannot decide how to vectorize f")
+
+    f_0 <- function(...) return(f(...) - threshold)
+    f_vec_0 <- function(...) return(f_vec(...) - threshold)
+    r <- mesh_roots(f = f_0, vectorized = f_vec_0, intervals = intervals,
+                    mesh = mesh, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
+                    tol = tol, ...)
+
     if (all(is.na(r)))
-        all_points = attr(r,"mesh")$p
+        all_points = attr(r, "mesh")$p
     else
-        all_points = rbind(attr(r,"mesh")$p,r)
-    
-    f_inf <- function(...) return(f(...)-(threshold-maxerror_f))
-    r_inf <- mesh_roots(f=f_inf, vectorized=vectorized, intervals=intervals,mesh=mesh,mesh.sizes=mesh.sizes,maxerror_f=maxerror_f, tol=tol,...)
-    if (! all(is.na(r_inf)))
-      all_points = rbind(all_points, r_inf)
-    
-    new_mesh <- geometry::delaunayn(all_points,output.options=TRUE)
+        all_points = rbind(attr(r, "mesh")$p, r)
 
-    if (isTRUE(vectorized))
-        f_vec=function(x,...) f(x,...)
-    else if (is.function(vectorized))
-        f_vec=function(x,...) vectorized(x,...)
-    else
-        f_vec=Vectorize.function(f,dim=ncol(new_mesh$p))
-    new_mesh$y = f_vec(new_mesh$p,...)
-    # I = foreach (i.I = 1:nrow(new_mesh$tri)) %do% {
-    #     X = new_mesh$p[new_mesh$tri[i.I,],,drop=FALSE] # NEVER USE "drop=F" => if "F" object exists, it will not crash but do a mess !!!
-    #     y = f_vec(X,...) #apply(X,1,f, ...)
-    #     if (all(y>=(threshold-2*maxerror_f))) {
-    #         return(i.I)
-    #     } else {
-    #         return(NULL)
-    #     }
-    # }
-    # I = unlist(Filter(Negate(is.null), I))
-    I = which(apply(new_mesh$tri,1,function(i) ex_filter.tri(new_mesh$y[i]>=(threshold-2*maxerror_f))))
+    if (maxerror_f != 0) { # try add points on each side of the frontier
+        f_inf <- function(...) return(f(...) - (threshold - maxerror_f))
+        f_vec_inf <- function(...) return(f_vec(...) - (threshold - maxerror_f))
+        r_inf <- mesh_roots(f = f_inf, vectorized = f_vec_inf, intervals = intervals,
+                            mesh = mesh, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
+                            tol = tol, ...)
+        if (!all(is.na(r_inf)))
+            all_points = rbind(all_points, r_inf)
 
+        f_sup <- function(...) return(f(...) - (threshold + maxerror_f))
+        f_vec_sup <- function(...) return(f_vec(...) - (threshold + maxerror_f))
+        r_sup <- mesh_roots(f = f_sup, vectorized = f_vec_sup, intervals = intervals,
+                            mesh = mesh, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
+                            tol = tol, ...)
+        if (!all(is.na(r_sup)))
+            all_points = rbind(all_points, r_sup)
+    }
+
+    new_mesh <- geometry::delaunayn(all_points, output.options = TRUE)
+    new_mesh$y = f_vec(new_mesh$p, ...)
+    I = which(apply(new_mesh$tri, 1,
+              function(i) ex_filter.tri(new_mesh$y[i] >= (threshold - 2 * maxerror_f))))
     colnames(new_mesh$p) <- colnames(intervals)
-
-    return(list(p=new_mesh$p,tri=new_mesh$tri[I,],areas=new_mesh$areas[I],neighbours=new_mesh$neighbours[I]))
+    return(list(p = new_mesh$p, tri = new_mesh$tri[I, ], areas = new_mesh$areas[I],
+                neighbours = new_mesh$neighbours[I]))
 }
 
 #### Plot meshes ####
