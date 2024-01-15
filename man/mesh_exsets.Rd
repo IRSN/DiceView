@@ -21,7 +21,7 @@ mesh_exsets(
 \arguments{
 \item{f}{Function to inverse at 'threshold'}
 
-\item{vectorized}{is f already vectorized ? (default: no)}
+\item{vectorized}{boolean: is f already vectorized ? (default: FALSE) or if function: vectorized version of f.}
 
 \item{threshold}{target value to inverse}
 
