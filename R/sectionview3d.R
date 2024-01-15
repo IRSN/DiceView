@@ -467,7 +467,7 @@ sectionview3d.km <- function(km_model, type = "UK",
 #' @param libKriging_model an object of class \code{"Kriging"}, \code{"NuggetKriging"} or \code{"NoiseKriging"}.
 #' @param col_points color of points.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
-sectionview3d.libKriging <- function(libKriging_model,
+sectionview3d_libKriging <- function(libKriging_model,
                            center = NULL,
                            axis = NULL,
                            npoints = 20,
@@ -576,7 +576,7 @@ sectionview3d.Kriging <- function(Kriging_model,
                                    add = FALSE,
                                    engine3d = NULL,
                                    ...) {
-    sectionview3d.libKriging(Kriging_model,center,axis,npoints,col_points,col_surf,conf_lev,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
+    sectionview3d_libKriging(Kriging_model,center,axis,npoints,col_points,col_surf,conf_lev,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
 
 #' @param NuggetKriging_model an object of class \code{"Kriging"}.
@@ -618,7 +618,7 @@ sectionview3d.NuggetKriging <- function(NuggetKriging_model,
                                 add = FALSE,
                                 engine3d = NULL,
                                 ...) {
-    sectionview3d.libKriging(NuggetKriging_model,center,axis,npoints,col_points,col_surf,conf_lev,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
+    sectionview3d_libKriging(NuggetKriging_model,center,axis,npoints,col_points,col_surf,conf_lev,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
 
 #' @param NoiseKriging_model an object of class \code{"Kriging"}.
@@ -660,7 +660,7 @@ sectionview3d.NoiseKriging <- function(NoiseKriging_model,
                                       add = FALSE,
                                       engine3d = NULL,
                                       ...) {
-    sectionview3d.libKriging(NoiseKriging_model,center,axis,npoints,col_points,col_surf,conf_lev,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
+    sectionview3d_libKriging(NoiseKriging_model,center,axis,npoints,col_points,col_surf,conf_lev,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
 
 #' @param glm_model an object of class \code{"glm"}.
