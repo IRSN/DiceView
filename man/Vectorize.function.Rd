@@ -4,12 +4,16 @@
 \alias{Vectorize.function}
 \title{Vectorize a multidimensional Function}
 \usage{
-Vectorize.function(fun, dim, ...)
+Vectorize.function(fun, dim, .combine = c, .lapply = parallel::mclapply, ...)
 }
 \arguments{
 \item{fun}{'dim'-dimensional function to Vectorize}
 
 \item{dim}{dimension of input arguments of fun}
+
+\item{.combine}{how to combine results (default using c(.))}
+
+\item{.lapply}{how to vectorize FUN call (default is parallel::mclapply)}
 
 \item{...}{optional args to pass to 'Apply.function()', including .combine, .lapply, or optional args passed to 'fun'.}
 }

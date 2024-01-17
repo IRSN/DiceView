@@ -10,7 +10,7 @@ mesh_exsets(
   threshold,
   sign,
   intervals,
-  mesh = "seq",
+  mesh.type = "seq",
   mesh.sizes = 11,
   maxerror_f = 1e-09,
   tol = .Machine$double.eps^0.25,
@@ -29,7 +29,7 @@ mesh_exsets(
 
 \item{intervals}{bounds to inverse in, each column contains min and max of each dimension}
 
-\item{mesh}{function or "unif" or "seq" (default) to preform interval partition}
+\item{mesh.type}{"unif" or "seq" (default) or "LHS" to preform interval partition}
 
 \item{mesh.sizes}{number of parts for mesh (duplicate for each dimension if using "seq")}
 
@@ -39,7 +39,7 @@ mesh_exsets(
 
 \item{ex_filter.tri}{boolean function to validate a geometry::tri as considered in excursion : 'any' or 'all'}
 
-\item{...}{parameters to forward to mesh_roots(...) call}
+\item{...}{parameters to forward to roots_mesh(...) call}
 }
 \description{
 Search excursion set of nD function, sampled by a mesh
@@ -65,7 +65,7 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) { # too long for CRAN on Windows
 
   if (requireNamespace("rgl")) {
     e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-                  threshold = .25,sign=-1, mesh="unif",
+                  threshold = .25,sign=-1, mesh.type="unif",
                   intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
                   maxerror_f=1E-2,tol=1E-2) # for faster testing
 

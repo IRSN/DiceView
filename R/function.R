@@ -35,6 +35,8 @@ Apply.function <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclap
 #' @description Vectorize a d-dimensional (input) function, in the same way that base::Vectorize for 1-dimensional functions.
 #' @param fun 'dim'-dimensional function to Vectorize
 #' @param dim dimension of input arguments of fun
+#' @param .combine how to combine results (default using c(.))
+#' @param .lapply how to vectorize FUN call (default is parallel::mclapply)
 #' @param ... optional args to pass to 'Apply.function()', including .combine, .lapply, or optional args passed to 'fun'.
 #' @return a vectorized function (to be called on matrix argument, on each row)
 #' @export
@@ -44,12 +46,13 @@ Apply.function <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclap
 #'
 #' f2 = function(x)x[1]+x[2]; f2(1:10); F2 = Vectorize.function(f2,2);
 #' F2(cbind(1:10,11:20));
-Vectorize.function <- function(fun, dim, ...) {
+Vectorize.function = function(fun, dim, .combine=c, .lapply=parallel::mclapply, ...) {
     function(X,...) {
         if (!is.matrix(X)) X = matrix(X,ncol=dim)
-        Apply.function(fun,X,...)
+        Apply.function(fun,X, .combine=.combine, .lapply=.lapply,...)
     }
 }
+
 
 #' @title Memoize a function
 #' @description Before each call of a function, check that the cache holds the results and returns it if available. Otherwise, compute f and cache the result for next evluations.

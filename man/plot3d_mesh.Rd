@@ -22,14 +22,14 @@ Plot a three dimensional mesh
 if (identical(Sys.getenv("NOT_CRAN"), "true")) { # too long for CRAN on Windows
 
   plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-                          threshold = .25,sign=-1, mesh="unif",
+                          threshold = .25,sign=-1, mesh.type="unif",
                           maxerror_f=1E-2,tol=1E-2, # faster display
                           intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),
                           engine3d='scatterplot3d')
 
   if (requireNamespace("rgl")) {
     plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
-                            threshold = .25,sign=-1, mesh="unif",
+                            threshold = .25,sign=-1, mesh.type="unif",
                             maxerror_f=1E-2,tol=1E-2, # faster display
                             intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),engine3d='rgl')
   }
