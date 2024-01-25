@@ -117,22 +117,32 @@ mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
 #' @title Plot a one dimensional mesh
 #' @param mesh 1-dimensional mesh to draw
 #' @param y ordinate value where to draw the mesh
-#' @param color color of the mesh
+#' @param color.nodes color of the mesh nodes
+#' @param color.mesh color of the mesh elements
+#' @param alpha transparency of the mesh elements & nodes
 #' @param ... optional arguments passed to plot function
 #' @import graphics
 #' @export
 #' @examples
 #' plot_mesh(mesh_exsets(function(x) x, threshold=.51, sign=1, intervals=rbind(0,1)))
 #' plot_mesh(mesh_exsets(function(x) (x-.5)^2, threshold=.1, sign=-1, intervals=rbind(0,1)))
-plot_mesh = function(mesh,y=0,color='black',...){
-    col.rgb=col2rgb(color)/255
-    plot(x=mesh$p,y=rep(y,length(mesh$p)),ylab="",col=rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4),...)
-    apply(mesh$tri,1,function(tri) lines(mesh$p[tri,],y=rep(y,length(tri)),col=color))
+plot_mesh = function(mesh,y=0,color.nodes='black',color.mesh='darkgray',alpha=0.4, ...){
+    nodes.rgb=col2rgb(color.nodes)/255
+    p = plot(x=mesh$p,y=rep(y,length(mesh$p)),ylab="",col=rgb(nodes.rgb[1,],nodes.rgb[2,],nodes.rgb[3,],alpha),...)
+    mesh.rgb=col2rgb(color.mesh)/255
+    apply(mesh$tri,1,
+          function(tri) {
+              lines(mesh$p[tri,],y=rep(0,length(tri)),col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,],alpha))
+              polygon(x=c(mesh$p[tri,],rev(mesh$p[tri,])),y=c(-1,-1,1,1),border = NA,col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,],alpha))
+          })
+    invisible(p)
 }
 
 #' @title Plot a two dimensional mesh
 #' @param mesh 2-dimensional mesh to draw
-#' @param color color of the mesh
+#' @param color.nodes color of the mesh nodes
+#' @param color.mesh color of the mesh elements
+#' @param alpha transparency of the mesh elements & nodes
 #' @param ... optional arguments passed to plot function
 #' @import graphics
 #' @export
@@ -140,18 +150,24 @@ plot_mesh = function(mesh,y=0,color='black',...){
 #' plot2d_mesh(mesh_exsets(f = function(x) sin(pi*x[1])*sin(pi*x[2]),
 #'                         threshold=0,sign=1, mesh.type="unif",mesh.size=11,
 #'                         intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2)))
-plot2d_mesh = function(mesh,color='black',...){
-    col.rgb=col2rgb(color)/255
-    plot(mesh$p,col=rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4),...)
-    apply(mesh$tri,1,function(tri) polygon(mesh$p[c(tri,tri[1]),],border = color, col = rgb(0,0,0,.2)))
+plot2d_mesh = function(mesh,color.nodes='black',color.mesh='darkgray',alpha=0.4,...){
+    nodes.rgb=col2rgb(color.nodes)/255
+    p = plot(mesh$p,col=rgb(nodes.rgb[1,],nodes.rgb[2,],nodes.rgb[3,],alpha),...)
+    mesh.rgb=col2rgb(color.mesh)/255
+    apply(mesh$tri,1,
+          function(tri)
+              polygon(mesh$p[c(tri,tri[1]),],border = rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,],alpha), col = rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,],alpha)))
     # sapply(1:nrow(mesh$tri),function(i) {xy=colMeans(mesh$p[mesh$tri[i,],]);text(x = xy[1],y=xy[2],paste0(i))})
     # apply(mesh$tri,1,function(tri) points(mesh$p[tri,], col = rgb(0,0,0,1),pch=20))
+    invisible(p)
 }
 
 #' @title Plot a three dimensional mesh
 #' @param mesh 3-dimensional mesh to draw
 #' @param engine3d 3d framework to use: 'rgl' if installed or 'scatterplot3d' (default)
-#' @param color color of the mesh
+#' @param color.nodes color of the mesh nodes
+#' @param color.mesh color of the mesh elements
+#' @param alpha transparency of the mesh elements & nodes
 #' @param ... optional arguments passed to plot function
 #' @export
 #' @examples
@@ -170,14 +186,15 @@ plot2d_mesh = function(mesh,color='black',...){
 #'                             intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),engine3d='rgl')
 #'   }
 #' }
-plot3d_mesh = function(mesh,engine3d=NULL,color='black',...){
-    col.rgb=col2rgb(color)/255
+plot3d_mesh = function(mesh,engine3d=NULL,color.nodes='black',color.mesh='darkgray',alpha=0.4,...){
+    nodes.rgb=col2rgb(color.nodes)/255
     package = load3d(engine3d)
     if (is.null(package)) return()
-    p3d = plot3d(mesh$p,col=rgb(col.rgb[1,],col.rgb[2,],col.rgb[3,],0.4), package=package,...)
+    p3d = plot3d(mesh$p,col=rgb(nodes.rgb[1,],nodes.rgb[2,],nodes.rgb[3,],alpha), package=package,...)
+    mesh.rgb=col2rgb(color.mesh)/255
     apply(mesh$tri,1,function(tri) {
-        quads3d(mesh$p[tri,],col=color,alpha=0.05, package=package)
-        quads3d(mesh$p[tri,][c(4,3,2,1),],col=color,alpha=0.05, package=package)
+        quads3d(mesh$p[tri,],col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,]),alpha=alpha/10, package=package)
+        quads3d(mesh$p[tri,][c(4,3,2,1),],col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,]),alpha=alpha/10, package=package)
         # triangles3d(mesh$p[tri,][-1,],col=color,alpha=0.05, package=package)
         # triangles3d(mesh$p[tri,][-2,],col=color,alpha=0.05, package=package)
         # triangles3d(mesh$p[tri,][-3,],col=color,alpha=0.05, package=package)

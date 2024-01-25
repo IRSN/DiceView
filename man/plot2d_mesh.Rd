@@ -4,12 +4,22 @@
 \alias{plot2d_mesh}
 \title{Plot a two dimensional mesh}
 \usage{
-plot2d_mesh(mesh, color = "black", ...)
+plot2d_mesh(
+  mesh,
+  color.nodes = "black",
+  color.mesh = "darkgray",
+  alpha = 0.4,
+  ...
+)
 }
 \arguments{
 \item{mesh}{2-dimensional mesh to draw}
 
-\item{color}{color of the mesh}
+\item{color.nodes}{color of the mesh nodes}
+
+\item{color.mesh}{color of the mesh elements}
+
+\item{alpha}{transparency of the mesh elements & nodes}
 
 \item{...}{optional arguments passed to plot function}
 }

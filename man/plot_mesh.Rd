@@ -4,14 +4,25 @@
 \alias{plot_mesh}
 \title{Plot a one dimensional mesh}
 \usage{
-plot_mesh(mesh, y = 0, color = "black", ...)
+plot_mesh(
+  mesh,
+  y = 0,
+  color.nodes = "black",
+  color.mesh = "darkgray",
+  alpha = 0.4,
+  ...
+)
 }
 \arguments{
 \item{mesh}{1-dimensional mesh to draw}
 
 \item{y}{ordinate value where to draw the mesh}
 
-\item{color}{color of the mesh}
+\item{color.nodes}{color of the mesh nodes}
+
+\item{color.mesh}{color of the mesh elements}
+
+\item{alpha}{transparency of the mesh elements & nodes}
 
 \item{...}{optional arguments passed to plot function}
 }

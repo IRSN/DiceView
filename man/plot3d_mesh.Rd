@@ -4,14 +4,25 @@
 \alias{plot3d_mesh}
 \title{Plot a three dimensional mesh}
 \usage{
-plot3d_mesh(mesh, engine3d = NULL, color = "black", ...)
+plot3d_mesh(
+  mesh,
+  engine3d = NULL,
+  color.nodes = "black",
+  color.mesh = "darkgray",
+  alpha = 0.4,
+  ...
+)
 }
 \arguments{
 \item{mesh}{3-dimensional mesh to draw}
 
 \item{engine3d}{3d framework to use: 'rgl' if installed or 'scatterplot3d' (default)}
 
-\item{color}{color of the mesh}
+\item{color.nodes}{color of the mesh nodes}
+
+\item{color.mesh}{color of the mesh elements}
+
+\item{alpha}{transparency of the mesh elements & nodes}
 
 \item{...}{optional arguments passed to plot function}
 }
