@@ -84,6 +84,9 @@ contourview.function <- function(fun, vectorized=FALSE,
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
 
+    if (!exists(".split.screen.lim",envir=DiceView.env))
+        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
+
     ## Changed by YD: a vector
     ## if (is.null(dim(npoints))) { npoints <- rep(npoints,D) }
     npoints <- rep(npoints, length.out = D)
@@ -281,6 +284,9 @@ contourview.matrix <- function(X, y, sdy=NULL,
         }
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
+
+    if (!exists(".split.screen.lim",envir=DiceView.env))
+        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
 
     ## Each 'id' will produce a plot
     for (id in 1:dim(axis)[1]) {

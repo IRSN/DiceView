@@ -84,6 +84,9 @@ sectionview.function <- function(fun, vectorized=FALSE,
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
 
+    if (!exists(".split.screen.lim",envir=DiceView.env))
+        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
+
     npoints <- rep(npoints, length.out = D)
 
     ## find limits: 'rx' is matrix with min in row 1 and max in row 2
@@ -274,6 +277,9 @@ sectionview.matrix<- function(X, y, sdy=NULL,
         }
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
+
+    if (!exists(".split.screen.lim",envir=DiceView.env))
+        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- "y"

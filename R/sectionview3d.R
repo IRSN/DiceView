@@ -87,6 +87,9 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
 
+    if (!exists(".split.screen.lim",envir=DiceView.env))
+        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
+
     ## Changed by YD: a vector
     ## if (is.null(dim(npoints))) { npoints <- rep(npoints,D) }
     npoints <- rep(npoints, length.out = D)
@@ -295,6 +298,9 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
         }
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
+
+    if (!exists(".split.screen.lim",envir=DiceView.env))
+        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
 
     if (is.null(conf_blend) || length(conf_blend) != length(conf_lev)) {
         conf_blend <- rep(0.5/length(conf_lev), length(conf_lev))
