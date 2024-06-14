@@ -28,8 +28,7 @@
   axis = NULL,
   npoints = 100,
   col_surf = "blue",
-  conf_lev = c(0.5, 0.8, 0.9, 0.95, 0.99),
-  conf_blend = NULL,
+  conf_blend = 0.5,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -46,9 +45,7 @@
   sdy = NULL,
   center = NULL,
   axis = NULL,
-  npoints = 100,
   col_points = "red",
-  conf_lev = c(0.5, 0.8, 0.9, 0.95, 0.99),
   conf_blend = NULL,
   bg_blend = 5,
   mfrow = NULL,
@@ -69,8 +66,8 @@
   npoints = 100,
   col_points = "red",
   col_surf = "blue",
-  conf_lev = c(0.5, 0.8, 0.9, 0.95, 0.99),
-  conf_blend = NULL,
+  conf_level = 0.95,
+  conf_blend = 0.5,
   bg_blend = 5,
   mfrow = NULL,
   Xlab = NULL,
@@ -89,8 +86,8 @@
   npoints = 100,
   col_points = "red",
   col_surf = "blue",
-  conf_lev = c(0.5, 0.8, 0.9, 0.95, 0.99),
-  conf_blend = NULL,
+  conf_level = 0.95,
+  conf_blend = 0.5,
   bg_blend = 5,
   mfrow = NULL,
   Xlab = NULL,
@@ -109,7 +106,7 @@
   npoints = 100,
   col_points = "red",
   col_surf = "blue",
-  conf_lev = c(0.5, 0.8, 0.9, 0.95, 0.99),
+  conf_level = c(0.5, 0.8, 0.9, 0.95, 0.99),
   conf_blend = NULL,
   bg_blend = 5,
   mfrow = NULL,
@@ -129,8 +126,8 @@
   npoints = 100,
   col_points = "red",
   col_surf = "blue",
-  conf_lev = c(0.5, 0.8, 0.9, 0.95, 0.99),
-  conf_blend = NULL,
+  conf_level = 0.95,
+  conf_blend = 0.5,
   bg_blend = 5,
   mfrow = NULL,
   Xlab = NULL,
@@ -149,8 +146,8 @@
   npoints = 100,
   col_points = "red",
   col_surf = "blue",
-  conf_lev = c(0.5, 0.8, 0.9, 0.95, 0.99),
-  conf_blend = NULL,
+  conf_level = 0.95,
+  conf_blend = 0.5,
   bg_blend = 5,
   mfrow = NULL,
   Xlab = NULL,
@@ -197,8 +194,6 @@ sectionview(...)
 
 \item{col_surf}{color for the surface.}
 
-\item{conf_lev}{an optional list of confidence interval values to display.}
-
 \item{conf_blend}{an optional factor of alpha (color channel) blending used to plot confidence intervals.}
 
 \item{mfrow}{an optional list to force \code{par(mfrow = ...)} call. The default value  \code{NULL} is automatically set for compact view.}
@@ -230,6 +225,8 @@ sectionview(...)
 \item{km_model}{an object of class \code{"km"}.}
 
 \item{type}{the kriging type to use for model prediction.}
+
+\item{conf_level}{an optional list of confidence interval values to display.}
 
 \item{Kriging_model}{an object of class \code{"Kriging"}.}
 

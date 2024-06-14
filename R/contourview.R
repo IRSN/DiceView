@@ -1,6 +1,7 @@
 #' @param fun a function or 'predict()'-like function that returns a simple numeric or mean and standard error: list(mean=...,se=...).
 #' @param vectorized is fun vectorized?
 #' @param dim input variables dimension of the model or function.
+#' @param conf_blend alpha shadow to apply on fun standard error (se) if returned.
 #' @template contourview-doc
 #' @rdname contourview
 #' @method contourview function
@@ -12,8 +13,8 @@
 #' x1 <- rnorm(15)
 #' x2 <- rnorm(15)
 #'
-#'
 #' y <- x1 + x2 + rnorm(15)
+#'
 #' model <- lm(y ~ x1 + x2)
 #'
 #' contourview(function(x) sum(x),
@@ -32,9 +33,11 @@ contourview.function <- function(fun, vectorized=FALSE,
                              center = NULL,
                              axis = NULL,
                              npoints = 20,
-                             nlevels = 10,
-                             col_surf = "blue",
-                             filled = FALSE,
+                             nlevels = if (is.null(levels)) 10 else length(levels),
+                             levels = NULL,
+                             lty_levels = 3,
+                             col_levels = "blue",
+                             conf_blend = 0.5,
                              mfrow = NULL,
                              Xlab = NULL, ylab = NULL,
                              Xlim = NULL,
@@ -64,10 +67,6 @@ contourview.function <- function(fun, vectorized=FALSE,
     } else {
         ## added by YD for the vector case
         axis <- matrix(axis, ncol = 2)
-    }
-
-    if (length(col)==1 && isTRUE(filled)) {
-        col_surf.fill = col.levels(col_surf,nlevels-1)
     }
 
     if (is.null(mfrow) && (D>2)) {
@@ -140,11 +139,13 @@ contourview.function <- function(fun, vectorized=FALSE,
         yd_sd <- matrix(0,npoints[1], npoints[2])
 
         y <- Fun(as.matrix(x))
+        y_has_sd = FALSE
         if (is.list(y)) {
             if (!("mean" %in% names(y)) || !("se" %in% names(y)))
                 stop(paste0("If function returns a list, it must have 'mean' and 'se', while had ",paste0(collapse=",",names(y))))
             y_mean <- as.numeric(y$mean)
             y_sd <- as.numeric(y$se)
+            y_has_sd = TRUE
         } else { # simple function, not a list
             if (!is.numeric(y))
                 stop("If function does not returns a list, it must be numeric.")
@@ -154,11 +155,12 @@ contourview.function <- function(fun, vectorized=FALSE,
         yd_mean <- matrix(y_mean,ncol=npoints[2],nrow=npoints[1])
         yd_sd <- matrix(y_sd,ncol=npoints[2],nrow=npoints[1])
 
+        if (is.null(levels)) levels = pretty(y_mean,nlevels)
+
         if (is.null(title)){
+            title_d <- paste(collapse = "~",sep = "~", ylab, paste(collapse = ",", sep = ",", Xlab[d[1]], Xlab[d[2]]))
             if (D>2) {
-                title_d <-  paste(collapse = ", ", paste(Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
-            } else {
-                title_d <- paste(collapse = "~", ylab, paste(collapse = ",", Xlab[d[1]], Xlab[d[2]]))
+                title_d <-  paste(collapse = "|", sep = "|", title_d,paste(Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
             }
         } else {
             title_d <-  title
@@ -171,13 +173,10 @@ contourview.function <- function(fun, vectorized=FALSE,
             xlim <- c(.split.screen.lim[id,1],.split.screen.lim[id,2])
             ylim <- c(.split.screen.lim[id,3],.split.screen.lim[id,4])
             zlim <- c(.split.screen.lim[id,5],.split.screen.lim[id,6])
-            if (isTRUE(filled))
-                warning("add=TRUE, so filled=TRUE disabled to not shadow previous plot")
             contour(x = xd1,y = xd2, z = yd_mean,
                     xlim = xlim, ylim = ylim, zlim = zlim,
-                    col = col_surf,  lty = 3,
-                    nlevels = nlevels,
-                    levels = pretty(y_mean,nlevels),
+                    col = col_levels,  lty = lty_levels,
+                    levels = levels,
                     add=TRUE,
                     ...)
         } else {
@@ -185,18 +184,13 @@ contourview.function <- function(fun, vectorized=FALSE,
             ylim = rx[,d[2]]
             zlim = range(yd_mean)
             eval(parse(text=paste(".split.screen.lim[",id,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
-            if (isTRUE(filled))
-                .filled.contour(x = xd1,y = xd2, z = yd_mean,
-                                col = col_surf.fill,
-                                levels = pretty(y_mean,nlevels))
             contour(x = xd1, y = xd2, z = yd_mean,
                     xlab = Xlab[d[1]], ylab = Xlab[d[2]],
                     xlim = xlim, ylim = ylim, zlim = zlim,
                     main = title_d,
-                    col = col_surf,  lty = 3,
-                    nlevels = nlevels,
-                    levels = pretty(y_mean,nlevels),
-                    add=isTRUE(filled),
+                    col = col_levels,  lty = lty_levels,
+                    levels = levels,
+                    add=FALSE,
                     ...)
             if(D>2) {
                 abline(v=center[d[1]],col='black',lty=2)
@@ -204,13 +198,21 @@ contourview.function <- function(fun, vectorized=FALSE,
             }
         }
 
-        ## fade the contour according to kriging sd
-        col_surf_rgba = col2rgb("white")
-        col_sd = rgb(col_surf_rgba[1]/255,col_surf_rgba[2]/255,col_surf_rgba[3]/255,seq(from=0,to=1,length=nlevels-1))
-        image(x = xd1,y = xd2, z = yd_sd,
-              col = col_sd, breaks=seq(from=min(yd_sd),to=max(yd_sd),length=length(col_sd)+1),
-              add=TRUE)
+        if (y_has_sd && any(y_sd>0)) {
+            for (i in 1:length(levels)) {
+                .filled.contour(x = xd1, y = xd2, z = abs(yd_mean - levels[i])-yd_sd,
+                                #xlim = xlim, ylim = ylim, zlim = zlim,
+                                col = fade(col_levels,alpha = 1-conf_blend),
+                                levels = c(-max(y_sd),0))
+                #.filled.contour(x = xd1, y = xd2, z = abs(yd_mean - levels[i])-0.25*yd_sd,
+                #                #xlim = xlim, ylim = ylim, zlim = zlim,
+                #                col = fade(col_levels,alpha = (1-0.25)*conf_blend),
+                #                levels = c(-max(y_sd),0))
 
+            }
+
+
+        }
     }
 }
 
@@ -340,6 +342,8 @@ contourview.matrix <- function(X, y, sdy=NULL,
 #' @param type the kriging type to use for model prediction.
 #' @param col_points color of points.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_level confidence level hull to display.
+#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence hull.
 #' @template contourview-doc
 #' @rdname contourview
 #' @method contourview km
@@ -362,10 +366,12 @@ contourview.km <- function(km_model, type = "UK",
                            center = NULL,
                            axis = NULL,
                            npoints = 20,
-                           nlevels = 10,
+                           nlevels = if (is.null(levels)) 10 else length(levels),
+                           levels = NULL,
                            col_points = "red",
-                           col_surf = "blue",
-                           filled = FALSE,
+                           col_levels = "blue",
+                           conf_level = 0.5,
+                           conf_blend = conf_level,
                            bg_blend = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
@@ -406,10 +412,10 @@ contourview.km <- function(km_model, type = "UK",
     contourview.function(
         fun = function(x) {
             p = DiceKriging::predict.km(km_model,type=type,newdata=x,checkNames=FALSE)
-            list(mean=p$mean, se=p$sd)
+            list(mean=p$mean, se=qnorm(1-(1-conf_level)/2) * p$sd) # to dosplay gaussian conf interval
         }, vectorized=TRUE,
-    dim = D, center = center,axis = axis,npoints = npoints, nlevels = nlevels,
-    col_surf = col_surf,filled = filled,
+    dim = D, center = center,axis = axis,npoints = npoints, nlevels = nlevels, levels = levels,
+    col_levels = col_levels,conf_blend = conf_blend,
     mfrow = mfrow, Xlab = Xlab, ylab = ylab,
     Xlim = rx, title = title, add = add, ...)
 
@@ -425,15 +431,19 @@ contourview.km <- function(km_model, type = "UK",
 
 #' @param libKriging_model an object of class \code{"Kriging"}, \code{"NuggetKriging"} or \code{"NoiseKriging"}.
 #' @param col_points color of points.
+#' @param conf_level confidence level hull to display.
+#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence hull.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
 contourview_libKriging <- function(libKriging_model,
                            center = NULL,
                            axis = NULL,
                            npoints = 20,
-                           nlevels = 10,
+                           nlevels = if (is.null(levels)) 10 else length(levels),
+                           levels = NULL,
                            col_points = "red",
-                           col_surf = "blue",
-                           filled = FALSE,
+                           col_levels = "blue",
+                           conf_level = 0.5,
+                           conf_blend = conf_level,
                            bg_blend = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
@@ -476,10 +486,10 @@ contourview_libKriging <- function(libKriging_model,
 
     contourview.function(fun = function(x) {
             p = rlibkriging::predict(libKriging_model,x,stdev=TRUE)
-            list(mean=p$mean, se=p$stdev)
+            list(mean=p$mean, se=qnorm(1-(1-conf_level)/2) * p$sd) # to dosplay gaussian conf interval
         }, vectorized=TRUE,
         dim = D, center = center,axis = axis,npoints = npoints,nlevels = nlevels,
-        col_surf = col_surf,filled = filled,
+        col_levels = col_levels, conf_blend = conf_blend,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 
@@ -495,6 +505,8 @@ contourview_libKriging <- function(libKriging_model,
 #' @param Kriging_model an object of class \code{"Kriging"}.
 #' @param col_points color of points.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_level confidence level hull to display.
+#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence hull.
 #' @template contourview-doc
 #' @rdname contourview
 #' @method contourview Kriging
@@ -517,10 +529,12 @@ contourview.Kriging <- function(Kriging_model,
                                    center = NULL,
                                    axis = NULL,
                                    npoints = 20,
-                                   nlevels = 10,
+                                   nlevels = if (is.null(levels)) 10 else length(levels),
+                                   levels = NULL,
                                    col_points = "red",
-                                   col_surf = "blue",
-                                   filled = FALSE,
+                                   col_levels = "blue",
+                                   conf_level = 0.5,
+                                   conf_blend = conf_level,
                                    bg_blend = 1,
                                    mfrow = NULL,
                                    Xlab = NULL, ylab = NULL,
@@ -528,12 +542,14 @@ contourview.Kriging <- function(Kriging_model,
                                    title = NULL,
                                    add = FALSE,
                                    ...) {
-    contourview_libKriging(Kriging_model,center,axis,npoints,nlevels,col_points,col_surf,filled,bg_blend,mfrow,Xlab, ylab,Xlim,title,add,...)
+    contourview_libKriging(Kriging_model,center,axis,npoints,nlevels,levels,col_points,col_levels,conf_level,bg_blend,mfrow,Xlab, ylab,Xlim,title,add,...)
 }
 
 #' @param NuggetKriging_model an object of class \code{"Kriging"}.
 #' @param col_points color of points.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_level confidence level hull to display.
+#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence hull.
 #' @template contourview-doc
 #' @rdname contourview
 #' @method contourview NuggetKriging
@@ -556,10 +572,12 @@ contourview.NuggetKriging <- function(NuggetKriging_model,
                                 center = NULL,
                                 axis = NULL,
                                 npoints = 20,
-                                nlevels = 10,
+                                nlevels = if (is.null(levels)) 10 else length(levels),
+                                levels = NULL,
                                 col_points = "red",
-                                col_surf = "blue",
-                                filled = FALSE,
+                                col_levels = "blue",
+                                conf_level = 0.5,
+                                conf_blend = conf_level,
                                 bg_blend = 1,
                                 mfrow = NULL,
                                 Xlab = NULL, ylab = NULL,
@@ -567,12 +585,14 @@ contourview.NuggetKriging <- function(NuggetKriging_model,
                                 title = NULL,
                                 add = FALSE,
                                 ...) {
-    contourview_libKriging(NuggetKriging_model,center,axis,npoints,nlevels,col_points,col_surf,filled,bg_blend,mfrow,Xlab, ylab,Xlim,title,add,...)
+    contourview_libKriging(NuggetKriging_model,center,axis,npoints,nlevels,levels,col_points,col_levels,conf_level,bg_blend,mfrow,Xlab, ylab,Xlim,title,add,...)
 }
 
 #' @param NoiseKriging_model an object of class \code{"Kriging"}.
 #' @param col_points color of points.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_level confidence level hull to display.
+#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence hull.
 #' @template contourview-doc
 #' @rdname contourview
 #' @method contourview NoiseKriging
@@ -595,10 +615,12 @@ contourview.NoiseKriging <- function(NoiseKriging_model,
                                       center = NULL,
                                       axis = NULL,
                                       npoints = 20,
-                                      nlevels = 10,
+                                      nlevels = if (is.null(levels)) 10 else length(levels),
+                                      levels = NULL,
                                       col_points = "red",
-                                      col_surf = "blue",
-                                      filled = FALSE,
+                                      col_levels = "blue",
+                                      conf_level = 0.5,
+                                      conf_blend = conf_level,
                                       bg_blend = 1,
                                       mfrow = NULL,
                                       Xlab = NULL, ylab = NULL,
@@ -606,12 +628,14 @@ contourview.NoiseKriging <- function(NoiseKriging_model,
                                       title = NULL,
                                       add = FALSE,
                                       ...) {
-    contourview_libKriging(NoiseKriging_model,center,axis,npoints,nlevels,col_points,col_surf,filled,bg_blend,mfrow,Xlab, ylab,Xlim,title,add,...)
+    contourview_libKriging(NoiseKriging_model,center,axis,npoints,nlevels,levels,col_points,col_levels,conf_level,bg_blend,mfrow,Xlab, ylab,Xlim,title,add,...)
 }
 
 #' @param glm_model an object of class \code{"glm"}.
 #' @param col_points color of points.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_level confidence level hull to display.
+#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence hull.
 #' @template contourview-doc
 #' @rdname contourview
 #' @method contourview glm
@@ -631,10 +655,12 @@ contourview.glm <- function(glm_model,
                            center = NULL,
                            axis = NULL,
                            npoints = 20,
-                           nlevels = 10,
+                           nlevels = if (is.null(levels)) 10 else length(levels),
+                           levels = NULL,
                            col_points = "red",
-                           col_surf = "blue",
-                           filled = FALSE,
+                           col_levels = "blue",
+                           conf_level = 0.5,
+                           conf_blend = conf_level,
                            bg_blend = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
@@ -678,10 +704,10 @@ contourview.glm <- function(glm_model,
             x = as.data.frame(x)
             colnames(x) <- Xlab
             p = predict.glm(glm_model, newdata=x, se.fit=TRUE)
-            list(mean=p$fit, se=p$se.fit)
+            list(mean=p$fit, se=qnorm(1-(1-conf_level)/2) * p$se.fit)
         }, vectorized=TRUE,
-        dim = D, center = center,axis = axis, npoints = npoints, nlevels = nlevels,
-        col_surf = col_surf,filled = filled,
+        dim = D, center = center,axis = axis, npoints = npoints, nlevels = nlevels, levels = levels,
+        col_levels = col_levels, conf_blend = conf_blend,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 
@@ -698,6 +724,7 @@ contourview.glm <- function(glm_model,
 #' @param modelFit_model an object returned by DiceEval::modelFit.
 #' @param col_points color of points.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_blend an optional factor of alpha (color channel) blending used to plot standard error (if any) hull.
 #' @template contourview-doc
 #' @rdname contourview
 #' @method contourview list
@@ -720,11 +747,12 @@ contourview.list <- function(modelFit_model,
                             center = NULL,
                             axis = NULL,
                             npoints = 20,
-                            nlevels = 10,
+                            nlevels = if (is.null(levels)) 10 else length(levels),
+                            levels = NULL,
                             col_points = "red",
-                            col_surf = "blue",
+                            col_levels = "blue",
+                            conf_blend = 0.5,
                             bg_blend = 1,
-                            filled = FALSE,
                             mfrow = NULL,
                             Xlab = NULL, ylab = NULL,
                             Xlim = NULL,
@@ -762,8 +790,8 @@ contourview.list <- function(modelFit_model,
             colnames(x) <- Xlab
             DiceEval::modelPredict(modelFit_model, x)
         }, vectorized=TRUE,
-        dim = D, center = center,axis = axis, npoints = npoints, nlevels = nlevels,
-        col_surf = col_surf, filled = filled,
+        dim = D, center = center,axis = axis, npoints = npoints, nlevels = nlevels, levels = levels,
+        col_levels = col_levels, conf_blend=conf_blend,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 

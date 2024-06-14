@@ -1,7 +1,7 @@
 #' @param fun a function or 'predict()'-like function that returns a simple numeric or mean and standard error: list(mean=...,se=...).
 #' @param vectorized is fun vectorized?
 #' @param dim input variables dimension of the model or function.
-#' @param conf_lev an optional list of confidence interval values to display.
+#' @param conf_level an optional list of confidence interval values to display.
 #' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
 #' @template sectionview3d-doc
 #' @rdname sectionview3d
@@ -35,8 +35,8 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
                              axis = NULL,
                              npoints = 20,
                              col_surf = "blue",
-                             conf_lev = c(0.95),
-                             conf_blend = NULL,
+                             conf_level = 0.95,
+                             conf_blend = 0.5,
                              mfrow = NULL,
                              Xlab = NULL, ylab = NULL,
                              Xlim = NULL, ylim = NULL,
@@ -93,10 +93,6 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
     ## Changed by YD: a vector
     ## if (is.null(dim(npoints))) { npoints <- rep(npoints,D) }
     npoints <- rep(npoints, length.out = D)
-
-    if (is.null(conf_blend) || length(conf_blend) != length(conf_lev)) {
-        conf_blend <- rep(0.5/length(conf_lev), length(conf_lev))
-    }
 
     ## find limits: 'rx' is matrix with min in row 1 and max in row 2
     if(!is.null(Xlim))
@@ -164,10 +160,9 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
         yd_sd <- matrix(y_sd,ncol=npoints[2],nrow=npoints[1])
 
         if (is.null(title)){
+            title_d <- paste(collapse = "~",sep = "~", ylab, paste(collapse = ",", sep = ",", Xlab[d[1]], Xlab[d[2]]))
             if (D>2) {
-                title_d <-  paste(collapse = ", ", paste(Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
-            } else {
-                title_d <- paste(collapse = "~", ylab, paste(collapse = ",", Xlab[d[1]], Xlab[d[2]]))
+                title_d <-  paste(collapse = "|", sep = "|", title_d,paste(Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
             }
         } else {
             title_d <-  title
@@ -200,22 +195,22 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
                 box = FALSE)
 
         ## add  "confidence surfaces"
-        for (p in 1:length(conf_lev)) {
+        #for (p in 1:length(conf_level)) {
             surface3d(x = xd1,
                     y = xd2,
-                    z = qnorm((1+conf_lev[p])/2, y_mean, y_sd),
+                    z =  y_mean + y_sd,
                     col = col_surf,
-                    alpha = conf_blend[p],
+                    alpha = conf_blend,
                     box = FALSE)
 
             surface3d(x = xd1,
                     y = xd2,
-                    z = qnorm((1-conf_lev[p])/2, y_mean, y_sd),
+                    z = y_mean - y_sd,
                     col = col_surf,
-                    alpha = conf_blend[p],
+                    alpha = conf_blend,
                     box = FALSE)
 
-        }
+        #}
     }
 }
 
@@ -224,7 +219,7 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
 #' @param y the array of output values.
 #' @param sdy optional array of output standard error.
 #' @param col_points color of points.
-#' @param conf_lev an optional list of confidence interval values to display.
+#' @param conf_level an optional list of confidence interval values to display.
 #' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
 #' @template sectionview3d-doc
@@ -243,8 +238,8 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
                              center = NULL,
                              axis = NULL,
                              col_points = "red",
-                             conf_lev = c(0.95),
-                             conf_blend = NULL,
+                             conf_level = 0.95,
+                             conf_blend = 0.5,
                              bg_blend = 1,
                              mfrow = NULL,
                              Xlab = NULL, ylab = NULL,
@@ -302,8 +297,8 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
     if (!exists(".split.screen.lim",envir=DiceView.env))
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
 
-    if (is.null(conf_blend) || length(conf_blend) != length(conf_lev)) {
-        conf_blend <- rep(0.5/length(conf_lev), length(conf_lev))
+    if (is.null(conf_blend) || length(conf_blend) != length(conf_level)) {
+        conf_blend <- rep(0.5/length(conf_level), length(conf_level))
     }
 
     ## Each 'id' will produce a plot
@@ -354,24 +349,25 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
         }
 
         if (!is.null(sdy))
-            for (p in 1:length(conf_lev)) {
+            #for (p in 1:length(conf_level)) {
                 for (i in 1:n) {
                     lines3d(x = c(X_doe[i, d[1]], X_doe[i, d[1]]),
                     y = c(X_doe[i, d[2]], X_doe[i, d[2]]),
-                    z = c(qnorm((1+conf_lev[p])/2, y_doe[i], sdy_doe[i]),
-                          qnorm((1-conf_lev[p])/2, y_doe[i], sdy_doe[i])),
+                    z = c( y_doe[i]+ sdy_doe[i],
+                           y_doe[i]- sdy_doe[i]),
                     col = col_points,
-                    alpha = alpha[i]*conf_blend[p],
+                    alpha = alpha[i]*conf_blend,
                     lwd = 5, lend = 1, box = FALSE)
-                }}
+                }
+            #}
         # else
-        #     for (p in 1:length(conf_lev)) {
+        #     for (p in 1:length(conf_level)) {
         #         for (i in 1:n) {
         #             points3d(x = X_doe[i, d[1]],
         #              y = X_doe[i, d[2]],
         #              z = y_doe[i],
         #              col = col_points,
-        #              alpha = alpha[i]*conf_blend[p],
+        #              alpha = alpha[i]*conf_blend,
         #              pch = 15, box = FALSE)
         #         }}
     }
@@ -380,7 +376,7 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
 #' @param km_model an object of class \code{"km"}.
 #' @param type the kriging type to use for model prediction.
 #' @param col_points color of points.
-#' @param conf_lev an optional list of confidence interval values to display.
+#' @param conf_level an optional list of confidence interval values to display.
 #' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
 #' @template sectionview3d-doc
@@ -407,8 +403,8 @@ sectionview3d.km <- function(km_model, type = "UK",
                            npoints = 20,
                            col_points = "red",
                            col_surf = "blue",
-                           conf_lev = c(0.95),
-                           conf_blend = NULL,
+                           conf_level = 0.95,
+                           conf_blend = 0.5,
                            bg_blend = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
@@ -447,23 +443,23 @@ sectionview3d.km <- function(km_model, type = "UK",
         axis <- matrix(axis, ncol = 2)
     }
 
-    if (is.null(conf_blend) || length(conf_blend) != length(conf_lev)) {
-        conf_blend <- rep(0.5/length(conf_lev), length(conf_lev))
+    if (is.null(conf_blend) || length(conf_blend) != length(conf_level)) {
+        conf_blend <- rep(0.5/length(conf_level), length(conf_level))
     }
 
     sectionview3d.function(
         fun = function(x) {
             p = DiceKriging::predict.km(km_model,type=type,newdata=x,checkNames=FALSE)
-            list(mean=p$mean, se=p$sd)
+            list(mean=p$mean, se=qnorm(1-(1-conf_level)/2) * p$sd)
         }, vectorized=TRUE,
     dim = D, center = center,axis = axis,npoints = npoints,
-    col_surf = col_surf,conf_lev=conf_lev, conf_blend=conf_blend,
+    col_surf = col_surf,conf_level=conf_level, conf_blend=conf_blend,
     mfrow = mfrow, Xlab = Xlab, ylab = ylab,
     Xlim = rx, ylim=ylim,title = title, add = add, engine3d=engine3d, ...)
 
     sectionview3d.matrix(X = X_doe, y = y_doe, sdy = sdy_doe,
                        dim = D, center = center, axis = axis,
-                       col_points = col_points, conf_lev = conf_lev, conf_blend = conf_blend, bg_blend = bg_blend,
+                       col_points = col_points, conf_level = conf_level, conf_blend = conf_blend, bg_blend = bg_blend,
                        mfrow = mfrow,
                        Xlim = rx, ylim=ylim, engine3d=engine3d,
                        add=TRUE)
@@ -479,8 +475,8 @@ sectionview3d_libKriging <- function(libKriging_model,
                            npoints = 20,
                            col_points = "red",
                            col_surf = "blue",
-                           conf_lev = c(0.95),
-                           conf_blend = NULL,
+                           conf_level = 0.95,
+                           conf_blend = 0.5,
                            bg_blend = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
@@ -522,22 +518,22 @@ sectionview3d_libKriging <- function(libKriging_model,
         axis <- matrix(axis, ncol = 2)
     }
 
-    if (is.null(conf_blend) || length(conf_blend) != length(conf_lev)) {
-        conf_blend <- rep(0.5/length(conf_lev), length(conf_lev))
+    if (is.null(conf_blend) || length(conf_blend) != length(conf_level)) {
+        conf_blend <- rep(0.5/length(conf_level), length(conf_level))
     }
 
     sectionview3d.function(fun = function(x) {
             p = rlibkriging::predict(libKriging_model,x,stdev=TRUE)
-            list(mean=p$mean, se=p$stdev)
+            list(mean=p$mean, se=qnorm(1-(1-conf_level)/2) * p$stdev)
         }, vectorized=TRUE,
         dim = D, center = center,axis = axis,npoints = npoints,
-        col_surf = col_surf,conf_lev=conf_lev, conf_blend=conf_blend,
+        col_surf = col_surf,conf_level=conf_level, conf_blend=conf_blend,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, ylim=ylim, title = title, add = add, engine3d=engine3d, ...)
 
     sectionview3d.matrix(X = X_doe, y = y_doe, sdy = sdy_doe,
                          dim = D, center = center, axis = axis,
-                         col_points = col_points, conf_lev = conf_lev, conf_blend = conf_blend, bg_blend = bg_blend,
+                         col_points = col_points, conf_level = conf_level, conf_blend = conf_blend, bg_blend = bg_blend,
                          mfrow = mfrow,
                          Xlim = rx, ylim=ylim, engine3d=engine3d,
                          add=TRUE)
@@ -545,7 +541,7 @@ sectionview3d_libKriging <- function(libKriging_model,
 
 #' @param Kriging_model an object of class \code{"Kriging"}.
 #' @param col_points color of points.
-#' @param conf_lev an optional list of confidence interval values to display.
+#' @param conf_level an optional list of confidence interval values to display.
 #' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
 #' @template sectionview3d-doc
@@ -572,8 +568,8 @@ sectionview3d.Kriging <- function(Kriging_model,
                                    npoints = 20,
                                    col_points = "red",
                                    col_surf = "blue",
-                                   conf_lev = c(0.95),
-                                   conf_blend = NULL,
+                                   conf_level = 0.95,
+                                   conf_blend = 0.5,
                                    bg_blend = 1,
                                    mfrow = NULL,
                                    Xlab = NULL, ylab = NULL,
@@ -582,12 +578,12 @@ sectionview3d.Kriging <- function(Kriging_model,
                                    add = FALSE,
                                    engine3d = NULL,
                                    ...) {
-    sectionview3d_libKriging(Kriging_model,center,axis,npoints,col_points,col_surf,conf_lev,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
+    sectionview3d_libKriging(Kriging_model,center,axis,npoints,col_points,col_surf,conf_level,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
 
 #' @param NuggetKriging_model an object of class \code{"Kriging"}.
 #' @param col_points color of points.
-#' @param conf_lev an optional list of confidence interval values to display.
+#' @param conf_level an optional list of confidence interval values to display.
 #' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
 #' @template sectionview3d-doc
@@ -614,8 +610,8 @@ sectionview3d.NuggetKriging <- function(NuggetKriging_model,
                                 npoints = 20,
                                 col_points = "red",
                                 col_surf = "blue",
-                                conf_lev = c(0.95),
-                                conf_blend = NULL,
+                                conf_level = 0.95,
+                                conf_blend = 0.5,
                                 bg_blend = 1,
                                 mfrow = NULL,
                                 Xlab = NULL, ylab = NULL,
@@ -624,12 +620,12 @@ sectionview3d.NuggetKriging <- function(NuggetKriging_model,
                                 add = FALSE,
                                 engine3d = NULL,
                                 ...) {
-    sectionview3d_libKriging(NuggetKriging_model,center,axis,npoints,col_points,col_surf,conf_lev,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
+    sectionview3d_libKriging(NuggetKriging_model,center,axis,npoints,col_points,col_surf,conf_level,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
 
 #' @param NoiseKriging_model an object of class \code{"Kriging"}.
 #' @param col_points color of points.
-#' @param conf_lev an optional list of confidence interval values to display.
+#' @param conf_level an optional list of confidence interval values to display.
 #' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
 #' @template sectionview3d-doc
@@ -656,8 +652,8 @@ sectionview3d.NoiseKriging <- function(NoiseKriging_model,
                                       npoints = 20,
                                       col_points = "red",
                                       col_surf = "blue",
-                                      conf_lev = c(0.95),
-                                      conf_blend = NULL,
+                                      conf_level = 0.95,
+                                      conf_blend = 0.5,
                                       bg_blend = 1,
                                       mfrow = NULL,
                                       Xlab = NULL, ylab = NULL,
@@ -666,12 +662,12 @@ sectionview3d.NoiseKriging <- function(NoiseKriging_model,
                                       add = FALSE,
                                       engine3d = NULL,
                                       ...) {
-    sectionview3d_libKriging(NoiseKriging_model,center,axis,npoints,col_points,col_surf,conf_lev,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
+    sectionview3d_libKriging(NoiseKriging_model,center,axis,npoints,col_points,col_surf,conf_level,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
 
 #' @param glm_model an object of class \code{"glm"}.
 #' @param col_points color of points.
-#' @param conf_lev an optional list of confidence interval values to display.
+#' @param conf_level an optional list of confidence interval values to display.
 #' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
 #' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
 #' @template sectionview3d-doc
@@ -695,8 +691,8 @@ sectionview3d.glm <- function(glm_model,
                            npoints = 20,
                            col_points = "red",
                            col_surf = "blue",
-                           conf_lev = c(0.95),
-                           conf_blend = NULL,
+                           conf_level = 0.95,
+                           conf_blend = 0.5,
                            bg_blend = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
@@ -737,8 +733,8 @@ sectionview3d.glm <- function(glm_model,
         axis <- matrix(axis, ncol = 2)
     }
 
-    if (is.null(conf_blend) || length(conf_blend) != length(conf_lev)) {
-        conf_blend <- rep(0.5/length(conf_lev), length(conf_lev))
+    if (is.null(conf_blend) || length(conf_blend) != length(conf_level)) {
+        conf_blend <- rep(0.5/length(conf_level), length(conf_level))
     }
 
     sectionview3d.function(
@@ -746,16 +742,16 @@ sectionview3d.glm <- function(glm_model,
             x = as.data.frame(x)
             colnames(x) <- Xlab
             p = predict.glm(glm_model, newdata=x, se.fit=TRUE)
-            list(mean=p$fit, se=p$se.fit)
+            list(mean=p$fit, se=qnorm(1-(1-conf_level)/2) * p$se.fit)
         }, vectorized=TRUE,
         dim = D, center = center,axis = axis, npoints = npoints,
-        col_surf = col_surf,conf_lev=conf_lev, conf_blend=conf_blend,
+        col_surf = col_surf,conf_level=conf_level, conf_blend=conf_blend,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, ylim=ylim, title = title, add = add, engine3d=engine3d, ...)
 
     sectionview3d.matrix(X = X_doe, y = y_doe, sdy = NULL,
                          dim = D, center = center, axis = axis,
-                         col_points = col_points, conf_lev = conf_lev, conf_blend = conf_blend, bg_blend = bg_blend,
+                         col_points = col_points, conf_level = conf_level, conf_blend = conf_blend, bg_blend = bg_blend,
                          mfrow = mfrow,
                          Xlim = rx, ylim=ylim, engine3d=engine3d,
                          add=TRUE)
@@ -835,7 +831,7 @@ sectionview3d.list <- function(modelFit_model,
 
     sectionview3d.matrix(X = X_doe, y = y_doe, sdy = NULL,
                          dim = D, center = center, axis = axis,
-                         col_points = col_points, conf_lev = NULL, conf_blend = NULL, bg_blend = bg_blend,
+                         col_points = col_points, conf_level = NULL, conf_blend = 0.5, bg_blend = bg_blend,
                          mfrow = mfrow,
                          Xlim = rx, ylim=ylim, engine3d=engine3d,
                          add=TRUE)

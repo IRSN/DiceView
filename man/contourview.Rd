@@ -27,9 +27,11 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = 10,
-  col_surf = "blue",
-  filled = FALSE,
+  nlevels = if (is.null(levels)) 10 else length(levels),
+  levels = NULL,
+  lty_levels = 3,
+  col_levels = "blue",
+  conf_blend = 0.5,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -62,10 +64,12 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = 10,
+  nlevels = if (is.null(levels)) 10 else length(levels),
+  levels = NULL,
   col_points = "red",
-  col_surf = "blue",
-  filled = FALSE,
+  col_levels = "blue",
+  conf_level = 0.5,
+  conf_blend = conf_level,
   bg_blend = 1,
   mfrow = NULL,
   Xlab = NULL,
@@ -81,10 +85,12 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = 10,
+  nlevels = if (is.null(levels)) 10 else length(levels),
+  levels = NULL,
   col_points = "red",
-  col_surf = "blue",
-  filled = FALSE,
+  col_levels = "blue",
+  conf_level = 0.5,
+  conf_blend = conf_level,
   bg_blend = 1,
   mfrow = NULL,
   Xlab = NULL,
@@ -100,10 +106,12 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = 10,
+  nlevels = if (is.null(levels)) 10 else length(levels),
+  levels = NULL,
   col_points = "red",
-  col_surf = "blue",
-  filled = FALSE,
+  col_levels = "blue",
+  conf_level = 0.5,
+  conf_blend = conf_level,
   bg_blend = 1,
   mfrow = NULL,
   Xlab = NULL,
@@ -119,10 +127,12 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = 10,
+  nlevels = if (is.null(levels)) 10 else length(levels),
+  levels = NULL,
   col_points = "red",
-  col_surf = "blue",
-  filled = FALSE,
+  col_levels = "blue",
+  conf_level = 0.5,
+  conf_blend = conf_level,
   bg_blend = 1,
   mfrow = NULL,
   Xlab = NULL,
@@ -138,10 +148,12 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = 10,
+  nlevels = if (is.null(levels)) 10 else length(levels),
+  levels = NULL,
   col_points = "red",
-  col_surf = "blue",
-  filled = FALSE,
+  col_levels = "blue",
+  conf_level = 0.5,
+  conf_blend = conf_level,
   bg_blend = 1,
   mfrow = NULL,
   Xlab = NULL,
@@ -157,11 +169,12 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = 10,
+  nlevels = if (is.null(levels)) 10 else length(levels),
+  levels = NULL,
   col_points = "red",
-  col_surf = "blue",
+  col_levels = "blue",
+  conf_blend = 0.5,
   bg_blend = 1,
-  filled = FALSE,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -188,9 +201,13 @@ contourview(...)
 
 \item{nlevels}{number of contour levels to display.}
 
-\item{col_surf}{color for the surface.}
+\item{levels}{contour levels to display.}
 
-\item{filled}{use filled.contour}
+\item{lty_levels}{contour line type.}
+
+\item{col_levels}{color for the surface.}
+
+\item{conf_blend}{an optional factor of alpha (color channel) blending used to plot standard error (if any) hull.}
 
 \item{mfrow}{an optional list to force \code{par(mfrow = ...)} call. The default value  \code{NULL} is automatically set for compact view.}
 
@@ -220,6 +237,8 @@ contourview(...)
 
 \item{type}{the kriging type to use for model prediction.}
 
+\item{conf_level}{confidence level hull to display.}
+
 \item{Kriging_model}{an object of class \code{"Kriging"}.}
 
 \item{NuggetKriging_model}{an object of class \code{"Kriging"}.}
@@ -240,8 +259,8 @@ If available, experimental points are plotted with fading colors. Points that fa
 x1 <- rnorm(15)
 x2 <- rnorm(15)
 
-
 y <- x1 + x2 + rnorm(15)
+
 model <- lm(y ~ x1 + x2)
 
 contourview(function(x) sum(x),
