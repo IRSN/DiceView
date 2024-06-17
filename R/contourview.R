@@ -486,7 +486,7 @@ contourview_libKriging <- function(libKriging_model,
 
     contourview.function(fun = function(x) {
             p = rlibkriging::predict(libKriging_model,x,stdev=TRUE)
-            list(mean=p$mean, se=qnorm(1-(1-conf_level)/2) * p$sd) # to dosplay gaussian conf interval
+            list(mean=p$mean, se=qnorm(1-(1-conf_level)/2) * p$stdev) # to display gaussian conf interval
         }, vectorized=TRUE,
         dim = D, center = center,axis = axis,npoints = npoints,nlevels = nlevels,
         col_levels = col_levels, conf_blend = conf_blend,
@@ -542,7 +542,23 @@ contourview.Kriging <- function(Kriging_model,
                                    title = NULL,
                                    add = FALSE,
                                    ...) {
-    contourview_libKriging(Kriging_model,center,axis,npoints,nlevels,levels,col_points,col_levels,conf_level,bg_blend,mfrow,Xlab, ylab,Xlim,title,add,...)
+    contourview_libKriging(libKriging_model = Kriging_model,
+                           center = center,
+                           axis = axis,
+                           npoints = npoints,
+                           nlevels = nlevels,
+                           levels = levels,
+                           col_points = col_points,
+                           col_levels = col_levels,
+                           conf_level = conf_level,
+                           conf_blend = conf_blend,
+                           bg_blend = bg_blend,
+                           mfrow = mfrow,
+                           Xlab = Xlab, ylab = ylab,
+                           Xlim = Xlim,
+                           title = title,
+                           add = add,
+                           ...)
 }
 
 #' @param NuggetKriging_model an object of class \code{"Kriging"}.
@@ -585,8 +601,24 @@ contourview.NuggetKriging <- function(NuggetKriging_model,
                                 title = NULL,
                                 add = FALSE,
                                 ...) {
-    contourview_libKriging(NuggetKriging_model,center,axis,npoints,nlevels,levels,col_points,col_levels,conf_level,bg_blend,mfrow,Xlab, ylab,Xlim,title,add,...)
-}
+    contourview_libKriging(libKriging_model = NuggetKriging_model,
+                           center = center,
+                           axis = axis,
+                           npoints = npoints,
+                           nlevels = nlevels,
+                           levels = levels,
+                           col_points = col_points,
+                           col_levels = col_levels,
+                           conf_level = conf_level,
+                           conf_blend = conf_blend,
+                           bg_blend = bg_blend,
+                           mfrow = mfrow,
+                           Xlab = Xlab, ylab = ylab,
+                           Xlim = Xlim,
+                           title = title,
+                           add = add,
+                           ...)
+    }
 
 #' @param NoiseKriging_model an object of class \code{"Kriging"}.
 #' @param col_points color of points.
@@ -628,8 +660,24 @@ contourview.NoiseKriging <- function(NoiseKriging_model,
                                       title = NULL,
                                       add = FALSE,
                                       ...) {
-    contourview_libKriging(NoiseKriging_model,center,axis,npoints,nlevels,levels,col_points,col_levels,conf_level,bg_blend,mfrow,Xlab, ylab,Xlim,title,add,...)
-}
+    contourview_libKriging(libKriging_model = NoiseKriging_model,
+                           center = center,
+                           axis = axis,
+                           npoints = npoints,
+                           nlevels = nlevels,
+                           levels = levels,
+                           col_points = col_points,
+                           col_levels = col_levels,
+                           conf_level = conf_level,
+                           conf_blend = conf_blend,
+                           bg_blend = bg_blend,
+                           mfrow = mfrow,
+                           Xlab = Xlab, ylab = ylab,
+                           Xlim = Xlim,
+                           title = title,
+                           add = add,
+                           ...)
+    }
 
 #' @param glm_model an object of class \code{"glm"}.
 #' @param col_points color of points.
