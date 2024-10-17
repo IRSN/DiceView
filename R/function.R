@@ -46,7 +46,10 @@ Apply.function <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclap
 #'
 #' f2 = function(x)x[1]+x[2]; f2(1:10); F2 = Vectorize.function(f2,2);
 #' F2(cbind(1:10,11:20));
-Vectorize.function = function(fun, dim, .combine=c, .lapply=parallel::mclapply, ...) {
+#'
+#' f3 = function(x)list(mean=x[1]+x[2],se=x[1]*x[2]); f3(1:10); F3 = Vectorize.function(f3,2);
+#' F3(cbind(1:10,11:20));
+Vectorize.function = function(fun, dim, .combine=rbind, .lapply=parallel::mclapply, ...) {
     function(X,...) {
         if (!is.matrix(X)) X = matrix(X,ncol=dim)
         Apply.function(fun,X, .combine=.combine, .lapply=.lapply,...)
