@@ -30,6 +30,10 @@ jobs:
 
     - uses: r-lib/actions/setup-r-dependencies@v2
 
+    - name: Install X11 dependencies on MacOS
+      if: runner.os == 'macOS'
+      run: brew --cask install xquartz
+
     - run: |
         cd ..; R CMD build DiceView
         mkdir DiceView/CRAN-${{ matrix.os }}
