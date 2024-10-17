@@ -268,7 +268,7 @@ is_in.mesh = function(x,mesh) {
                 isin = FALSE
                 try(isin <- is_in.p(x, mesh$p[mesh$tri[i,],, drop = FALSE]),silent = T) # to avoid coplanar errors in qhull
                 if (isin) return(TRUE)
-            } # else warning("Too flat element (",i,"): ",capture.output(print(mesh$p[mesh$tri[i,],, drop = FALSE])))
+            } # else warning("Too flat element (",i,"): ",utils::capture.output(print(mesh$p[mesh$tri[i,],, drop = FALSE])))
         # else warning("Too small element (",i,"): area=",mesh$areas[i])
         }
     return(FALSE)
