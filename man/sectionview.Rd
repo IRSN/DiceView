@@ -5,6 +5,8 @@
 \alias{sectionview,function,function-method}
 \alias{sectionview.matrix}
 \alias{sectionview,matrix,matrix-method}
+\alias{sectionview.character}
+\alias{sectionview,character,character-method}
 \alias{sectionview.km}
 \alias{sectionview,km,km-method}
 \alias{sectionview.Kriging}
@@ -25,9 +27,12 @@
   vectorized = FALSE,
   dim = NULL,
   center = NULL,
+  lty_center = 2,
+  col_center = "black",
   axis = NULL,
   npoints = 100,
-  col_surf = "blue",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_blend = 0.5,
   mfrow = NULL,
   Xlab = NULL,
@@ -44,9 +49,12 @@
   y,
   sdy = NULL,
   center = NULL,
+  lty_center = 2,
+  col_center = "black",
   axis = NULL,
-  col_points = "red",
-  conf_blend = NULL,
+  col_points = if (!is.null(col)) col else "red",
+  col = NULL,
+  conf_blend = 0.5,
   bg_blend = 5,
   mfrow = NULL,
   Xlab = NULL,
@@ -58,14 +66,17 @@
   ...
 )
 
+\method{sectionview}{character}(eval_str, axis = NULL, mfrow = NULL, ...)
+
 \method{sectionview}{km}(
   km_model,
   type = "UK",
   center = NULL,
   axis = NULL,
   npoints = 100,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   bg_blend = 5,
@@ -84,8 +95,9 @@
   center = NULL,
   axis = NULL,
   npoints = 100,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   bg_blend = 5,
@@ -104,10 +116,11 @@
   center = NULL,
   axis = NULL,
   npoints = 100,
-  col_points = "red",
-  col_surf = "blue",
-  conf_level = c(0.5, 0.8, 0.9, 0.95, 0.99),
-  conf_blend = NULL,
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
+  conf_level = 0.95,
+  conf_blend = 0.5,
   bg_blend = 5,
   mfrow = NULL,
   Xlab = NULL,
@@ -124,8 +137,9 @@
   center = NULL,
   axis = NULL,
   npoints = 100,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   bg_blend = 5,
@@ -144,8 +158,9 @@
   center = NULL,
   axis = NULL,
   npoints = 100,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   bg_blend = 5,
@@ -164,8 +179,9 @@
   center = NULL,
   axis = NULL,
   npoints = 100,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   bg_blend = 5,
   mfrow = NULL,
   Xlab = NULL,
@@ -188,11 +204,17 @@ sectionview(...)
 
 \item{center}{optional coordinates (as a list or data frame) of the center of the section view if the model's dimension is > 2.}
 
+\item{lty_center}{line type for the section center of the plot (if any).}
+
+\item{col_center}{color for the section center of the plot (if any).}
+
 \item{axis}{optional matrix of 2-axis combinations to plot, one by row. The value \code{NULL} leads to all possible combinations i.e. \code{choose(D, 2)}.}
 
 \item{npoints}{an optional number of points to discretize plot of response  surface and uncertainties.}
 
 \item{col_surf}{color for the surface.}
+
+\item{col}{color of the object (use col_* for specific objects).}
 
 \item{conf_blend}{an optional factor of alpha (color channel) blending used to plot confidence intervals.}
 
@@ -221,6 +243,8 @@ sectionview(...)
 \item{col_points}{color of points.}
 
 \item{bg_blend}{an optional factor of alpha (color channel) blending used to plot design points outside from this section.}
+
+\item{eval_str}{the expression to evaluate in each subplot.}
 
 \item{km_model}{an object of class \code{"km"}.}
 
@@ -268,6 +292,15 @@ y = apply(X,1,branin)
 
 sectionview(X,y, center=c(.5,.5))
 
+x1 <- rnorm(15)
+x2 <- rnorm(15)
+
+y <- x1 + x2^2 + rnorm(15)
+model <- glm(y ~ x1 + I(x2^2))
+
+sectionview(model, center=c(.5,.5))
+
+sectionview("abline(h=5)")
 if (requireNamespace("DiceKriging")) { library(DiceKriging)
 
 X = matrix(runif(15*2),ncol=2)
@@ -372,6 +405,8 @@ sectionview(branin, center= c(.5,.5), col='red', add=TRUE)
 \seealso{
 \code{\link{sectionview.function}} for a section plot, and \code{\link{sectionview3d.function}} for a 2D section plot.
 \code{\link{Vectorize.function}} to wrap as vectorized a non-vectorized function.
+
+\code{\link{sectionview.matrix}} for a section plot, and \code{\link{sectionview3d.matrix}} for a 2D section plot.
 
 \code{\link{sectionview.matrix}} for a section plot, and \code{\link{sectionview3d.matrix}} for a 2D section plot.
 

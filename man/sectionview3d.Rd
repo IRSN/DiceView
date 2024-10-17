@@ -5,6 +5,8 @@
 \alias{sectionview3d,function,function-method}
 \alias{sectionview3d.matrix}
 \alias{sectionview3d,matrix,matrix-method}
+\alias{sectionview3d.character}
+\alias{sectionview3d,character,character-method}
 \alias{sectionview3d.km}
 \alias{sectionview3d,km,km-method}
 \alias{sectionview3d.Kriging}
@@ -27,7 +29,8 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  col_surf = "blue",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   mfrow = NULL,
@@ -47,7 +50,8 @@
   sdy = NULL,
   center = NULL,
   axis = NULL,
-  col_points = "red",
+  col_points = if (!is.null(col)) col else "red",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   bg_blend = 1,
@@ -62,14 +66,17 @@
   ...
 )
 
+\method{sectionview3d}{character}(eval_str, axis = NULL, mfrow = NULL, ...)
+
 \method{sectionview3d}{km}(
   km_model,
   type = "UK",
   center = NULL,
   axis = NULL,
   npoints = 20,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   bg_blend = 1,
@@ -89,8 +96,9 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   bg_blend = 1,
@@ -110,8 +118,9 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   bg_blend = 1,
@@ -131,8 +140,9 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   bg_blend = 1,
@@ -152,8 +162,9 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.95,
   conf_blend = 0.5,
   bg_blend = 1,
@@ -173,8 +184,9 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  col_points = "red",
-  col_surf = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_surf = if (!is.null(col)) col else "blue",
+  col = NULL,
   bg_blend = 1,
   mfrow = NULL,
   Xlab = NULL,
@@ -203,6 +215,8 @@ sectionview3d(...)
 \item{npoints}{an optional number of points to discretize plot of response  surface and uncertainties.}
 
 \item{col_surf}{color for the surface.}
+
+\item{col}{color of the object (use col_* for specific objects).}
 
 \item{conf_level}{an optional list of confidence interval values to display.}
 
@@ -235,6 +249,8 @@ sectionview3d(...)
 \item{col_points}{color of points.}
 
 \item{bg_blend}{an optional factor of alpha (color channel) blending used to plot design points outside from this section.}
+
+\item{eval_str}{the expression to evaluate in each subplot.}
 
 \item{km_model}{an object of class \code{"km"}.}
 
@@ -280,6 +296,12 @@ y = apply(X,1,branin)
 
 sectionview3d(X, y)
 
+X = matrix(runif(15*2),ncol=2)
+y = apply(X,1,branin)
+
+sectionview3d(X,y, center=c(.5,.5))
+
+sectionview3d("abline(h=0.25,col='red')")
 if (requireNamespace("DiceKriging")) { library(DiceKriging)
 
 X = matrix(runif(15*2),ncol=2)
@@ -386,6 +408,8 @@ sectionview3d(branin, dim=2, col='red', add=TRUE)
 \code{\link{Vectorize.function}} to wrap as vectorized a non-vectorized function.
 
 \code{\link{sectionview.matrix}} for a section plot, and \code{\link{sectionview3d.matrix}} for a 2D section plot.
+
+\code{\link{sectionview3d.matrix}} for a section plot.
 
 \code{\link{sectionview.km}} for a section plot, and \code{\link{sectionview3d.km}} for a 2D section plot.
 

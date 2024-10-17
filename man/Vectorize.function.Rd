@@ -4,7 +4,13 @@
 \alias{Vectorize.function}
 \title{Vectorize a multidimensional Function}
 \usage{
-Vectorize.function(fun, dim, .combine = c, .lapply = parallel::mclapply, ...)
+Vectorize.function(
+  fun,
+  dim,
+  .combine = rbind,
+  .lapply = parallel::mclapply,
+  ...
+)
 }
 \arguments{
 \item{fun}{'dim'-dimensional function to Vectorize}
@@ -29,4 +35,7 @@ F(1:10); #F = Vectorize(f); F(1:10);
 
 f2 = function(x)x[1]+x[2]; f2(1:10); F2 = Vectorize.function(f2,2);
 F2(cbind(1:10,11:20));
+
+f3 = function(x)list(mean=x[1]+x[2],se=x[1]*x[2]); f3(1:10); F3 = Vectorize.function(f3,2);
+F3(cbind(1:10,11:20));
 }

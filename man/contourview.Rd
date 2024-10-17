@@ -5,6 +5,8 @@
 \alias{contourview,function,function-method}
 \alias{contourview.matrix}
 \alias{contourview,matrix,matrix-method}
+\alias{contourview.character}
+\alias{contourview,character,character-method}
 \alias{contourview.km}
 \alias{contourview,km,km-method}
 \alias{contourview.Kriging}
@@ -25,12 +27,15 @@
   vectorized = FALSE,
   dim = NULL,
   center = NULL,
+  lty_center = 2,
+  col_center = "black",
   axis = NULL,
   npoints = 20,
   nlevels = if (is.null(levels)) 10 else length(levels),
   levels = NULL,
   lty_levels = 3,
-  col_levels = "blue",
+  col_levels = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_blend = 0.5,
   mfrow = NULL,
   Xlab = NULL,
@@ -46,8 +51,11 @@
   y,
   sdy = NULL,
   center = NULL,
+  lty_center = 2,
+  col_center = "black",
   axis = NULL,
-  col_points = "red",
+  col_points = if (!is.null(col)) col else "red",
+  col = NULL,
   bg_blend = 1,
   mfrow = NULL,
   Xlab = NULL,
@@ -58,6 +66,8 @@
   ...
 )
 
+\method{contourview}{character}(eval_str, axis = NULL, mfrow = NULL, ...)
+
 \method{contourview}{km}(
   km_model,
   type = "UK",
@@ -66,8 +76,9 @@
   npoints = 20,
   nlevels = if (is.null(levels)) 10 else length(levels),
   levels = NULL,
-  col_points = "red",
-  col_levels = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_levels = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.5,
   conf_blend = conf_level,
   bg_blend = 1,
@@ -87,8 +98,9 @@
   npoints = 20,
   nlevels = if (is.null(levels)) 10 else length(levels),
   levels = NULL,
-  col_points = "red",
-  col_levels = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_levels = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.5,
   conf_blend = conf_level,
   bg_blend = 1,
@@ -108,8 +120,9 @@
   npoints = 20,
   nlevels = if (is.null(levels)) 10 else length(levels),
   levels = NULL,
-  col_points = "red",
-  col_levels = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_levels = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.5,
   conf_blend = conf_level,
   bg_blend = 1,
@@ -129,8 +142,9 @@
   npoints = 20,
   nlevels = if (is.null(levels)) 10 else length(levels),
   levels = NULL,
-  col_points = "red",
-  col_levels = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_levels = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.5,
   conf_blend = conf_level,
   bg_blend = 1,
@@ -150,8 +164,9 @@
   npoints = 20,
   nlevels = if (is.null(levels)) 10 else length(levels),
   levels = NULL,
-  col_points = "red",
-  col_levels = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_levels = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_level = 0.5,
   conf_blend = conf_level,
   bg_blend = 1,
@@ -171,8 +186,9 @@
   npoints = 20,
   nlevels = if (is.null(levels)) 10 else length(levels),
   levels = NULL,
-  col_points = "red",
-  col_levels = "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col_levels = if (!is.null(col)) col else "blue",
+  col = NULL,
   conf_blend = 0.5,
   bg_blend = 1,
   mfrow = NULL,
@@ -195,6 +211,10 @@ contourview(...)
 
 \item{center}{optional coordinates (as a list or data frame) of the center of the section view if the model's dimension is > 2.}
 
+\item{lty_center}{line type for the section center of the plot (if any).}
+
+\item{col_center}{color for the section center of the plot (if any).}
+
 \item{axis}{optional matrix of 2-axis combinations to plot, one by row. The value \code{NULL} leads to all possible combinations i.e. \code{choose(D, 2)}.}
 
 \item{npoints}{an optional number of points to discretize plot of response  surface and uncertainties.}
@@ -206,6 +226,8 @@ contourview(...)
 \item{lty_levels}{contour line type.}
 
 \item{col_levels}{color for the surface.}
+
+\item{col}{color of the object (use col_* for specific objects).}
 
 \item{conf_blend}{an optional factor of alpha (color channel) blending used to plot standard error (if any) hull.}
 
@@ -233,6 +255,8 @@ contourview(...)
 
 \item{bg_blend}{an optional factor of alpha (color channel) blending used to plot design points outside from this section.}
 
+\item{eval_str}{the expression to evaluate in each subplot.}
+
 \item{km_model}{an object of class \code{"km"}.}
 
 \item{type}{the kriging type to use for model prediction.}
@@ -259,14 +283,13 @@ If available, experimental points are plotted with fading colors. Points that fa
 x1 <- rnorm(15)
 x2 <- rnorm(15)
 
-y <- x1 + x2 + rnorm(15)
+contourview(function(x) sum(x),
+                     dim=2, Xlim=cbind(range(x1),range(x2)), col_levels='black')
 
+y <- x1 + x2 + rnorm(15)
 model <- lm(y ~ x1 + x2)
 
-contourview(function(x) sum(x),
-                     dim=2, Xlim=cbind(range(x1),range(x2)), col='black')
 points(x1,x2)
-
 contourview(function(x) {
                       x = as.data.frame(x)
                       colnames(x) <- names(model$coefficients[-1])
@@ -279,12 +302,21 @@ y = apply(X,1,branin)
 
 contourview(X, y)
 
+x1 <- rnorm(15)
+x2 <- rnorm(15)
+
+y <- x1 + x2^2 + rnorm(15)
+model <- glm(y ~ x1 + I(x2^2))
+
+contourview(model)
+
+contourview("abline(h=0.25,col='red')")
 if (requireNamespace("DiceKriging")) { library(DiceKriging)
 
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin)
 
-model <- km(design = X, response = y, covtype="matern3_2")
+model <- DiceKriging::km(design = X, response = y, covtype="matern3_2")
 
 contourview(model)
 
@@ -385,6 +417,8 @@ contourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
 \code{\link{Vectorize.function}} to wrap as vectorized a non-vectorized function.
 
 \code{\link{sectionview.matrix}} for a section plot, and \code{\link{sectionview3d.matrix}} for a 2D section plot.
+
+\code{\link{contourview.matrix}} for a section plot.
 
 \code{\link{sectionview.km}} for a section plot, and \code{\link{sectionview3d.km}} for a 2D section plot.
 
