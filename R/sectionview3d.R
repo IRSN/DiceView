@@ -34,7 +34,8 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
                              center = NULL,
                              axis = NULL,
                              npoints = 20,
-                             col_surf = "blue",
+                             col_surf = if (!is.null(col)) col else "blue",
+                             col = NULL,
                              conf_level = 0.95,
                              conf_blend = 0.5,
                              mfrow = NULL,
@@ -44,7 +45,7 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
                              add = FALSE,
                              engine3d = NULL,
                              ...) {
-    load3d(engine3d)
+    engine3d = load3d(engine3d)
 
     if (!is.null(dim)) {
         D <- dim
@@ -71,8 +72,8 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
         axis <- matrix(axis, ncol = 2)
     }
 
-    if (D>2 && engine3d!="rgl") {
-        if (is.null(mfrow) && (D>1)) {
+    if (engine3d!="rgl") {
+        if (is.null(mfrow)) {
             nc <- round(sqrt(D))
             nl <- ceiling(D/nc)
             mfrow <- c(nc, nl)
@@ -80,7 +81,7 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
     }
 
     if (!isTRUE(add)) {
-        if(D>2){
+        if(engine3d!="rgl"){
             close.screen( all.screens = TRUE )
             split.screen(figs = mfrow)
         }
@@ -97,10 +98,16 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
     ## find limits: 'rx' is matrix with min in row 1 and max in row 2
     if(!is.null(Xlim))
         rx <- matrix(Xlim,nrow=2,ncol=D)
-    else
+    else {
         rx <- matrix(c(0,1),nrow=2,ncol=D)
+        if (!is.null(center)) # ensure center is included in Xlim
+            for (i in 1:D) {
+                rx[1,i] <- min(rx[1,i],center[i])
+                rx[2,i] <- max(rx[2,i],center[i])
+            }
+    }
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     zlim <- ylim
 
@@ -129,8 +136,8 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
         ind.nonfix <- (1:D) %in% c(d[1], d[2])
         ind.nonfix <- !ind.nonfix
 
-        xdmin <- rx["min", d]
-        xdmax <- rx["max", d]
+        xdmin <- unlist(rx["min", d])
+        xdmax <- unlist(rx["max", d])
 
         xd1 <- seq(from = xdmin[1], to = xdmax[1], length.out = npoints[1])
         xd2 <- seq(from = xdmin[2], to = xdmax[2], length.out = npoints[2])
@@ -146,10 +153,22 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
 
         y <- Fun(as.matrix(x))
         if (is.list(y)) {
+            y = lapply(as.list(as.data.frame(y)),unlist)
             if (!("mean" %in% names(y)) || !("se" %in% names(y)))
-                stop(paste0("If function returns a list, it must have 'mean' and 'se', while had ",paste0(collapse=",",names(y))))
+                stop(paste0("If function returns a list, it must have 'mean' and 'se', while was ",paste0(collapse="\n",utils::capture.output(print(y)))))
             y_mean <- as.numeric(y$mean)
+            if (!is.numeric(y_mean))
+                stop("If function returns a list, 'mean' must be (as) numeric:",paste0(y_mean,collapse="\n"))
             y_sd <- as.numeric(y$se)
+            if (!is.numeric(y_sd))
+                stop("If function returns a list, 'se' must be (as) numeric:",paste0(y_sd,collapse="\n"))
+        } else if (is.matrix(y) && ncol(y)==2) {
+            y_mean <- as.numeric(y[,1])
+            y_sd <- as.numeric(y[,2])
+            if (!is.numeric(y_mean))
+                stop("If function returns a matrix, first column must be (as) numeric.")
+            if (!is.numeric(y_sd))
+                stop("If function returns a matrix, second column must be (as) numeric.")
         } else { # simple function, not a list
             if (!is.numeric(y))
                 stop("If function does not returns a list, it must be numeric.")
@@ -162,14 +181,14 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
         if (is.null(title)){
             title_d <- paste(collapse = "~",sep = "~", ylab, paste(collapse = ",", sep = ",", Xlab[d[1]], Xlab[d[2]]))
             if (D>2) {
-                title_d <-  paste(collapse = "|", sep = "|", title_d,paste(Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
+                title_d <-  paste(collapse = " | ", sep = " | ", title_d, paste(collapse=',',Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
             }
         } else {
             title_d <-  title
         }
 
-        xlim <- rx[ , d[1]]
-        ylim <- rx[ , d[2]]
+        xlim <- unlist(rx[ , d[1]])
+        ylim <- unlist(rx[ , d[2]])
         if (is.null(zlim)) {
             zlim <- c(min(y_mean+3*y_sd),max(y_mean-3*y_sd))
         }
@@ -237,7 +256,8 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
 sectionview3d.matrix <- function(X, y, sdy = NULL,
                              center = NULL,
                              axis = NULL,
-                             col_points = "red",
+                             col_points = if (!is.null(col)) col else "red",
+                             col = NULL,
                              conf_level = 0.95,
                              conf_blend = 0.5,
                              bg_blend = 1,
@@ -248,7 +268,7 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
                              add = FALSE,
                              engine3d = NULL,
                              ...) {
-    load3d(engine3d)
+    engine3d = load3d(engine3d)
 
     X_doe <- X
     y_doe <- y
@@ -266,7 +286,7 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
     rx <- apply(X_doe, 2, range)
     if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- names(y_doe)
@@ -278,8 +298,8 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
         axis <- matrix(axis, ncol = 2)
     }
 
-    if (D>2 && engine3d!="rgl") {
-        if (is.null(mfrow) && (D>1)) {
+    if (engine3d!="rgl") {
+        if (is.null(mfrow)) {
             nc <- round(sqrt(D))
             nl <- ceiling(D/nc)
             mfrow <- c(nc, nl)
@@ -287,7 +307,7 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
     }
 
     if (!isTRUE(add)) {
-        if(D>2){
+        if(engine3d!="rgl"){
             close.screen( all.screens = TRUE )
             split.screen(figs = mfrow)
         }
@@ -317,9 +337,9 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
             ind.nonfix <- (1:D) %in% c(d[1], d[2])
             ind.nonfix <- !ind.nonfix
 
-            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
+            alpha <- pmax(0,apply(X = xrel[ , ind.nonfix, drop = FALSE],
                            MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
+                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend))
         } else {
             alpha <- rep(1, n)
         }
@@ -335,8 +355,8 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
                      pch = 20, size=if (is.null(sdy)) 3 else 0, box = FALSE,
                      xlim=xlim, ylim=ylim, zlim=zlim)
         } else {
-            xlim = rx[,d[1]]
-            ylim = rx[,d[2]]
+            xlim = unlist(rx[,d[1]])
+            ylim = unlist(rx[,d[2]])
             zlim = range(y_doe)
             eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
             open3d()
@@ -373,6 +393,77 @@ sectionview3d.matrix <- function(X, y, sdy = NULL,
     }
 }
 
+
+#' @param eval_str the expression to evaluate in each subplot.
+#' @param axis optional matrix of 2-axis combinations to plot, one by row. The value \code{NULL} leads to all possible combinations i.e. \code{choose(D, 2)}.
+#' @param mfrow  an optional list to force \code{par(mfrow = ...)} call. The default value  \code{NULL} is automatically set for compact view.
+#' @rdname sectionview3d
+#' @method sectionview3d character
+#' @aliases sectionview3d,character,character-method
+#' @export
+#' @seealso \code{\link{sectionview3d.matrix}} for a section plot.
+#' @examples
+#' X = matrix(runif(15*2),ncol=2)
+#' y = apply(X,1,branin)
+#'
+#' sectionview3d(X,y, center=c(.5,.5))
+#'
+#' sectionview3d("abline(h=0.25,col='red')")
+sectionview3d.character <- function(eval_str,
+                                  axis = NULL,
+                                  mfrow = NULL,
+                                  ...) {
+
+    if (!exists(".split.screen.lim",envir=DiceView.env))
+        stop(paste0("Cannot eval '",eval_str,"' when no previous sectionview() was called."))
+    else
+        .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
+
+    D <- nrow(.split.screen.lim)
+
+    if (is.null(axis)) {
+        axis <- matrix(1:D, ncol = 1)
+    } else {
+        ## added by YD for the vector case
+        axis <- matrix(axis, ncol = 1)
+    }
+
+    if (is.null(mfrow)) {
+        nc <- round(sqrt(D))
+        nl <- ceiling(D/nc)
+        mfrow <- c(nc, nl)
+    }
+
+    ## Each 'id' will produce a plot
+    for (id in 1:dim(axis)[1]) {
+
+        d <- axis[id,]
+
+        e = parent.frame()
+        assign("d",d,envir=e)
+        assign("xlim",c(.split.screen.lim[d,1],.split.screen.lim[d,2]),envir=e)
+        assign("ylim",c(.split.screen.lim[d,3],.split.screen.lim[d,4]),envir=e)
+        assign("zlim",c(.split.screen.lim[d,5],.split.screen.lim[d,6]),envir=e)
+
+        if (D>1) {
+            screen(id, new=FALSE)
+
+            .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
+            xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
+            ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
+            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
+
+            plot3d(x=c(.split.screen.lim[d,1],.split.screen.lim[d,2]), y=c(.split.screen.lim[d,3],.split.screen.lim[d,4]), z=c(.split.screen.lim[d,5],.split.screen.lim[d,6]),
+                 type='n', box = FALSE,
+                 xlab="",ylab="",zlab="",
+                 xlim=xlim, ylim=ylim, zlim=zlim,
+                 ...)
+        }
+
+        eval(parse(text = eval_str), envir = e)
+    }
+}
+
 #' @param km_model an object of class \code{"km"}.
 #' @param type the kriging type to use for model prediction.
 #' @param col_points color of points.
@@ -401,8 +492,9 @@ sectionview3d.km <- function(km_model, type = "UK",
                            center = NULL,
                            axis = NULL,
                            npoints = 20,
-                           col_points = "red",
-                           col_surf = "blue",
+                           col_points = if (!is.null(col)) col else "red",
+                           col_surf = if (!is.null(col)) col else "blue",
+                           col = NULL,
                            conf_level = 0.95,
                            conf_blend = 0.5,
                            bg_blend = 1,
@@ -431,7 +523,7 @@ sectionview3d.km <- function(km_model, type = "UK",
     rx <- apply(X_doe, 2, range)
     if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- names(y_doe)
@@ -473,8 +565,9 @@ sectionview3d_libKriging <- function(libKriging_model,
                            center = NULL,
                            axis = NULL,
                            npoints = 20,
-                           col_points = "red",
-                           col_surf = "blue",
+                           col_points = if (!is.null(col)) col else "red",
+                           col_surf = if (!is.null(col)) col else "blue",
+                           col = NULL,
                            conf_level = 0.95,
                            conf_blend = 0.5,
                            bg_blend = 1,
@@ -504,7 +597,7 @@ sectionview3d_libKriging <- function(libKriging_model,
     rx <- apply(X_doe, 2, range)
     if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- names(y_doe)
@@ -523,11 +616,11 @@ sectionview3d_libKriging <- function(libKriging_model,
     }
 
     sectionview3d.function(fun = function(x) {
-            p = rlibkriging::predict(libKriging_model,x,stdev=TRUE)
+            p = rlibkriging::predict(libKriging_model,x,return_stdev=TRUE)
             list(mean=p$mean, se=qnorm(1-(1-conf_level)/2) * p$stdev)
         }, vectorized=TRUE,
         dim = D, center = center,axis = axis,npoints = npoints,
-        col_surf = col_surf,conf_level=conf_level, conf_blend=conf_blend,
+        col_surf = col_surf, conf_blend=conf_blend,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, ylim=ylim, title = title, add = add, engine3d=engine3d, ...)
 
@@ -566,8 +659,9 @@ sectionview3d.Kriging <- function(Kriging_model,
                                    center = NULL,
                                    axis = NULL,
                                    npoints = 20,
-                                   col_points = "red",
-                                   col_surf = "blue",
+                                   col_points = if (!is.null(col)) col else "red",
+                                   col_surf = if (!is.null(col)) col else "blue",
+                                   col = NULL,
                                    conf_level = 0.95,
                                    conf_blend = 0.5,
                                    bg_blend = 1,
@@ -578,7 +672,10 @@ sectionview3d.Kriging <- function(Kriging_model,
                                    add = FALSE,
                                    engine3d = NULL,
                                    ...) {
-    sectionview3d_libKriging(Kriging_model,center,axis,npoints,col_points,col_surf,conf_level,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
+    sectionview3d_libKriging(Kriging_model,center,axis,npoints,
+                             col_points,col_surf,col,
+                             conf_level,conf_blend,bg_blend,
+                             mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
 
 #' @param NuggetKriging_model an object of class \code{"Kriging"}.
@@ -608,8 +705,9 @@ sectionview3d.NuggetKriging <- function(NuggetKriging_model,
                                 center = NULL,
                                 axis = NULL,
                                 npoints = 20,
-                                col_points = "red",
-                                col_surf = "blue",
+                                col_points = if (!is.null(col)) col else "red",
+                                col_surf = if (!is.null(col)) col else "blue",
+                                col = NULL,
                                 conf_level = 0.95,
                                 conf_blend = 0.5,
                                 bg_blend = 1,
@@ -620,7 +718,10 @@ sectionview3d.NuggetKriging <- function(NuggetKriging_model,
                                 add = FALSE,
                                 engine3d = NULL,
                                 ...) {
-    sectionview3d_libKriging(NuggetKriging_model,center,axis,npoints,col_points,col_surf,conf_level,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
+    sectionview3d_libKriging(NuggetKriging_model,center,axis,npoints,
+                             col_points,col_surf,col,
+                             conf_level,conf_blend,bg_blend,
+                             mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
 
 #' @param NoiseKriging_model an object of class \code{"Kriging"}.
@@ -650,8 +751,9 @@ sectionview3d.NoiseKriging <- function(NoiseKriging_model,
                                       center = NULL,
                                       axis = NULL,
                                       npoints = 20,
-                                      col_points = "red",
-                                      col_surf = "blue",
+                                      col_points = if (!is.null(col)) col else "red",
+                                      col_surf = if (!is.null(col)) col else "blue",
+                                      col = NULL,
                                       conf_level = 0.95,
                                       conf_blend = 0.5,
                                       bg_blend = 1,
@@ -662,7 +764,10 @@ sectionview3d.NoiseKriging <- function(NoiseKriging_model,
                                       add = FALSE,
                                       engine3d = NULL,
                                       ...) {
-    sectionview3d_libKriging(NoiseKriging_model,center,axis,npoints,col_points,col_surf,conf_level,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
+    sectionview3d_libKriging(NoiseKriging_model,center,axis,npoints,
+                             col_points,col_surf,col,
+                             conf_level,conf_blend,bg_blend,
+                             mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
 
 #' @param glm_model an object of class \code{"glm"}.
@@ -689,8 +794,9 @@ sectionview3d.glm <- function(glm_model,
                            center = NULL,
                            axis = NULL,
                            npoints = 20,
-                           col_points = "red",
-                           col_surf = "blue",
+                           col_points = if (!is.null(col)) col else "red",
+                           col_surf = if (!is.null(col)) col else "blue",
+                           col = NULL,
                            conf_level = 0.95,
                            conf_blend = 0.5,
                            bg_blend = 1,
@@ -725,7 +831,7 @@ sectionview3d.glm <- function(glm_model,
     rx <- apply(X_doe, 2, range)
     if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     if (is.null(axis)) {
         axis <- t(utils::combn(D, 2))
@@ -783,8 +889,9 @@ sectionview3d.list <- function(modelFit_model,
                             center = NULL,
                             axis = NULL,
                             npoints = 20,
-                            col_points = "red",
-                            col_surf = "blue",
+                            col_points = if (!is.null(col)) col else "red",
+                            col_surf = if (!is.null(col)) col else "blue",
+                            col = NULL,
                             bg_blend = 1,
                             mfrow = NULL,
                             Xlab = NULL, ylab = NULL,
@@ -810,7 +917,7 @@ sectionview3d.list <- function(modelFit_model,
     rx <- apply(X_doe, 2, range)
     if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     if (is.null(axis)) {
         axis <- t(utils::combn(D, 2))

@@ -13,14 +13,13 @@
 #' x1 <- rnorm(15)
 #' x2 <- rnorm(15)
 #'
-#' y <- x1 + x2 + rnorm(15)
+#' contourview(function(x) sum(x),
+#'                      dim=2, Xlim=cbind(range(x1),range(x2)), col_levels='black')
 #'
+#' y <- x1 + x2 + rnorm(15)
 #' model <- lm(y ~ x1 + x2)
 #'
-#' contourview(function(x) sum(x),
-#'                      dim=2, Xlim=cbind(range(x1),range(x2)), col='black')
 #' points(x1,x2)
-#'
 #' contourview(function(x) {
 #'                       x = as.data.frame(x)
 #'                       colnames(x) <- names(model$coefficients[-1])
@@ -31,12 +30,15 @@
 contourview.function <- function(fun, vectorized=FALSE,
                                 dim = NULL,
                              center = NULL,
+                             lty_center = 2,
+                             col_center = "black",
                              axis = NULL,
                              npoints = 20,
                              nlevels = if (is.null(levels)) 10 else length(levels),
                              levels = NULL,
                              lty_levels = 3,
-                             col_levels = "blue",
+                             col_levels = if (!is.null(col)) col else "blue",
+                             col = NULL,
                              conf_blend = 0.5,
                              mfrow = NULL,
                              Xlab = NULL, ylab = NULL,
@@ -69,17 +71,17 @@ contourview.function <- function(fun, vectorized=FALSE,
         axis <- matrix(axis, ncol = 2)
     }
 
-    if (is.null(mfrow) && (D>2)) {
+    if (is.null(mfrow)) {
         nc <- round(sqrt(nrow(axis)))
         nl <- ceiling(nrow(axis)/nc)
         mfrow <- c(nc, nl)
     }
 
     if (!isTRUE(add)) {
-        if (D>2) {
+        #if (D>2) {
             close.screen( all.screens = TRUE )
             split.screen(figs = mfrow)
-        }
+        #}
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
 
@@ -93,10 +95,16 @@ contourview.function <- function(fun, vectorized=FALSE,
     ## find limits: 'rx' is matrix with min in row 1 and max in row 2
     if(!is.null(Xlim))
         rx <- matrix(Xlim,nrow=2,ncol=D)
-    else
+    else {
         rx <- matrix(c(0,1),nrow=2,ncol=D)
+        if (!is.null(center)) # ensure center is included in Xlim
+            for (i in 1:D) {
+                rx[1,i] <- min(rx[1,i],center[i])
+                rx[2,i] <- max(rx[2,i],center[i])
+            }
+    }
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- "y"
@@ -123,8 +131,8 @@ contourview.function <- function(fun, vectorized=FALSE,
         ind.nonfix <- (1:D) %in% c(d[1], d[2])
         ind.nonfix <- !ind.nonfix
 
-        xdmin <- rx["min", d]
-        xdmax <- rx["max", d]
+        xdmin <- unlist(rx["min", d])
+        xdmax <- unlist(rx["max", d])
 
         xd1 <- seq(from = xdmin[1], to = xdmax[1], length.out = npoints[1])
         xd2 <- seq(from = xdmin[2], to = xdmax[2], length.out = npoints[2])
@@ -141,11 +149,23 @@ contourview.function <- function(fun, vectorized=FALSE,
         y <- Fun(as.matrix(x))
         y_has_sd = FALSE
         if (is.list(y)) {
+            y = lapply(as.list(as.data.frame(y)),unlist)
             if (!("mean" %in% names(y)) || !("se" %in% names(y)))
-                stop(paste0("If function returns a list, it must have 'mean' and 'se', while had ",paste0(collapse=",",names(y))))
+                stop(paste0("If function returns a list, it must have 'mean' and 'se', while was ",paste0(collapse="\n",utils::capture.output(print(y)))))
             y_mean <- as.numeric(y$mean)
+            if (!is.numeric(y_mean))
+                stop("If function returns a list, 'mean' must be (as) numeric:",paste0(y_mean,collapse="\n"))
             y_sd <- as.numeric(y$se)
+            if (!is.numeric(y_sd))
+                stop("If function returns a list, 'se' must be (as) numeric:",paste0(y_sd,collapse="\n"))
             y_has_sd = TRUE
+        } else if (is.matrix(y) && ncol(y)==2) {
+            y_mean <- as.numeric(y[,1])
+            y_sd <- as.numeric(y[,2])
+            if (!is.numeric(y_mean))
+                stop("If function returns a matrix, first column must be (as) numeric.")
+            if (!is.numeric(y_sd))
+                stop("If function returns a matrix, second column must be (as) numeric.")
         } else { # simple function, not a list
             if (!is.numeric(y))
                 stop("If function does not returns a list, it must be numeric.")
@@ -160,7 +180,7 @@ contourview.function <- function(fun, vectorized=FALSE,
         if (is.null(title)){
             title_d <- paste(collapse = "~",sep = "~", ylab, paste(collapse = ",", sep = ",", Xlab[d[1]], Xlab[d[2]]))
             if (D>2) {
-                title_d <-  paste(collapse = "|", sep = "|", title_d,paste(Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
+                title_d <-  paste(collapse = " | ", sep = " | ", title_d, paste(collapse=',',Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
             }
         } else {
             title_d <-  title
@@ -193,8 +213,8 @@ contourview.function <- function(fun, vectorized=FALSE,
                     add=FALSE,
                     ...)
             if(D>2) {
-                abline(v=center[d[1]],col='black',lty=2)
-                abline(h=center[d[2]],col='black',lty=2)
+                abline(v=center[d[1]],col=col_center,lty=lty_center)
+                abline(h=center[d[2]],col=col_center,lty=lty_center)
             }
         }
 
@@ -236,8 +256,11 @@ contourview.function <- function(fun, vectorized=FALSE,
 #'
 contourview.matrix <- function(X, y, sdy=NULL,
                            center = NULL,
+                           lty_center = 2,
+                           col_center = "black",
                            axis = NULL,
-                           col_points = "red",
+                           col_points = if (!is.null(col)) col else "red",
+                           col = NULL,
                            bg_blend = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
@@ -261,7 +284,7 @@ contourview.matrix <- function(X, y, sdy=NULL,
     rx <- apply(X_doe, 2, range)
     if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- names(y_doe)
@@ -273,17 +296,17 @@ contourview.matrix <- function(X, y, sdy=NULL,
         axis <- matrix(axis, ncol = 2)
     }
 
-    if (is.null(mfrow) && (D>1)) {
+    if (is.null(mfrow)) {
         nc <- round(sqrt(D))
         nl <- ceiling(D/nc)
         mfrow <- c(nc, nl)
     }
 
     if (!isTRUE(add)) {
-        if(D>1){
+        #if(D>1){
             close.screen( all.screens = TRUE )
             split.screen(figs = mfrow)
-        }
+        #}
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
 
@@ -306,9 +329,9 @@ contourview.matrix <- function(X, y, sdy=NULL,
             ind.nonfix <- (1:D) %in% c(d[1], d[2])
             ind.nonfix <- !ind.nonfix
 
-            alpha <- apply(X = xrel[ , ind.nonfix, drop = FALSE],
+            alpha <- pmax(0,apply(X = xrel[ , ind.nonfix, drop = FALSE],
                            MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend)
+                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend))
         } else {
             alpha <- rep(1, n)
         }
@@ -326,8 +349,8 @@ contourview.matrix <- function(X, y, sdy=NULL,
             eval(parse(text=paste(".split.screen.lim[",id,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
 
             if(D>2) {
-                abline(v=center[d[1]],col='black',lty=2)
-                abline(h=center[d[2]],col='black',lty=2)
+                abline(v=center[d[1]],col=col_center,lty=lty_center)
+                abline(h=center[d[2]],col=col_center,lty=lty_center)
             }
         }
 
@@ -335,6 +358,73 @@ contourview.matrix <- function(X, y, sdy=NULL,
                col = fade(color = col_points, alpha = alpha),
                xlim=xlim,ylim=ylim,
                pch = 20)
+    }
+}
+
+#' @param eval_str the expression to evaluate in each subplot.
+#' @param axis optional matrix of 2-axis combinations to plot, one by row. The value \code{NULL} leads to all possible combinations i.e. \code{choose(D, 2)}.
+#' @param mfrow  an optional list to force \code{par(mfrow = ...)} call. The default value  \code{NULL} is automatically set for compact view.
+#' @rdname contourview
+#' @method contourview character
+#' @aliases contourview,character,character-method
+#' @export
+#' @seealso \code{\link{contourview.matrix}} for a section plot.
+#' @examples
+#' x1 <- rnorm(15)
+#' x2 <- rnorm(15)
+#'
+#' y <- x1 + x2^2 + rnorm(15)
+#' model <- glm(y ~ x1 + I(x2^2))
+#'
+#' contourview(model)
+#'
+#' contourview("abline(h=0.25,col='red')")
+contourview.character <- function(eval_str,
+                                 axis = NULL,
+                                 mfrow = NULL,
+                                 ...) {
+
+    if (!exists(".split.screen.lim",envir=DiceView.env))
+        stop(paste0("Cannot eval '",eval_str,"' when no previous sectionview() was called."))
+    else
+        .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
+
+    D <- nrow(.split.screen.lim)
+
+    if (is.null(axis)) {
+        axis <- matrix(1:D, ncol = 1)
+    } else {
+        ## added by YD for the vector case
+        axis <- matrix(axis, ncol = 1)
+    }
+
+    if (is.null(mfrow) && (D>1)) {
+        nc <- round(sqrt(D))
+        nl <- ceiling(D/nc)
+        mfrow <- c(nc, nl)
+    }
+
+    ## Each 'id' will produce a plot
+    for (id in 1:dim(axis)[1]) {
+
+        d <- axis[id,]
+
+        e = parent.frame()
+        assign("d",d,envir=e)
+        assign("xlim",c(.split.screen.lim[d,1],.split.screen.lim[d,2]),envir=e)
+        assign("ylim",c(.split.screen.lim[d,3],.split.screen.lim[d,4]),envir=e)
+        assign("zlim",c(.split.screen.lim[d,5],.split.screen.lim[d,6]),envir=e)
+
+        if (D>2) {
+            screen(id, new=FALSE)
+            plot(x=c(.split.screen.lim[d,1],.split.screen.lim[d,2]), y=c(.split.screen.lim[d,3],.split.screen.lim[d,4]),
+                 type='n',
+                 xlab="",ylab="", main="",
+                 bty='n', xaxt='n', yaxt='n', ann=FALSE, # remove all text, that should be already displayed
+                 ...)
+        }
+
+        eval(parse(text = eval_str), envir = e)
     }
 }
 
@@ -356,7 +446,7 @@ contourview.matrix <- function(X, y, sdy=NULL,
 #' X = matrix(runif(15*2),ncol=2)
 #' y = apply(X,1,branin)
 #'
-#' model <- km(design = X, response = y, covtype="matern3_2")
+#' model <- DiceKriging::km(design = X, response = y, covtype="matern3_2")
 #'
 #' contourview(model)
 #'
@@ -368,8 +458,9 @@ contourview.km <- function(km_model, type = "UK",
                            npoints = 20,
                            nlevels = if (is.null(levels)) 10 else length(levels),
                            levels = NULL,
-                           col_points = "red",
-                           col_levels = "blue",
+                           col_points = if (!is.null(col)) col else "red",
+                           col_levels = if (!is.null(col)) col else "blue",
+                           col = NULL,
                            conf_level = 0.5,
                            conf_blend = conf_level,
                            bg_blend = 1,
@@ -397,7 +488,7 @@ contourview.km <- function(km_model, type = "UK",
     rx <- apply(X_doe, 2, range)
     if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- names(y_doe)
@@ -440,8 +531,9 @@ contourview_libKriging <- function(libKriging_model,
                            npoints = 20,
                            nlevels = if (is.null(levels)) 10 else length(levels),
                            levels = NULL,
-                           col_points = "red",
-                           col_levels = "blue",
+                           col_points = if (!is.null(col)) col else "red",
+                           col_levels = if (!is.null(col)) col else "blue",
+                           col = NULL,
                            conf_level = 0.5,
                            conf_blend = conf_level,
                            bg_blend = 1,
@@ -470,7 +562,7 @@ contourview_libKriging <- function(libKriging_model,
     rx <- apply(X_doe, 2, range)
     if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- names(y_doe)
@@ -485,7 +577,7 @@ contourview_libKriging <- function(libKriging_model,
     }
 
     contourview.function(fun = function(x) {
-            p = rlibkriging::predict(libKriging_model,x,stdev=TRUE)
+            p = rlibkriging::predict(libKriging_model,x,return_stdev=TRUE)
             list(mean=p$mean, se=qnorm(1-(1-conf_level)/2) * p$stdev) # to display gaussian conf interval
         }, vectorized=TRUE,
         dim = D, center = center,axis = axis,npoints = npoints,nlevels = nlevels,
@@ -531,8 +623,9 @@ contourview.Kriging <- function(Kriging_model,
                                    npoints = 20,
                                    nlevels = if (is.null(levels)) 10 else length(levels),
                                    levels = NULL,
-                                   col_points = "red",
-                                   col_levels = "blue",
+                                   col_points = if (!is.null(col)) col else "red",
+                                   col_levels = if (!is.null(col)) col else "blue",
+                                   col = NULL,
                                    conf_level = 0.5,
                                    conf_blend = conf_level,
                                    bg_blend = 1,
@@ -550,6 +643,7 @@ contourview.Kriging <- function(Kriging_model,
                            levels = levels,
                            col_points = col_points,
                            col_levels = col_levels,
+                           col = col,
                            conf_level = conf_level,
                            conf_blend = conf_blend,
                            bg_blend = bg_blend,
@@ -590,8 +684,9 @@ contourview.NuggetKriging <- function(NuggetKriging_model,
                                 npoints = 20,
                                 nlevels = if (is.null(levels)) 10 else length(levels),
                                 levels = NULL,
-                                col_points = "red",
-                                col_levels = "blue",
+                                col_points = if (!is.null(col)) col else "red",
+                                col_levels = if (!is.null(col)) col else "blue",
+                                col = NULL,
                                 conf_level = 0.5,
                                 conf_blend = conf_level,
                                 bg_blend = 1,
@@ -609,6 +704,7 @@ contourview.NuggetKriging <- function(NuggetKriging_model,
                            levels = levels,
                            col_points = col_points,
                            col_levels = col_levels,
+                           col = col,
                            conf_level = conf_level,
                            conf_blend = conf_blend,
                            bg_blend = bg_blend,
@@ -649,8 +745,9 @@ contourview.NoiseKriging <- function(NoiseKriging_model,
                                       npoints = 20,
                                       nlevels = if (is.null(levels)) 10 else length(levels),
                                       levels = NULL,
-                                      col_points = "red",
-                                      col_levels = "blue",
+                                      col_points = if (!is.null(col)) col else "red",
+                                      col_levels = if (!is.null(col)) col else "blue",
+                                      col = NULL,
                                       conf_level = 0.5,
                                       conf_blend = conf_level,
                                       bg_blend = 1,
@@ -668,6 +765,7 @@ contourview.NoiseKriging <- function(NoiseKriging_model,
                            levels = levels,
                            col_points = col_points,
                            col_levels = col_levels,
+                           col = col,
                            conf_level = conf_level,
                            conf_blend = conf_blend,
                            bg_blend = bg_blend,
@@ -705,8 +803,9 @@ contourview.glm <- function(glm_model,
                            npoints = 20,
                            nlevels = if (is.null(levels)) 10 else length(levels),
                            levels = NULL,
-                           col_points = "red",
-                           col_levels = "blue",
+                           col_points = if (!is.null(col)) col else "red",
+                           col_levels = if (!is.null(col)) col else "blue",
+                           col = NULL,
                            conf_level = 0.5,
                            conf_blend = conf_level,
                            bg_blend = 1,
@@ -739,7 +838,7 @@ contourview.glm <- function(glm_model,
     rx <- apply(X_doe, 2, range)
     if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     if (is.null(axis)) {
         axis <- t(utils::combn(D, 2))
@@ -797,8 +896,9 @@ contourview.list <- function(modelFit_model,
                             npoints = 20,
                             nlevels = if (is.null(levels)) 10 else length(levels),
                             levels = NULL,
-                            col_points = "red",
-                            col_levels = "blue",
+                            col_points = if (!is.null(col)) col else "red",
+                            col_levels = if (!is.null(col)) col else "blue",
+                            col = NULL,
                             conf_blend = 0.5,
                             bg_blend = 1,
                             mfrow = NULL,
@@ -824,7 +924,7 @@ contourview.list <- function(modelFit_model,
     rx <- apply(X_doe, 2, range)
     if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
     rownames(rx) <- c("min", "max")
-    drx <- rx["max", ] - rx["min", ]
+    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
     if (is.null(axis)) {
         axis <- t(utils::combn(D, 2))
