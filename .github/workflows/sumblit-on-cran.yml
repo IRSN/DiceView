@@ -40,6 +40,7 @@ jobs:
         mv DiceView_*.* DiceView/CRAN-${{ matrix.os }}/.
       shell: bash
       name: R CMD build
+
     - run: |
         R CMD check --as-cran --no-manual CRAN-${{ matrix.os }}/DiceView* || (
           test -f DiceView.Rcheck/00install.out && cat DiceView.Rcheck/00install.out | sed -e 's/^/00install.out| /';
@@ -49,6 +50,7 @@ jobs:
       name: R CMD check
     - uses: actions/upload-artifact@v4
       with:
+        name: artifact-${{ matrix.os }}
         path: ./CRAN-*
 
     - uses: softprops/action-gh-release@v1
