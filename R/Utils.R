@@ -29,10 +29,12 @@ translude <- function(col, alpha = 0.6) {
 
 #' @import grDevices
 col.levels <- function(color,nlevels){
-        col.rgb=col2rgb(color)
-        col.hsv=rgb2hsv(r=col.rgb[1],g=col.rgb[2],b=col.rgb[3])
-        col = hsv(h=col.hsv[1],s=seq(f=0,t=col.hsv[2],l=nlevels),v=col.hsv[3])
-        return(col)
+    if (length(nlevels)!=1) # if nlevels is in fact levels
+        nlevels <- length(nlevels)-1
+    col.rgb=col2rgb(color)
+    col.hsv=rgb2hsv(r=col.rgb[1],g=col.rgb[2],b=col.rgb[3])
+    col = hsv(h=col.hsv[1],s=seq(f=0,t=col.hsv[2],l=nlevels),v=col.hsv[3])
+    return(col)
 }
 
 ##========================================================
