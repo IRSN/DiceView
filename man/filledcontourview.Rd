@@ -27,13 +27,12 @@
   col_center = "black",
   axis = NULL,
   npoints = 20,
-  nlevels = if (is.null(levels)) 10 else length(levels),
-  levels = NULL,
+  levels = 10,
   lty_levels = 1,
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, nlevels + 1) else
-    col.levels("blue", nlevels + 1),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels - 1) else
+    col.levels("blue", levels - 1),
   col = NULL,
-  conf_blend = 0.5,
+  col_fading_interval = 0.5,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -49,15 +48,14 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = if (is.null(levels)) 10 else length(levels),
-  levels = NULL,
+  levels = pretty(km_model@y, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, nlevels + 1) else
-    col.levels("blue", nlevels + 1),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+    col.levels("blue", levels),
   col = NULL,
   conf_level = 0.5,
-  conf_blend = conf_level,
-  bg_blend = 1,
+  conf_fading = 0.5,
+  bg_fading = 1,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -72,15 +70,14 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = if (is.null(levels)) 10 else length(levels),
-  levels = NULL,
+  levels = pretty(Kriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, nlevels + 1) else
-    col.levels("blue", nlevels + 1),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+    col.levels("blue", levels),
   col = NULL,
   conf_level = 0.5,
-  conf_blend = conf_level,
-  bg_blend = 1,
+  conf_fading = 0.5,
+  bg_fading = 1,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -95,15 +92,14 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = if (is.null(levels)) 10 else length(levels),
-  levels = NULL,
+  levels = pretty(NuggetKriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, nlevels + 1) else
-    col.levels("blue", nlevels + 1),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+    col.levels("blue", levels),
   col = NULL,
   conf_level = 0.5,
-  conf_blend = conf_level,
-  bg_blend = 1,
+  conf_fading = 0.5,
+  bg_fading = 1,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -118,15 +114,14 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = if (is.null(levels)) 10 else length(levels),
-  levels = NULL,
+  levels = pretty(NoiseKriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, nlevels + 1) else
-    col.levels("blue", nlevels + 1),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+    col.levels("blue", levels),
   col = NULL,
   conf_level = 0.5,
-  conf_blend = conf_level,
-  bg_blend = 1,
+  conf_fading = 0.5,
+  bg_fading = 1,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -141,15 +136,14 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = if (is.null(levels)) 10 else length(levels),
-  levels = NULL,
+  levels = pretty(glm_model$fitted.values, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, nlevels + 1) else
-    col.levels("blue", nlevels + 1),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+    col.levels("blue", levels),
   col = NULL,
   conf_level = 0.5,
-  conf_blend = conf_level,
-  bg_blend = 1,
+  conf_fading = 0.5,
+  bg_fading = 1,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -164,14 +158,12 @@
   center = NULL,
   axis = NULL,
   npoints = 20,
-  nlevels = if (is.null(levels)) 10 else length(levels),
-  levels = NULL,
+  levels = pretty(modelFit_model$data$Y, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, nlevels + 1) else
-    col.levels("blue", nlevels + 1),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+    col.levels("blue", levels),
   col = NULL,
-  conf_blend = 0.5,
-  bg_blend = 1,
+  bg_fading = 1,
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
@@ -200,9 +192,7 @@ filledcontourview(...)
 
 \item{npoints}{an optional number of points to discretize plot of response  surface and uncertainties.}
 
-\item{nlevels}{number of contour levels to display.}
-
-\item{levels}{contour levels to display.}
+\item{levels}{(number of) contour levels to display.}
 
 \item{lty_levels}{contour line type.}
 
@@ -210,7 +200,7 @@ filledcontourview(...)
 
 \item{col}{color of the object (use col_* for specific objects).}
 
-\item{conf_blend}{an optional factor of alpha (color channel) blending used to plot standard error (if any) hull.}
+\item{col_fading_interval}{an optional factor of alpha (color channel) fading used to plot function output intervals (if any).}
 
 \item{mfrow}{an optional list to force \code{par(mfrow = ...)} call. The default value  \code{NULL} is automatically set for compact view.}
 
@@ -232,9 +222,11 @@ filledcontourview(...)
 
 \item{col_points}{color of points.}
 
-\item{conf_level}{confidence level hull to display.}
+\item{conf_level}{confidence hulls to display.}
 
-\item{bg_blend}{an optional factor of alpha (color channel) blending used to plot design points outside from this section.}
+\item{conf_fading}{an optional factor of alpha (color channel) fading used to plot confidence hull.}
+
+\item{bg_fading}{an optional factor of alpha (color channel) fading used to plot design points outside from this section.}
 
 \item{Kriging_model}{an object of class \code{"Kriging"}.}
 
@@ -257,7 +249,6 @@ x1 <- rnorm(15)
 x2 <- rnorm(15)
 
 y <- x1 + x2 + rnorm(15)
-
 model <- lm(y ~ x1 + x2)
 
 filledcontourview(function(x) sum(x),
@@ -266,10 +257,10 @@ points(x1,x2)
 
 filledcontourview(function(x) {
                       x = as.data.frame(x)
-                      colnames(x) <- names(model$coefficients[-1])
-                      p = predict.lm(model, newdata=x, se.fit=TRUE)
-                      list(mean=p$fit, se=p$se.fit)
-                    }, vectorized=TRUE, dim=2, Xlim=cbind(range(x1),range(x2)), add=TRUE)
+                      colnames(x) <- all.vars(model$call)[-1]
+                      predict.lm(model, newdata=x, se.fit=FALSE)
+                    }, vectorized=TRUE, dim=2,
+                  Xlim=cbind(range(x1),range(x2)), add=TRUE)
 
 if (requireNamespace("DiceKriging")) { library(DiceKriging)
 
@@ -335,7 +326,7 @@ filledcontourview(model)
 }
 
 ## A 2D example - Branin-Hoo function
-filledcontourview(branin, dim=2, nlevels=30, col='black')
+filledcontourview(branin, dim=2, levels=30, col='black')
 
 \dontrun{
 ## a 16-points factorial design, and the corresponding response
@@ -347,34 +338,33 @@ y <- branin(design.fact); names(y) <- "y"
 if (requireNamespace("DiceKriging")) { library(DiceKriging)
 ## model: km
 model <- DiceKriging::km(design = design.fact, response = y)
-filledcontourview(model, nlevels=30)
-filledcontourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
+filledcontourview(model, levels=30)
+filledcontourview(branin, dim=2, levels=30, col='red', add=TRUE)
 }
 
-## model: Kriging
 if (requireNamespace("rlibkriging")) { library(rlibkriging)
+## model: Kriging
 model <- Kriging(X = as.matrix(design.fact), y = as.matrix(y), kernel="matern3_2")
-filledcontourview(model, nlevels=30)
-filledcontourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
+filledcontourview(model, levels=30)
+filledcontourview(branin, dim=2, levels=30, col='red', add=TRUE)
 }
 
 ## model: glm
 model <- glm(y ~ 1+ x1 + x2 + I(x1^2) + I(x2^2) + x1*x2, data=cbind(y,design.fact))
-filledcontourview(model, nlevels=30)
-filledcontourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
+filledcontourview(model, levels=30)
+filledcontourview(branin, dim=2, levels=30, col='red', add=TRUE)
 
 if (requireNamespace("DiceEval")) { library(DiceEval)
 ## model: StepLinear
 model <- modelFit(design.fact, y, type = "StepLinear")
-filledcontourview(model, nlevels=30)
-filledcontourview(branin, dim=2, nlevels=30, col='red', add=TRUE)
+filledcontourview(model, levels=30)
+filledcontourview(branin, dim=2, levels=30, col='red', add=TRUE)
 }
 }
 
 }
 \seealso{
 \code{\link{sectionview.function}} for a section plot, and \code{\link{sectionview3d.function}} for a 2D section plot.
-\code{\link{Vectorize.function}} to wrap as vectorized a non-vectorized function.
 
 \code{\link{sectionview.km}} for a section plot, and \code{\link{sectionview3d.km}} for a 2D section plot.
 

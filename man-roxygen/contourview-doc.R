@@ -3,8 +3,7 @@
 #' @param npoints an optional number of points to discretize plot of response  surface and uncertainties.
 #' @param col_levels color for the surface.
 #' @param col color of the object (use col_* for specific objects).
-#' @param nlevels number of contour levels to display.
-#' @param levels contour levels to display.
+#' @param levels (number of) contour levels to display.
 #' @param lty_levels contour line type.
 #' @param col_center color for the section center of the plot (if any).
 #' @param lty_center line type for the section center of the plot (if any).
