@@ -1,20 +1,19 @@
-#' @param fun a function or 'predict()'-like function that returns a simple numeric or mean and standard error: list(mean=...,se=...).
+#' @param fun a function or 'predict()'-like function that returns a simple numeric, or an interval, or mean and standard error: list(mean=...,se=...).
 #' @param vectorized is fun vectorized?
 #' @param dim input variables dimension of the model or function.
-#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
+#' @param col_fun color of the function plot.
+#' @param col_fading_interval an optional factor of alpha (color channel) fading used to plot function output intervals (if any).
 #' @template sectionview-doc
 #' @rdname sectionview
 #' @method sectionview function
 #' @aliases sectionview,function,function-method
 #' @export
 #' @seealso \code{\link{sectionview.function}} for a section plot, and \code{\link{sectionview3d.function}} for a 2D section plot.
-#' \code{\link{Vectorize.function}} to wrap as vectorized a non-vectorized function.
 #' @examples
 #' x1 <- rnorm(15)
 #' x2 <- rnorm(15)
 #'
 #' y <- x1 + x2 + rnorm(15)
-#'
 #' model <- lm(y ~ x1 + x2)
 #'
 #' sectionview(function(x) sum(x),
@@ -22,11 +21,11 @@
 #'
 #' sectionview(function(x) {
 #'                       x = as.data.frame(x)
-#'                       colnames(x) <- names(model$coefficients[-1])
+#'                       colnames(x) <- all.vars(model$call)[-1]
 #'                       p = predict.lm(model, newdata=x, se.fit=TRUE)
-#'                       list(mean=p$fit, se=p$se.fit)
-#'                     }, vectorized=TRUE,
-#'                     dim=2, center=c(0,0), Xlim=cbind(range(x1),range(x2)), add=TRUE)
+#'                       cbind(p$fit-1.96 * p$se.fit, p$fit+1.96 * p$se.fit)
+#'                     }, vectorized=TRUE, dim=2, center=c(0,0),
+#'               Xlim=cbind(range(x1),range(x2)), add=TRUE)
 #'
 sectionview.function <- function(fun, vectorized=FALSE,
                                 dim = NULL,
@@ -35,12 +34,12 @@ sectionview.function <- function(fun, vectorized=FALSE,
                              col_center = "black",
                              axis = NULL,
                              npoints = 100,
-                             col_surf = if (!is.null(col)) col else "blue",
+                             col_fun = if (!is.null(col)) col else "blue",
                              col = NULL,
-                             conf_blend = 0.5,
+                             col_fading_interval = 0.5,
                              mfrow = NULL,
                              Xlab = NULL, ylab = NULL,
-                             Xlim = NULL, ylim=NULL,
+                             Xlim = NULL, ylim = NULL,
                              title = NULL,
                              add = FALSE,
                              ...) {
@@ -55,11 +54,6 @@ sectionview.function <- function(fun, vectorized=FALSE,
             D <- length(center)
     }
 
-    if (!vectorized)
-        Fun = Vectorize.function(fun, D)
-    else
-        Fun = fun
-
     if (is.null(axis)) {
         axis <- matrix(1:D, ncol = 1)
     } else {
@@ -68,8 +62,8 @@ sectionview.function <- function(fun, vectorized=FALSE,
     }
 
     if (is.null(mfrow)) {
-        nc <- round(sqrt(D))
-        nl <- ceiling(D/nc)
+        nc <- round(sqrt(nrow(axis)))
+        nl <- ceiling(nrow(axis)/nc)
         mfrow <- c(nc, nl)
     }
 
@@ -100,6 +94,10 @@ sectionview.function <- function(fun, vectorized=FALSE,
     rownames(rx) <- c("min", "max")
     drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
+    if (is.null(ylim)) ylim <- range(unlist(EvalInterval.function(fun,rbind(rx,center), vectorized)), na.rm = TRUE)
+
+    zlim <- c(NA,NA) #Not used for this kind of plot
+
     ## define X & y labels
     if (is.null(ylab)) ylab <- "y"
     if (is.null(Xlab)) Xlab <- paste(sep = "", "X", 1:D)
@@ -115,40 +113,14 @@ sectionview.function <- function(fun, vectorized=FALSE,
 
         xdmin <- unlist(rx["min", d])
         xdmax <- unlist(rx["max", d])
-        xlim = c(xdmin,xdmax)
+        xlim = c(xdmin, xdmax)
 
         xd <- seq(from = xdmin, to = xdmax, length.out = npoints[d])
         x <- data.frame(t(matrix(as.numeric(center), nrow = D, ncol = npoints[d])))
         if (!is.null(center)) if(!is.null(names(center))) names(x) <- names(center)
         x[ , d] <- xd
 
-        y_mean <- array(NA, npoints)
-        y_sd <- array(0, npoints)
-
-        y <- Fun(as.matrix(x))
-        if (is.list(y)) {
-            y = lapply(as.list(as.data.frame(y)),unlist)
-            if (!("mean" %in% names(y)) || !("se" %in% names(y)))
-                stop(paste0("If function returns a list, it must have 'mean' and 'se', while was ",paste0(collapse="\n",utils::capture.output(print(y)))))
-            y_mean <- as.numeric(y$mean)
-            if (!is.numeric(y_mean))
-                stop("If function returns a list, 'mean' must be (as) numeric:",paste0(y_mean,collapse="\n"))
-            y_sd <- as.numeric(y$se)
-            if (!is.numeric(y_sd))
-                stop("If function returns a list, 'se' must be (as) numeric:",paste0(y_sd,collapse="\n"))
-        } else if (is.matrix(y) && ncol(y)==2) {
-            y_mean <- as.numeric(y[,1])
-            y_sd <- as.numeric(y[,2])
-            if (!is.numeric(y_mean))
-                stop("If function returns a matrix, first column must be (as) numeric.")
-            if (!is.numeric(y_sd))
-                stop("If function returns a matrix, second column must be (as) numeric.")
-        } else { # simple function, not a list
-            y_mean <- as.numeric(y)
-            y_sd <- 0
-            if (!is.numeric(y_mean))
-                stop("If function does not returns a list, it must be (as) numeric.")
-        }
+        F_x = EvalInterval.function(fun, x, vectorized)
 
         if (is.null(title)){
             title_d <- paste(collapse = "~",sep = "~", ylab, Xlab[d])
@@ -159,12 +131,7 @@ sectionview.function <- function(fun, vectorized=FALSE,
             title_d <- title
         }
 
-        if (is.null(ylim)) {
-            ylim <- c(min(y_mean-3*y_sd),max(y_mean+3*y_sd))
-        }
-        zlim <- c(NA,NA) #Not used for this kind of plot
-
-        ## plot mean surface two steps required to use alpha =
+        ## plot mean
         if (isTRUE(add)) {
             # re-use global settings for limits of this screen
             .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
@@ -172,48 +139,50 @@ sectionview.function <- function(fun, vectorized=FALSE,
             ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
             zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
             if (D>1) {
-                plot(xd, y_mean,
-                     xlim=xlim, ylim=ylim,
-                     type = "l",
-                     col = col_surf, xlab="", ylab="",
+                plot(xd, if (!all(is.na(F_x$y))) F_x$y else F_x$y_low,
+                     xlim = xlim, ylim  =ylim,
+                     type = if (!all(is.na(F_x$y))) "l" else "n",
+                     col = col_fun, xlab="", ylab="",
                      bty='n', xaxt='n', yaxt='n', ann=FALSE,# remove all text, that should be already displayed
                      ...)
             } else { # not using screen(), so need for a non reset plotting method
-                lines(xd, y_mean,
-                      xlim=xlim, ylim=ylim,
-                      col = col_surf,
+                lines(xd, if (!all(is.na(F_x$y))) F_x$y else F_x$y_low,
+                      xlim = xlim, ylim = ylim,
+                      type = if (!all(is.na(F_x$y))) "l" else "n",
+                      col = col_fun,
                       ...)
             }
         } else {
             eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
-            plot(xd, y_mean,
+            plot(xd, if (!all(is.na(F_x$y))) F_x$y else F_x$y_low,
                  xlab = Xlab[d], ylab = ylab,
                  xlim = xlim, ylim = ylim,
                  main = title_d,
-                 type = "l",
-                 col = col_surf,
+                 type = if (!all(is.na(F_x$y))) "l" else "n",
+                 col = col_fun,
                  ...)
             if(D>1) abline(v=center[d],col=col_center,lty=lty_center)
         }
 
         ## 'confidence band' filled with the suitable color
-	if (any(y_sd!=0))
-            polygon(c(xd,rev(xd)),
-                    c(y_mean + y_sd,
-                      rev(y_mean - y_sd)),
-                    col = translude(col_surf, alpha = conf_blend),
-                    border = NA)
-
+	    if (!all(is.na(F_x$y_low)) && !all(is.na(F_x$y_up))) {
+	        print(xd)
+	        print(F_x$y_low)
+	        print( translude(col_fun, alpha = col_fading_interval))
+                polygon(c(xd,rev(xd)),
+                        c(F_x$y_low,rev(F_x$y_up)),
+                        col = translude(col_fun, alpha = col_fading_interval),
+                        border = NA)
+	    }
     }
 }
 
 
 #' @param X the matrix of input design.
-#' @param y the array of output values.
-#' @param sdy optional array of output standard error.
+#' @param y the array of output values (two columns means an interval).
 #' @param col_points color of points.
-#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
-#' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param col_fading_interval an optional factor of alpha (color channel) fading used to plot confidence intervals.
+#' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 #' @template sectionview-doc
 #' @rdname sectionview
 #' @method sectionview matrix
@@ -226,48 +195,46 @@ sectionview.function <- function(fun, vectorized=FALSE,
 #'
 #' sectionview(X,y, center=c(.5,.5))
 #'
-sectionview.matrix<- function(X, y, sdy=NULL,
-                              center = NULL,
-                              lty_center = 2,
-                              col_center = "black",
-                              axis = NULL,
-                              col_points = if (!is.null(col)) col else "red",
-                              col = NULL,
-                              conf_blend = 0.5,
-                              bg_blend = 5,
-                              mfrow = NULL,
-                              Xlab = NULL, ylab = NULL,
-                              Xlim = NULL, ylim=NULL,
-                              title = NULL,
-                              add = FALSE,
-                              ...) {
-    X_doe <- X
-    y_doe <- y
+sectionview.matrix <- function(X, y,
+                               center = NULL,
+                               lty_center = 2,
+                               col_center = "black",
+                               axis = NULL,
+                               col_points = if (!is.null(col)) col else "red",
+                               col = NULL,
+                               col_fading_interval = 0.5,
+                               bg_fading = 5,
+                               mfrow = NULL,
+                               Xlab = NULL, ylab = NULL,
+                               Xlim = NULL, ylim=NULL,
+                               title = NULL,
+                               add = FALSE,
+                               ...) {
+    D <- ncol(X)
+    n <- nrow(X)
 
-    D <- ncol(X_doe)
-    n <- nrow(X_doe)
-
-    if (is.null(sdy)) {
-        sdy_doe <- rep(0, n)
+    if (is.matrix(y) && ncol(y) == 2) {
+        y_low <- y[ , 1]
+        y_up <- y[ , 2]
+        y <- NA
     } else {
-        sdy_doe <- rep_len(sdy, n)
+        y_low <- NA
+        y_up <- NA
     }
 
     ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X_doe, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
+    rx <- apply(X, 2, range)
+    if(!is.null(Xlim)) rx <- matrix(Xlim, nrow=2, ncol=D)
     rownames(rx) <- c("min", "max")
     drx <- unlist(rx["max", ]) - unlist(rx["min", ])
 
-    if (is.null(ylim)) {
-        ymin <- min(y_doe-3*sdy_doe)
-        ymax <- max(y_doe+3*sdy_doe)
-        ylim <- c(ymin, ymax)
-    }
+    if (is.null(ylim)) ylim <- range(y)
+
+    zlim <- c(NA,NA) #Not used for this kind of plot
 
     ## define X & y labels
-    if (is.null(ylab)) ylab <- names(y_doe)
-    if (is.null(Xlab)) Xlab <- names(X_doe)
+    if (is.null(ylab) && !is.null(names(y))) ylab <- names(y)[1]
+    if (is.null(Xlab)) Xlab <- names(X)
 
     if (is.null(axis)) {
         axis <- matrix(1:D, ncol = 1)
@@ -277,8 +244,8 @@ sectionview.matrix<- function(X, y, sdy=NULL,
     }
 
     if (is.null(mfrow)) {
-        nc <- round(sqrt(D))
-        nl <- ceiling(D/nc)
+        nc <- round(sqrt(nrow(axis)))
+        nl <- ceiling(nrow(axis)/nc)
         mfrow <- c(nc, nl)
     }
 
@@ -318,14 +285,9 @@ sectionview.matrix<- function(X, y, sdy=NULL,
             title_d <- title
         }
 
-        if (is.null(ylim)) {
-            ylim <- c(min(y-3*sdy),max(y+3*sdy))
-        }
-        zlim <- c(NA,NA) #Not used for this kind of plot
-
         ## fading colors for points
         if (D>1) {
-            xrel <- scale(x = as.matrix(X_doe),
+            xrel <- scale(x = as.matrix(X),
                           center = center,
                           scale = drx)
 
@@ -335,54 +297,50 @@ sectionview.matrix<- function(X, y, sdy=NULL,
 
             alpha <- pmax(0,apply(X = xrel[ , ind.nonfix, drop = FALSE],
                            MARGIN = 1,
-                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_blend))
+                           FUN = function(x) (1 - sqrt(sum(x^2)/D))^bg_fading))
         } else {
             alpha <- rep(1, n)
         }
 
-        if (add) {
+        if (isTRUE(add) && !all(is.na(y))) {
             .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
             xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
             ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
             zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
             if (D>1)
-                plot(x=X_doe[,d], y=y_doe, # Cannot use 'points' so use 'plot' with these neutral args
+                plot(x=X[,d], y=y, # Cannot use 'points' so use 'plot' with these neutral args
                        col = fade(color = col_points, alpha = alpha),
-                       pch = 20,type=if (is.null(sdy)) 'p' else 'n',
+                       pch = 20,type='p',
                        xlab="",ylab="", main="", xlim=xlim, ylim=ylim,
                      bty='n', xaxt='n', yaxt='n', ann=FALSE, # remove all text, that should be already displayed
                      ...)
             else
-                points(x=X_doe[,d], y=y_doe,
+                points(x=X[,d], y=y,
                  col = fade(color = col_points, alpha = alpha),
-                 pch = 20,type=if (is.null(sdy)) 'p' else 'n',
+                 pch = 20,type='p',
                  xlab="",ylab="", xlim=xlim, ylim=ylim,
                  ...)
         } else {
             eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
-            plot(X_doe[,d], y_doe,
-                 col = fade(color = col_points, alpha = alpha),
-                 pch = 20, type='p', main=title_d,
+            plot(X[,d], if (!all(is.na(y))) y else y_low,
                  xlab=Xlab[d], ylab=ylab, xlim=xlim, ylim=ylim,
+                 main=title_d,
+                 pch = 20, type = if (!all(is.na(y))) "l" else "n",
+                 col = fade(color = col_points, alpha = alpha),
                  ...)
             if(D>1) abline(v=center[d],col=col_center,lty=lty_center)
         }
 
-        if (!is.null(sdy)) {
+        if (!all(is.na(y_low)) && !all(is.na(y_up))) {
             #for (p in 1:length(conf_level)) {
                 for (i in 1:n) {
-                    if (sdy_doe[i]>0)
-                        lines(x=c(X_doe[i,d],X_doe[i,d]),
-                              y=c( y_doe[i] + sdy_doe[i],
-                                  y_doe[i] - sdy_doe[i]),
-                              col = fade(color = col_points, alpha = alpha[i]*conf_blend),
+                        lines(x=c(X[i,d],X[i,d]),
+                              y=c(y_low[i], y_up[i]),
+                              col = fade(color = col_points, alpha = alpha[i]*col_fading_interval),
                               lwd = 5, lend = 1)
-                    else
-                        points(x=X_doe[i,d],y=y_doe[i],
-                               col = fade(color = col_points, alpha = alpha[i]*conf_blend),
-                               pch = 15, lwd = 5)
                 }
-            }
+            #}
+        }
     }
 }
 
@@ -457,9 +415,9 @@ sectionview.character <- function(eval_str,
 #' @param km_model an object of class \code{"km"}.
 #' @param type the kriging type to use for model prediction.
 #' @param col_points color of points.
-#' @param conf_level an optional list of confidence interval values to display.
-#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
-#' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_level confidence intervals to display.
+#' @param conf_fading an optional factor of alpha (color channel) fading used to plot confidence intervals.
+#' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 #' @template sectionview-doc
 #' @rdname sectionview
 #' @method sectionview km
@@ -483,11 +441,11 @@ sectionview.km <- function(km_model, type = "UK",
                            axis = NULL,
                            npoints = 100,
                            col_points = if (!is.null(col)) col else "red",
-                           col_surf = if (!is.null(col)) col else "blue",
+                           col_fun = if (!is.null(col)) col else "blue",
                            col = NULL,
                            conf_level = 0.95,
-                           conf_blend = 0.5,
-                           bg_blend = 5,
+                           conf_fading = 0.5,
+                           bg_fading = 5,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
                            Xlim = NULL, ylim=NULL,
@@ -505,7 +463,7 @@ sectionview.km <- function(km_model, type = "UK",
     } else if (km_model@covariance@nugget.flag) {
         sdy_doe <- rep(sqrt(km_model@covariance@nugget), n)
     } else {
-        sdy_doe <- rep(0, n)
+        sdy_doe <- 0
     }
 
     ## find limits: rx is matrix with min in row 1 and max in row 2
@@ -531,38 +489,60 @@ sectionview.km <- function(km_model, type = "UK",
         axis <- matrix(axis, ncol = 1)
     }
 
-    sectionview.function(
-        fun = function(x) {
-            p = DiceKriging::predict.km(km_model,type=type,newdata=x,checkNames=FALSE)
-            list(mean=p$mean, se=qnorm(1-(1-conf_level)/2) * p$sd)
-        }, vectorized=TRUE,
+    if (is.null(conf_fading) || length(conf_fading) != length(conf_level)) {
+        conf_fading <- rep(0.5/length(conf_level), length(conf_level))
+    }
+
+    # plot mean
+    sectionview.function(fun = function(x) {
+        DiceKriging::predict.km(km_model,type=type,newdata=x,checkNames=FALSE)$mean
+    }, vectorized=TRUE,
     dim = D, center = center,axis = axis,npoints = npoints,
-    col_surf = col_surf, conf_blend=conf_blend,
+    col_fun = col_fun, #conf_fading=conf_fading,
     mfrow = mfrow, Xlab = Xlab, ylab = ylab,
     Xlim = rx, ylim=ylim, title = title, add = add, ...)
 
-    sectionview.matrix(X = X_doe, y = y_doe, sdy = sdy_doe,
-                       dim = D, center = center, axis = axis,
-                       col_points = col_points, conf_blend = conf_blend, bg_blend = bg_blend,
-                       mfrow = mfrow,
-                       Xlim = rx, ylim=ylim,
-                       add=TRUE)
+    # plot design points
+    sectionview.matrix(X = X_doe, y = y_doe,
+                       center = center, axis = axis,
+                       col_points = col_points,
+                       col_fading_interval = conf_fading, bg_fading = bg_fading,
+                       mfrow = mfrow, Xlim = rx, ylim=ylim, add=TRUE)
+
+    # plot confidence bands
+    for (l in conf_level) {
+        sectionview.function(fun = function(x) {
+                p = DiceKriging::predict.km(km_model,type=type,newdata=x,checkNames=FALSE)
+                cbind(p$mean-qnorm(1-(1-l)/2) * p$sd, p$mean+qnorm(1-(1-l)/2) * p$sd)
+            }, vectorized=TRUE,
+            dim = D, center = center,axis = axis,npoints = npoints,
+            col_fun = col_fun,
+            col_fading_interval=conf_fading,
+            mfrow = mfrow, Xlim = rx, ylim=ylim, add = TRUE)
+
+        if (km_model@noise.flag)
+            sectionview.matrix(X = X_doe, y = cbind(y_doe-qnorm(1-(1-l)/2) * sdy_doe, y_doe+qnorm(1-(1-l)/2) * sdy_doe),
+                           center = center, axis = axis,
+                           col_points = col_points,
+                           col_fading_interval = conf_fading, bg_fading = bg_fading,
+                           mfrow = mfrow, Xlim = rx, ylim=ylim, add=TRUE)
+    }
 
 }
 
 #' @param libKriging_model an object of class \code{"Kriging"}, \code{"NuggetKriging"} or \code{"NoiseKriging"}.
 #' @param col_points color of points.
-#' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 sectionview_libKriging <- function(libKriging_model,
                            center = NULL,
                            axis = NULL,
                            npoints = 100,
                            col_points = if (!is.null(col)) col else "red",
-                           col_surf = if (!is.null(col)) col else "blue",
+                           col_fun = if (!is.null(col)) col else "blue",
                            col = NULL,
                            conf_level = 0.95,
-                           conf_blend = 0.5,
-                           bg_blend = 5,
+                           conf_fading = 0.5,
+                           bg_fading = 5,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
                            Xlim = NULL, ylim=NULL,
@@ -576,7 +556,7 @@ sectionview_libKriging <- function(libKriging_model,
     n <- nrow(X_doe)
 
     if (inherits(libKriging_model, "Kriging")) {
-        sdy_doe <- NULL #rep(0, n)
+        sdy_doe <- 0
     } else if (inherits(libKriging_model, "NuggetKriging")) {
         sdy_doe <- rep(sqrt(libKriging_model$nugget()),n)
     } else if (inherits(libKriging_model, "NoiseKriging")) {
@@ -613,33 +593,52 @@ sectionview_libKriging <- function(libKriging_model,
         axis <- matrix(axis, ncol = 1)
     }
 
-    if (is.null(conf_blend) ||
-        length(conf_blend) != length(conf_level))
-        conf_blend <- rep(0.5/length(conf_level), length(conf_level))
+    if (is.null(conf_fading) ||
+        length(conf_fading) != length(conf_level))
+        conf_fading <- rep(0.5/length(conf_level), length(conf_level))
 
+    # plot mean
     sectionview.function(fun = function(x) {
-            p = rlibkriging::predict(libKriging_model,x,return_stdev=TRUE)
-            list(mean=p$mean, se=qnorm(1-(1-conf_level)/2) * p$stdev)
-        }, vectorized=TRUE,
-        dim = D, center = center,axis = axis,npoints = npoints,
-        col_surf = col_surf, conf_blend=conf_blend,
-        mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-        Xlim = rx, ylim=ylim, title = title, add = add, ...)
+        rlibkriging::predict(libKriging_model,x,return_stdev=FALSE)$mean
+    }, vectorized=TRUE,
+    dim = D, center = center,axis = axis,npoints = npoints,
+    col_fun = col_fun, #conf_fading=conf_fading,
+    mfrow = mfrow, Xlab = Xlab, ylab = ylab,
+    Xlim = rx, ylim=ylim, title = title, add = add, ...)
 
-    sectionview.matrix(X = X_doe, y = y_doe, sdy = sdy_doe,
-                       dim = D, center = center, axis = axis,
+    # plot design points
+    sectionview.matrix(X = X_doe, y = y_doe,
+                       center = center, axis = axis,
                        col_points = col_points,
-                       conf_blend = conf_blend, bg_blend = bg_blend,
-                       mfrow = mfrow,
-                       Xlim = rx, ylim=ylim,
-                       add=TRUE)
+                       col_fading_interval = conf_fading, bg_fading = bg_fading,
+                       mfrow = mfrow, Xlim = rx, ylim=ylim, add=TRUE)
+
+    # plot confidence bands
+    for (l in conf_level) {
+        sectionview.function(fun = function(x) {
+                p = rlibkriging::predict(libKriging_model,x,return_stdev=TRUE)
+                cbind(p$mean-qnorm(1-(1-l)/2) * p$stdev, p$mean+qnorm(1-(1-l)/2) * p$stdev)
+            }, vectorized=TRUE,
+            dim = D, center = center,axis = axis,npoints = npoints,
+            col_fun = col_fun,
+            col_fading_interval=conf_fading,
+            mfrow = mfrow, Xlim = rx, ylim=ylim, add = TRUE)
+
+        if (inherits(libKriging_model, "NoiseKriging")) # so sdy_doe!=0
+            sectionview.matrix(X = X_doe, y = cbind(y_doe-qnorm(1-(1-l)/2) * sdy_doe, y_doe+qnorm(1-(1-l)/2) * sdy_doe),
+                           center = center, axis = axis,
+                           col_points = col_points,
+                           col_fading_interval = conf_fading, bg_fading = bg_fading,
+                           mfrow = mfrow, Xlim = rx, ylim=ylim, add=TRUE)
+    }
+
 }
 
 #' @param Kriging_model an object of class \code{"Kriging"}.
 #' @param col_points color of points.
-#' @param conf_level an optional list of confidence interval values to display.
-#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
-#' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_level confidence intervals to display.
+#' @param conf_fading an optional factor of alpha (color channel) fading used to plot confidence intervals.
+#' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 #' @template sectionview-doc
 #' @rdname sectionview
 #' @method sectionview Kriging
@@ -663,11 +662,11 @@ sectionview.Kriging <- function(Kriging_model,
                                    axis = NULL,
                                    npoints = 100,
                                    col_points = if (!is.null(col)) col else "red",
-                                   col_surf = if (!is.null(col)) col else "blue",
+                                   col_fun = if (!is.null(col)) col else "blue",
                                    col = NULL,
                                    conf_level = 0.95,
-                                   conf_blend = 0.5,
-                                   bg_blend = 5,
+                                   conf_fading = 0.5,
+                                   bg_fading = 5,
                                    mfrow = NULL,
                                    Xlab = NULL, ylab = NULL,
                                    Xlim = NULL, ylim=NULL,
@@ -675,16 +674,16 @@ sectionview.Kriging <- function(Kriging_model,
                                    add = FALSE,
                                    ...) {
     sectionview_libKriging(Kriging_model,center,axis,npoints,
-                           col_points,col_surf,col,
-                           conf_level,conf_blend,bg_blend,
+                           col_points,col_fun,col,
+                           conf_level,conf_fading,bg_fading,
                            mfrow,Xlab, ylab,Xlim,ylim,title,add,...)
 }
 
 #' @param NuggetKriging_model an object of class \code{"Kriging"}.
 #' @param col_points color of points.
-#' @param conf_level an optional list of confidence interval values to display.
-#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
-#' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_level an optional list of confidence intervals to display.
+#' @param conf_fading an optional factor of alpha (color channel) fading used to plot confidence intervals.
+#' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 #' @template sectionview-doc
 #' @rdname sectionview
 #' @method sectionview NuggetKriging
@@ -708,11 +707,11 @@ sectionview.NuggetKriging <- function(NuggetKriging_model,
                                 axis = NULL,
                                 npoints = 100,
                                 col_points = if (!is.null(col)) col else "red",
-                                col_surf = if (!is.null(col)) col else "blue",
+                                col_fun = if (!is.null(col)) col else "blue",
                                 col = NULL,
                                 conf_level = 0.95,
-                                conf_blend = 0.5,
-                                bg_blend = 5,
+                                conf_fading = 0.5,
+                                bg_fading = 5,
                                 mfrow = NULL,
                                 Xlab = NULL, ylab = NULL,
                                 Xlim = NULL, ylim=NULL,
@@ -720,16 +719,16 @@ sectionview.NuggetKriging <- function(NuggetKriging_model,
                                 add = FALSE,
                                 ...) {
     sectionview_libKriging(NuggetKriging_model,center,axis,npoints,
-                           col_points,col_surf,col,
-                           conf_level,conf_blend,bg_blend,
+                           col_points,col_fun,col,
+                           conf_level,conf_fading,bg_fading,
                            mfrow,Xlab, ylab,Xlim,ylim,title,add,...)
 }
 
 #' @param NoiseKriging_model an object of class \code{"Kriging"}.
 #' @param col_points color of points.
-#' @param conf_level an optional list of confidence interval values to display.
-#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
-#' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_level an optional list of confidence intervals to display.
+#' @param conf_fading an optional factor of alpha (color channel) fading used to plot confidence intervals.
+#' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 #' @template sectionview-doc
 #' @rdname sectionview
 #' @method sectionview NoiseKriging
@@ -753,11 +752,11 @@ sectionview.NoiseKriging <- function(NoiseKriging_model,
                                       axis = NULL,
                                       npoints = 100,
                                       col_points = if (!is.null(col)) col else "red",
-                                      col_surf = if (!is.null(col)) col else "blue",
+                                      col_fun = if (!is.null(col)) col else "blue",
                                       col = NULL,
                                       conf_level = 0.95,
-                                      conf_blend = 0.5,
-                                      bg_blend = 5,
+                                      conf_fading = 0.5,
+                                      bg_fading = 5,
                                       mfrow = NULL,
                                       Xlab = NULL, ylab = NULL,
                                       Xlim = NULL, ylim=NULL,
@@ -765,15 +764,16 @@ sectionview.NoiseKriging <- function(NoiseKriging_model,
                                       add = FALSE,
                                       ...) {
     sectionview_libKriging(NoiseKriging_model,center,axis,npoints,
-                           col_points,col_surf,col,
-                           conf_level,conf_blend,bg_blend,mfrow,Xlab, ylab,Xlim,ylim,title,add,...)
+                           col_points,col_fun,col,
+                           conf_level,conf_fading,bg_fading,
+                           mfrow,Xlab, ylab,Xlim,ylim,title,add,...)
 }
 
 #' @param glm_model an object of class \code{"glm"}.
 #' @param col_points color of points.
-#' @param conf_level an optional list of confidence interval values to display.
-#' @param conf_blend an optional factor of alpha (color channel) blending used to plot confidence intervals.
-#' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param conf_level an optional list of confidence intervals to display.
+#' @param conf_fading an optional factor of alpha (color channel) fading used to plot confidence intervals.
+#' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 #' @template sectionview-doc
 #' @rdname sectionview
 #' @method sectionview glm
@@ -794,11 +794,11 @@ sectionview.glm <- function(glm_model,
                            axis = NULL,
                            npoints = 100,
                            col_points = if (!is.null(col)) col else "red",
-                           col_surf = if (!is.null(col)) col else "blue",
+                           col_fun = if (!is.null(col)) col else "blue",
                            col = NULL,
                            conf_level = 0.95,
-                           conf_blend = 0.5,
-                           bg_blend = 5,
+                           conf_fading = 0.5,
+                           bg_fading = 5,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
                            Xlim = NULL, ylim=NULL,
@@ -837,29 +837,46 @@ sectionview.glm <- function(glm_model,
         axis <- matrix(axis, ncol = 1)
     }
 
-    sectionview.function(
-        fun = function(x) {
-            x = as.data.frame(x)
-            colnames(x) <- Xlab
-            p = predict.glm(glm_model, newdata=x, se.fit=TRUE)
-            list(mean=p$fit, se=qnorm(1-(1-conf_level)/2) * p$se.fit)
-        }, vectorized=TRUE,
-        dim = D, center = center,axis = axis, npoints = npoints,
-        col_surf = col_surf,conf_blend=conf_blend,
-        mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-        Xlim = rx, ylim=range(y_doe), title = title, add = add, ...)
+    if (is.null(conf_fading) ||
+        length(conf_fading) != length(conf_level))
+        conf_fading <- rep(0.5/length(conf_level), length(conf_level))
 
-    sectionview.matrix(X = X_doe, y = y_doe, sdy = NULL,
-                       dim = D, center = center, axis = axis,
-                       col_points = col_points, conf_blend = conf_blend, bg_blend = bg_blend,
-                       mfrow = mfrow,
-                       Xlim = rx, ylim=range(y_doe),
-                       add=TRUE)
+    # plot mean
+    sectionview.function(fun = function(x) {
+        x = as.data.frame(x)
+            colnames(x) <- Xlab
+            predict.glm(glm_model, newdata=x, se.fit=FALSE)
+    }, vectorized=TRUE,
+    dim = D, center = center,axis = axis, npoints = npoints,
+    col_fun = col_fun,
+    mfrow = mfrow, Xlab = Xlab, ylab = ylab,
+    Xlim = rx, ylim=range(y_doe), title = title, add = add, ...)
+
+    # plot design points
+    sectionview.matrix(X = X_doe, y = y_doe,
+                   center = center, axis = axis,
+                   col_points = col_points,
+                   col_fading_interval = conf_fading, bg_fading = bg_fading,
+                   mfrow = mfrow, Xlim = rx, ylim=range(y_doe), add=TRUE)
+
+    # plot confidence bands
+    for (l in conf_level) {
+        sectionview.function(fun = function(x) {
+                x = as.data.frame(x)
+                colnames(x) <- Xlab
+                p = predict.glm(glm_model, newdata=x, se.fit=TRUE)
+                cbind(p$fit-qnorm(1-(1-l)/2) * p$se.fit, p$fit+qnorm(1-(1-l)/2) * p$se.fit)
+            }, vectorized=TRUE,
+            dim = D, center = center,axis = axis,npoints = npoints,
+            col_fun = col_fun,
+            col_fading_interval=conf_fading,
+            mfrow = mfrow, Xlim = rx, ylim=range(y_doe), add = TRUE)
+    }
 }
 
 #' @param modelFit_model an object returned by DiceEval::modelFit.
 #' @param col_points color of points.
-#' @param bg_blend  an optional factor of alpha (color channel) blending used to plot design points outside from this section.
+#' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 #' @template sectionview-doc
 #' @rdname sectionview
 #' @method sectionview list
@@ -883,9 +900,9 @@ sectionview.list <- function(modelFit_model,
                             axis = NULL,
                             npoints = 100,
                             col_points = if (!is.null(col)) col else "red",
-                            col_surf = if (!is.null(col)) col else "blue",
+                            col_fun = if (!is.null(col)) col else "blue",
                             col = NULL,
-                            bg_blend = 5,
+                            bg_fading = 5,
                             mfrow = NULL,
                             Xlab = NULL, ylab = NULL,
                             Xlim = NULL, ylim=NULL,
@@ -918,25 +935,24 @@ sectionview.list <- function(modelFit_model,
         axis <- matrix(axis, ncol = 1)
     }
 
-    sectionview.function(
-        fun = function(x) {
-            x = as.data.frame(x)
+    # plot mean
+    sectionview.function(fun = function(x) {
+        x = as.data.frame(x)
             colnames(x) <- Xlab
             DiceEval::modelPredict(modelFit_model, x)
-        }, vectorized=TRUE,
-        dim = D, center = center,axis = axis, npoints = npoints,
-        col_surf = col_surf,
-        mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-        Xlim = rx, ylim=range(y_doe), title = title, add = add, ...)
+    }, vectorized=TRUE,
+    dim = D, center = center,axis = axis,npoints = npoints,
+    col_fun = col_fun, #conf_fading=conf_fading,
+    mfrow = mfrow, Xlab = Xlab, ylab = ylab,
+    Xlim = rx, ylim=range(y_doe), title = title, add = add, ...)
 
-    sectionview.matrix(X = X_doe, y = y_doe, sdy = NULL,
-                       dim = D, center = center, axis = axis,
-                       col_points = col_points, bg_blend = bg_blend,
-                       mfrow = mfrow,
-                       add=TRUE)
+    # plot design points
+    sectionview.matrix(X = X_doe, y = y_doe,
+                   center = center, axis = axis,
+                   col_points = col_points,
+                   bg_fading = bg_fading,
+                   mfrow = mfrow, Xlim = rx, ylim=range(y_doe), add=TRUE)
 }
-
-
 
 
 
