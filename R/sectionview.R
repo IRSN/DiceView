@@ -166,9 +166,6 @@ sectionview.function <- function(fun, vectorized=FALSE,
 
         ## 'confidence band' filled with the suitable color
 	    if (!all(is.na(F_x$y_low)) && !all(is.na(F_x$y_up))) {
-	        print(xd)
-	        print(F_x$y_low)
-	        print( translude(col_fun, alpha = col_fading_interval))
                 polygon(c(xd,rev(xd)),
                         c(F_x$y_low,rev(F_x$y_up)),
                         col = translude(col_fun, alpha = col_fading_interval),
