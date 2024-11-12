@@ -32,7 +32,7 @@ filledcontourview.function <- function(fun, vectorized=FALSE,
                              lty_center = 2,
                              col_center = "black",
                              axis = NULL,
-                             npoints = 20,
+                             npoints = 21,
                              levels = 10,
                              lty_levels = 1,
                              col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels-1) else col.levels("blue",levels-1),
@@ -139,13 +139,19 @@ filledcontourview.function <- function(fun, vectorized=FALSE,
         ind.nonfix <- (1:D) %in% c(d[1], d[2])
         ind.nonfix <- !ind.nonfix
 
-        xdmin <- unlist(rx["min", d])
-        xdmax <- unlist(rx["max", d])
-        xlim <- unlist(rx[ , d[1]])
-        ylim <- unlist(rx[ , d[2]])
+        xlim <- unlist(rx[c("min","max"), d[1]])
+        if (isTRUE(add)) {
+            xlim['min'] <- min(xlim['min'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,1:2]))
+            xlim['max'] <- max(xlim['max'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,1:2]))
+        }
+        ylim <- unlist(rx[c("min","max"), d[2]])
+        if (isTRUE(add)) {
+            ylim['min'] <- min(ylim['min'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,3:4]))
+            ylim['max'] <- max(ylim['max'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,3:4]))
+        }
 
-        xd1 <- seq(from = xdmin[1], to = xdmax[1], length.out = npoints[1])
-        xd2 <- seq(from = xdmin[2], to = xdmax[2], length.out = npoints[2])
+        xd1 <- seq(from = as.numeric(xlim['min']), to = as.numeric(xlim['max']), length.out = npoints[1])
+        xd2 <- seq(from = as.numeric(ylim['min']), to = as.numeric(ylim['max']), length.out = npoints[2])
 
         x <- data.frame(t(matrix(as.numeric(center), nrow = D, ncol = npoints_all)))
         if (!is.null(center)) if(!is.null(names(center))) names(x) <- names(center)
@@ -243,7 +249,7 @@ filledcontourview.function <- function(fun, vectorized=FALSE,
 filledcontourview.km <- function(km_model, type = "UK",
                            center = NULL,
                            axis = NULL,
-                           npoints = 20,
+                           npoints = 21,
                            levels = pretty(km_model@y, 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
                            col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -334,7 +340,7 @@ filledcontourview.km <- function(km_model, type = "UK",
 filledcontourview_libKriging <- function(libKriging_model,
                            center = NULL,
                            axis = NULL,
-                           npoints = 20,
+                           npoints = 21,
                            levels = pretty( libKriging_model$y() , 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
                            col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -445,7 +451,7 @@ filledcontourview_libKriging <- function(libKriging_model,
 filledcontourview.Kriging <- function(Kriging_model,
                                    center = NULL,
                                    axis = NULL,
-                                   npoints = 20,
+                                   npoints = 21,
                                    levels = pretty( Kriging_model$y() , 10),
                                    col_points = if (!is.null(col) & length(col)==1) col else "red",
                                    col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -504,7 +510,7 @@ filledcontourview.Kriging <- function(Kriging_model,
 filledcontourview.NuggetKriging <- function(NuggetKriging_model,
                                 center = NULL,
                                 axis = NULL,
-                                npoints = 20,
+                                npoints = 21,
                                 levels = pretty( NuggetKriging_model$y() , 10),
                                 col_points = if (!is.null(col) & length(col)==1) col else "red",
                                 col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -563,7 +569,7 @@ filledcontourview.NuggetKriging <- function(NuggetKriging_model,
 filledcontourview.NoiseKriging <- function(NoiseKriging_model,
                                       center = NULL,
                                       axis = NULL,
-                                      npoints = 20,
+                                      npoints = 21,
                                       levels = pretty( NoiseKriging_model$y() , 10),
                                       col_points = if (!is.null(col) & length(col)==1) col else "red",
                                       col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -619,7 +625,7 @@ filledcontourview.NoiseKriging <- function(NoiseKriging_model,
 filledcontourview.glm <- function(glm_model,
                            center = NULL,
                            axis = NULL,
-                           npoints = 20,
+                           npoints = 21,
                            levels = pretty( glm_model$fitted.values , 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
                            col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -733,7 +739,7 @@ filledcontourview.glm <- function(glm_model,
 filledcontourview.list <- function(modelFit_model,
                             center = NULL,
                             axis = NULL,
-                            npoints = 20,
+                            npoints = 21,
                             levels = pretty( modelFit_model$data$Y , 10),
                             col_points = if (!is.null(col) & length(col)==1) col else "red",
                             col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),

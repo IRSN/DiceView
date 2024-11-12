@@ -33,7 +33,7 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
                                 dim = NULL,
                              center = NULL,
                              axis = NULL,
-                             npoints = 20,
+                             npoints = 21,
                              col_fun = if (!is.null(col)) col else "blue",
                              col = NULL,
                              col_fading_interval = 0.5,
@@ -128,13 +128,20 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
         ind.nonfix <- (1:D) %in% c(d[1], d[2])
         ind.nonfix <- !ind.nonfix
 
-        xdmin <- unlist(rx["min", d])
-        xdmax <- unlist(rx["max", d])
-        xlim <- unlist(rx[ , d[1]])
-        ylim <- unlist(rx[ , d[2]])
+        xlim <- unlist(rx[c("min","max"), d[1]])
+        if (isTRUE(add)) {
+            xlim['min'] <- min(xlim['min'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,1:2]))
+            xlim['max'] <- max(xlim['max'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,1:2]))
+        }
+        ylim <- unlist(rx[c("min","max"), d[2]])
+        if (isTRUE(add)) {
+            ylim['min'] <- min(ylim['min'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,3:4]))
+            ylim['max'] <- max(ylim['max'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,3:4]))
+        }
 
-        xd1 <- seq(from = xdmin[1], to = xdmax[1], length.out = npoints[1])
-        xd2 <- seq(from = xdmin[2], to = xdmax[2], length.out = npoints[2])
+        xd1 <- seq(from = as.numeric(xlim['min']), to = as.numeric(xlim['max']), length.out = npoints[1])
+        xd2 <- seq(from = as.numeric(ylim['min']), to = as.numeric(ylim['max']), length.out = npoints[2])
+
         x <- data.frame(t(matrix(as.numeric(center), nrow = D, ncol = npoints_all)))
         if (!is.null(center)) if(!is.null(names(center))) names(x) <- names(center)
         x[ , d] <- expand.grid(xd1, xd2)
@@ -470,7 +477,7 @@ sectionview3d.character <- function(eval_str,
 sectionview3d.km <- function(km_model, type = "UK",
                            center = NULL,
                            axis = NULL,
-                           npoints = 20,
+                           npoints = 21,
                            col_points = if (!is.null(col)) col else "red",
                            col_fun = if (!is.null(col)) col else "blue",
                            col = NULL,
@@ -569,7 +576,7 @@ sectionview3d.km <- function(km_model, type = "UK",
 sectionview3d_libKriging <- function(libKriging_model,
                            center = NULL,
                            axis = NULL,
-                           npoints = 20,
+                           npoints = 21,
                            col_points = if (!is.null(col)) col else "red",
                            col_fun = if (!is.null(col)) col else "blue",
                            col = NULL,
@@ -694,7 +701,7 @@ sectionview3d_libKriging <- function(libKriging_model,
 sectionview3d.Kriging <- function(Kriging_model,
                                    center = NULL,
                                    axis = NULL,
-                                   npoints = 20,
+                                   npoints = 21,
                                    col_points = if (!is.null(col)) col else "red",
                                    col_fun = if (!is.null(col)) col else "blue",
                                    col = NULL,
@@ -709,7 +716,7 @@ sectionview3d.Kriging <- function(Kriging_model,
                                    engine3d = NULL,
                                    ...) {
     sectionview3d_libKriging(Kriging_model,center,axis,npoints,
-                             col_points,col_fun,col,
+                             col_points=col_points,col_fun=col_fun,col=col,
                              conf_level,conf_fading,bg_fading,
                              mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
@@ -740,7 +747,7 @@ sectionview3d.Kriging <- function(Kriging_model,
 sectionview3d.NuggetKriging <- function(NuggetKriging_model,
                                 center = NULL,
                                 axis = NULL,
-                                npoints = 20,
+                                npoints = 21,
                                 col_points = if (!is.null(col)) col else "red",
                                 col_fun = if (!is.null(col)) col else "blue",
                                 col = NULL,
@@ -755,7 +762,7 @@ sectionview3d.NuggetKriging <- function(NuggetKriging_model,
                                 engine3d = NULL,
                                 ...) {
     sectionview3d_libKriging(NuggetKriging_model,center,axis,npoints,
-                             col_points,col_fun,col,
+                             col_points=col_points,col_fun=col_fun,col=col,
                              conf_level,conf_fading,bg_fading,
                              mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
@@ -786,7 +793,7 @@ sectionview3d.NuggetKriging <- function(NuggetKriging_model,
 sectionview3d.NoiseKriging <- function(NoiseKriging_model,
                                       center = NULL,
                                       axis = NULL,
-                                      npoints = 20,
+                                      npoints = 21,
                                       col_points = if (!is.null(col)) col else "red",
                                       col_fun = if (!is.null(col)) col else "blue",
                                       col = NULL,
@@ -801,7 +808,7 @@ sectionview3d.NoiseKriging <- function(NoiseKriging_model,
                                       engine3d = NULL,
                                       ...) {
     sectionview3d_libKriging(NoiseKriging_model,center,axis,npoints,
-                             col_points,col_fun,col,
+                             col_points=col_points,col_fun=col_fun,col=col,
                              conf_level,conf_fading,bg_fading,
                              mfrow,Xlab, ylab,Xlim,ylim,title,add,engine3d,...)
 }
@@ -829,7 +836,7 @@ sectionview3d.NoiseKriging <- function(NoiseKriging_model,
 sectionview3d.glm <- function(glm_model,
                            center = NULL,
                            axis = NULL,
-                           npoints = 20,
+                           npoints = 21,
                            col_points = if (!is.null(col)) col else "red",
                            col_fun = if (!is.null(col)) col else "blue",
                            col = NULL,
@@ -937,7 +944,7 @@ sectionview3d.glm <- function(glm_model,
 sectionview3d.list <- function(modelFit_model,
                             center = NULL,
                             axis = NULL,
-                            npoints = 20,
+                            npoints = 21,
                             col_points = if (!is.null(col)) col else "red",
                             col_fun = if (!is.null(col)) col else "blue",
                             col = NULL,

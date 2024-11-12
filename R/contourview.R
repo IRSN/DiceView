@@ -32,7 +32,7 @@ contourview.function <- function(fun, vectorized=FALSE,
                              lty_center = 2,
                              col_center = "black",
                              axis = NULL,
-                             npoints = 20,
+                             npoints = 21,
                              levels = 10,
                              lty_levels = 3,
                              col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels-1) else col.levels("blue",levels-1),
@@ -130,13 +130,20 @@ contourview.function <- function(fun, vectorized=FALSE,
         ind.nonfix <- (1:D) %in% c(d[1], d[2])
         ind.nonfix <- !ind.nonfix
 
-        xdmin <- unlist(rx["min", d])
-        xdmax <- unlist(rx["max", d])
-        xlim <- unlist(rx[ , d[1]])
-        ylim <- unlist(rx[ , d[2]])
+        xlim <- unlist(rx[c("min","max"), d[1]])
+        if (isTRUE(add)) {
+            xlim['min'] <- min(xlim['min'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,1:2]))
+            xlim['max'] <- max(xlim['max'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,1:2]))
+        }
+        ylim <- unlist(rx[c("min","max"), d[2]])
+        if (isTRUE(add)) {
+            ylim['min'] <- min(ylim['min'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,3:4]))
+            ylim['max'] <- max(ylim['max'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,3:4]))
+        }
 
-        xd1 <- seq(from = xdmin[1], to = xdmax[1], length.out = npoints[1])
-        xd2 <- seq(from = xdmin[2], to = xdmax[2], length.out = npoints[2])
+        xd1 <- seq(from = as.numeric(xlim['min']), to = as.numeric(xlim['max']), length.out = npoints[1])
+        xd2 <- seq(from = as.numeric(ylim['min']), to = as.numeric(ylim['max']), length.out = npoints[2])
+
         x <- data.frame(t(matrix(as.numeric(center), nrow = D, ncol = npoints_all)))
         if (!is.null(center)) if(!is.null(names(center))) names(x) <- names(center)
         x[ , d] <- expand.grid(xd1, xd2)
@@ -296,8 +303,6 @@ contourview.matrix <- function(X, y,
         ind.nonfix <- (1:D) %in% c(d[1], d[2])
         ind.nonfix <- !ind.nonfix
 
-        xdmin <- unlist(rx["min", d])
-        xdmax <- unlist(rx["max", d])
         xlim <- unlist(rx[ , d[1]])
         ylim <- unlist(rx[ , d[2]])
 
@@ -330,9 +335,9 @@ contourview.matrix <- function(X, y,
         if (isTRUE(add)) {
             # re-use global settings for limits of this screen
             .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
-            xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
-            ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
-            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
+            xlim <- c(.split.screen.lim[1,1],.split.screen.lim[1,2])
+            ylim <- c(.split.screen.lim[1,3],.split.screen.lim[1,4])
+            zlim <- c(.split.screen.lim[1,5],.split.screen.lim[1,6])
         } else {
             eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
             if(D>2) {
@@ -442,7 +447,7 @@ contourview.character <- function(eval_str,
 contourview.km <- function(km_model, type = "UK",
                            center = NULL,
                            axis = NULL,
-                           npoints = 20,
+                           npoints = 21,
                            levels = pretty(km_model@y, 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
                            col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -533,7 +538,7 @@ contourview.km <- function(km_model, type = "UK",
 contourview_libKriging <- function(libKriging_model,
                            center = NULL,
                            axis = NULL,
-                           npoints = 20,
+                           npoints = 21,
                            levels = pretty( libKriging_model$y() , 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
                            col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -645,7 +650,7 @@ contourview_libKriging <- function(libKriging_model,
 contourview.Kriging <- function(Kriging_model,
                                    center = NULL,
                                    axis = NULL,
-                                   npoints = 20,
+                                   npoints = 21,
                                    levels = pretty( Kriging_model$y() , 10),
                                    col_points = if (!is.null(col) & length(col)==1) col else "red",
                                    col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -704,7 +709,7 @@ contourview.Kriging <- function(Kriging_model,
 contourview.NuggetKriging <- function(NuggetKriging_model,
                                 center = NULL,
                                 axis = NULL,
-                                npoints = 20,
+                                npoints = 21,
                                 levels = pretty( NuggetKriging_model$y() , 10),
                                 col_points = if (!is.null(col) & length(col)==1) col else "red",
                                 col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -763,7 +768,7 @@ contourview.NuggetKriging <- function(NuggetKriging_model,
 contourview.NoiseKriging <- function(NoiseKriging_model,
                                       center = NULL,
                                       axis = NULL,
-                                      npoints = 20,
+                                      npoints = 21,
                                       levels = pretty( NoiseKriging_model$y() , 10),
                                       col_points = if (!is.null(col) & length(col)==1) col else "red",
                                       col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -819,7 +824,7 @@ contourview.NoiseKriging <- function(NoiseKriging_model,
 contourview.glm <- function(glm_model,
                            center = NULL,
                            axis = NULL,
-                           npoints = 20,
+                           npoints = 21,
                            levels = pretty( glm_model$fitted.values , 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
                            col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
@@ -934,7 +939,7 @@ contourview.glm <- function(glm_model,
 contourview.list <- function(modelFit_model,
                             center = NULL,
                             axis = NULL,
-                            npoints = 20,
+                            npoints = 21,
                             levels = pretty( modelFit_model$data$Y , 10),
                             col_points = if (!is.null(col) & length(col)==1) col else "red",
                             col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),

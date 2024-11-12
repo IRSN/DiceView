@@ -30,7 +30,7 @@
   lty_center = 2,
   col_center = "black",
   axis = NULL,
-  npoints = 20,
+  npoints = 21,
   levels = 10,
   lty_levels = 3,
   col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels - 1) else
@@ -72,7 +72,7 @@
   type = "UK",
   center = NULL,
   axis = NULL,
-  npoints = 20,
+  npoints = 21,
   levels = pretty(km_model@y, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
   col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
@@ -94,7 +94,7 @@
   Kriging_model,
   center = NULL,
   axis = NULL,
-  npoints = 20,
+  npoints = 21,
   levels = pretty(Kriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
   col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
@@ -116,7 +116,7 @@
   NuggetKriging_model,
   center = NULL,
   axis = NULL,
-  npoints = 20,
+  npoints = 21,
   levels = pretty(NuggetKriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
   col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
@@ -138,7 +138,7 @@
   NoiseKriging_model,
   center = NULL,
   axis = NULL,
-  npoints = 20,
+  npoints = 21,
   levels = pretty(NoiseKriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
   col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
@@ -160,7 +160,7 @@
   glm_model,
   center = NULL,
   axis = NULL,
-  npoints = 20,
+  npoints = 21,
   levels = pretty(glm_model$fitted.values, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
   col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
@@ -182,7 +182,7 @@
   modelFit_model,
   center = NULL,
   axis = NULL,
-  npoints = 20,
+  npoints = 21,
   levels = pretty(modelFit_model$data$Y, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
   col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
