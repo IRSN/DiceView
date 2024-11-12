@@ -86,10 +86,10 @@ filledcontourview.function <- function(fun, vectorized=FALSE,
         stop("col_levels must be a vector of length 1, 2 or levels.")
 
     if (!isTRUE(add)) {
-        #if (D>2) {
+        if (D>2) {
             close.screen( all.screens = TRUE )
             split.screen(figs = mfrow)
-        #}
+        }
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
 

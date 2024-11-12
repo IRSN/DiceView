@@ -68,10 +68,10 @@ sectionview.function <- function(fun, vectorized=FALSE,
     }
 
     if (!isTRUE(add)) {
-        #if(D>1){
+        if (D>1){
             close.screen( all.screens = TRUE )
             split.screen(figs = mfrow)
-        #}
+        }
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
 
@@ -249,10 +249,10 @@ sectionview.matrix <- function(X, y,
     }
 
     if (!isTRUE(add)) {
-        #if(D>1){
+        if (D>1){
             close.screen( all.screens = TRUE )
             split.screen(figs = mfrow)
-        #}
+        }
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
 

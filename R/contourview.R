@@ -77,10 +77,10 @@ contourview.function <- function(fun, vectorized=FALSE,
     }
 
     if (!isTRUE(add)) {
-        #if (D>2) {
+        if (D>2) {
             close.screen( all.screens = TRUE )
-            split.screen(figs = mfrow)
-        #}
+            split.screen(figs = mfrow, erase=TRUE)
+        }
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
 
@@ -277,10 +277,10 @@ contourview.matrix <- function(X, y,
     }
 
     if (!isTRUE(add)) {
-        #if(D>1){
+        if (D>2) {
             close.screen( all.screens = TRUE )
-            split.screen(figs = mfrow)
-        #}
+            split.screen(figs = mfrow, erase=TRUE)
+        }
         assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
 
@@ -338,18 +338,31 @@ contourview.matrix <- function(X, y,
             xlim <- c(.split.screen.lim[1,1],.split.screen.lim[1,2])
             ylim <- c(.split.screen.lim[1,3],.split.screen.lim[1,4])
             zlim <- c(.split.screen.lim[1,5],.split.screen.lim[1,6])
+            if (D>2)
+                plot(x=X[,d],  # Cannot use 'points' so use 'plot' with these neutral args
+                     col = fade(color = col_points, alpha = alpha),
+                     pch = 20,type='p',
+                     xlab="",ylab="", main="", xlim=xlim, ylim=ylim,
+                     bty='n', xaxt='n', yaxt='n', ann=FALSE, # remove all text, that should be already     displayed
+                     )
+            else
+                points(X[,d],
+                       col = fade(color = col_points, alpha = alpha),
+                       xlim=xlim,ylim=ylim,
+                       pch = 20)
         } else {
             eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
+            plot(X[,d],
+                 xlab=Xlab[d[1]], ylab=Xlab[d[1]], xlim=xlim, ylim=ylim,
+                 main=title_d,
+                 pch = 20, type = "p",
+                 col = fade(color = col_points, alpha = alpha),
+                 ...)
             if(D>2) {
                 abline(v=center[d[1]],col=col_center,lty=lty_center)
                 abline(h=center[d[2]],col=col_center,lty=lty_center)
             }
         }
-
-        points(X[,d],
-               col = fade(color = col_points, alpha = alpha),
-               xlim=xlim,ylim=ylim,
-               pch = 20)
     }
 }
 
