@@ -35,7 +35,7 @@ contourview.function <- function(fun, vectorized=FALSE,
                              npoints = 21,
                              levels = 10,
                              lty_levels = 3,
-                             col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels-1) else col.levels("blue",levels-1),
+                             col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels-1) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels-1) else col.levels("blue",levels-1),
                              col = NULL,
                              col_fading_interval = 0.5,
                              mfrow = NULL,
@@ -56,9 +56,9 @@ contourview.function <- function(fun, vectorized=FALSE,
     }
 
     if (length(levels)==1) {
-        levels = pretty(range(unlist(EvalInterval.function(fun,Xlim,vectorized,D)),na.rm=TRUE), levels)
-        if (length(col_levels) != length(levels)-1)
-            col_levels = col.levels(col_levels,levels)
+        levels = pretty(range(unlist(EvalInterval.function(fun,X=Xlim,vectorized,dim=D)),na.rm=TRUE), levels)
+        if (length(col_levels) != length(levels))
+            col_levels = col.levels(col_levels,length(levels))
     }
 
     if (D == 1) stop("for a model with dim 1, use 'sectionview'")
@@ -463,7 +463,7 @@ contourview.km <- function(km_model, type = "UK",
                            npoints = 21,
                            levels = pretty(km_model@y, 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
-                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels-1) else col.levels("blue",levels),
                            col = NULL,
                            conf_level = 0.5,
                            conf_fading = 0.5,
@@ -475,7 +475,7 @@ contourview.km <- function(km_model, type = "UK",
                            add = FALSE,
                            ...) {
     if (length(levels)==1) {
-        levels = pretty(km_model@y, levels)
+        levels = pretty(c(km_model@y+2*sqrt(km_model@covariance@sd2), km_model@y-2*sqrt(km_model@covariance@sd2)), levels)
         if (length(col_levels) != length(levels)-1)
             col_levels = col.levels(col_levels,levels)
     }
@@ -523,13 +523,6 @@ contourview.km <- function(km_model, type = "UK",
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 
-    # plot design points
-    contourview.matrix(X = X_doe, y = y_doe,
-                       dim = D, center = center, axis = axis,
-                       col_points = col_points,
-                       bg_fading = bg_fading,
-                       mfrow = mfrow, Xlim = rx, add=TRUE)
-
     # plot confidence bands
     for (l in conf_level) {
         contourview.function(fun = function(x) {
@@ -541,6 +534,13 @@ contourview.km <- function(km_model, type = "UK",
             col_fading_interval=conf_fading,
             mfrow = mfrow, Xlim = rx, add = TRUE)
     }
+
+    # plot design points
+    contourview.matrix(X = X_doe, y = y_doe,
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points,
+                       bg_fading = bg_fading,
+                       mfrow = mfrow, Xlim = rx, add=TRUE)
 }
 
 #' @param libKriging_model an object of class \code{"Kriging"}, \code{"NuggetKriging"} or \code{"NoiseKriging"}.
@@ -554,7 +554,7 @@ contourview_libKriging <- function(libKriging_model,
                            npoints = 21,
                            levels = pretty( libKriging_model$y() , 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
-                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels-1) else col.levels("blue",levels),
                            col = NULL,
                            conf_level = 0.5,
                            conf_fading = 0.5,
@@ -566,7 +566,8 @@ contourview_libKriging <- function(libKriging_model,
                            add = FALSE,
                            ...) {
     if (length(levels)==1) {
-        levels = pretty(libKriging_model$y(), levels)
+        levels = pretty(c(libKriging_model$y()-2*sqrt(libKriging_model$sigma2()),
+                          libKriging_model$y()+2*sqrt(libKriging_model$sigma2())), levels)
         if (length(col_levels) != length(levels)-1)
             col_levels = col.levels(col_levels,levels)
     }
@@ -617,13 +618,6 @@ contourview_libKriging <- function(libKriging_model,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 
-    # plot design points
-    contourview.matrix(X = X_doe, y = y_doe,
-                       dim = D, center = center, axis = axis,
-                       col_points = col_points,
-                       bg_fading = bg_fading,
-                       mfrow = mfrow, Xlim = rx, add=TRUE)
-
     # plot confidence bands
     for (l in conf_level) {
         contourview.function(fun = function(x) {
@@ -635,6 +629,13 @@ contourview_libKriging <- function(libKriging_model,
             col_fading_interval=conf_fading,
             mfrow = mfrow, Xlim = rx, add = TRUE)
     }
+
+    # plot design points
+    contourview.matrix(X = X_doe, y = y_doe,
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points,
+                       bg_fading = bg_fading,
+                       mfrow = mfrow, Xlim = rx, add=TRUE)
 }
 
 #' @param Kriging_model an object of class \code{"Kriging"}.
@@ -666,7 +667,7 @@ contourview.Kriging <- function(Kriging_model,
                                    npoints = 21,
                                    levels = pretty( Kriging_model$y() , 10),
                                    col_points = if (!is.null(col) & length(col)==1) col else "red",
-                                   col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                                   col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels-1) else col.levels("blue",levels),
                                    col = NULL,
                                    conf_level = 0.5,
                                    conf_fading = 0.5,
@@ -725,7 +726,7 @@ contourview.NuggetKriging <- function(NuggetKriging_model,
                                 npoints = 21,
                                 levels = pretty( NuggetKriging_model$y() , 10),
                                 col_points = if (!is.null(col) & length(col)==1) col else "red",
-                                col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                                col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels-1) else col.levels("blue",levels),
                                 col = NULL,
                                 conf_level = 0.5,
                                 conf_fading = 0.5,
@@ -784,7 +785,7 @@ contourview.NoiseKriging <- function(NoiseKriging_model,
                                       npoints = 21,
                                       levels = pretty( NoiseKriging_model$y() , 10),
                                       col_points = if (!is.null(col) & length(col)==1) col else "red",
-                                      col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                                      col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels-1) else col.levels("blue",levels),
                                       col = NULL,
                                       conf_level = 0.5,
                                       conf_fading = 0.5,
@@ -840,7 +841,7 @@ contourview.glm <- function(glm_model,
                            npoints = 21,
                            levels = pretty( glm_model$fitted.values , 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
-                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels-1) else col.levels("blue",levels),
                            col = NULL,
                            conf_level = 0.5,
                            conf_fading = 0.5,
@@ -903,15 +904,6 @@ contourview.glm <- function(glm_model,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 
-    # plot design points
-    contourview.matrix(X = X_doe, y = y_doe,
-                       dim = D, center = center, axis = axis,
-                       col_points = col_points,
-                       bg_fading = bg_fading,
-                       mfrow = mfrow,
-                       Xlim = rx,
-                       add=TRUE)
-
                            # plot confidence bands
     for (l in conf_level) {
         contourview.function(fun = function(x) {
@@ -925,6 +917,15 @@ contourview.glm <- function(glm_model,
             col_fading_interval=conf_fading,
             mfrow = mfrow, Xlim = rx, add = TRUE)
     }
+
+    # plot design points
+    contourview.matrix(X = X_doe, y = y_doe,
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points,
+                       bg_fading = bg_fading,
+                       mfrow = mfrow,
+                       Xlim = rx,
+                       add=TRUE)
 }
 
 
@@ -955,7 +956,7 @@ contourview.list <- function(modelFit_model,
                             npoints = 21,
                             levels = pretty( modelFit_model$data$Y , 10),
                             col_points = if (!is.null(col) & length(col)==1) col else "red",
-                            col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                            col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels-1) else col.levels("blue",levels),
                             col = NULL,
                             bg_fading = 1,
                             mfrow = NULL,

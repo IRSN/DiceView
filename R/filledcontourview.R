@@ -2,6 +2,8 @@
 #' @param vectorized is fun vectorized?
 #' @param dim input variables dimension of the model or function.
 #' @param col_fading_interval an optional factor of alpha (color channel) fading used to plot function output intervals (if any).
+#' @param col_interval color to display interval width.
+#' @param add_fading an optional factor of alpha (color channel) fading used to plot when add=TRUE.
 #' @template filledcontourview-doc
 #' @rdname filledcontourview
 #' @method filledcontourview function
@@ -34,15 +36,17 @@ filledcontourview.function <- function(fun, vectorized=FALSE,
                              axis = NULL,
                              npoints = 21,
                              levels = 10,
-                             lty_levels = 1,
-                             col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels-1) else col.levels("blue",levels-1),
+                             lty_levels = 0,
+                             col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels, fill=TRUE) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels,fill=TRUE) else col.levels("blue",levels, fill=TRUE),
                              col = NULL,
+                             col_interval = 'white',
                              col_fading_interval = 0.5,
                              mfrow = NULL,
                              Xlab = NULL, ylab = NULL,
                              Xlim = NULL,
                              title = NULL,
                              add = FALSE,
+                             add_fading = 0.5,
                              ...) {
     if (!is.null(dim)) {
         D <- dim
@@ -57,8 +61,8 @@ filledcontourview.function <- function(fun, vectorized=FALSE,
 
     if (length(levels)==1) {
         levels = pretty(range(unlist(EvalInterval.function(fun,Xlim,vectorized,D)),na.rm=TRUE), levels)
-        if (length(col_levels) != length(levels)-1)
-            col_levels = col.levels(col_levels,levels)
+        if (length(col_levels) != length(levels)+1)
+            col_levels = col.levels(col_levels,length(levels)+1)
     }
 
     if (D == 1) stop("for a model with dim 1, use 'sectionview'")
@@ -76,14 +80,14 @@ filledcontourview.function <- function(fun, vectorized=FALSE,
         mfrow <- c(nc, nl)
     }
 
-    if (length(col_levels) == length(levels)-1)
+    if (length(col_levels) == (length(levels)+1))
         col_fills = col_levels
     else if (length(col_levels) == 1)
-        col_fills = colorRampPalette(c(rgb(1,1,1,0),col_levels), alpha=TRUE)(levels) # from white transparent to col_level
+        col_fills = colorRampPalette(c(rgb(1,1,1,0),col_levels), alpha=TRUE)(length(levels)+1) # from white transparent to col_level
     else if (length(col_levels) == 2)
-        col_fills =  colorRampPalette(col_levels)(levels)
+        col_fills =  colorRampPalette(col_levels)(length(levels)+1)
     else
-        stop("col_levels must be a vector of length 1, 2 or levels.")
+        stop("col_levels must be a vector of length 1, 2 or #levels+1 (but was ",length(col_levels),").")
 
     if (!isTRUE(add)) {
         if (D>2) {
@@ -181,21 +185,24 @@ filledcontourview.function <- function(fun, vectorized=FALSE,
             xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
             ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
             zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
-            .filled.contour(x = xd1,y = xd2, z = if (!all(is.na(F_x$yd))) F_x$yd else F_x$yd_low,
-                            col = col_fills,
+            if (!all(is.na(F_x$yd))) {
+                print(levels)
+                contour(x = xd1,y = xd2, z = F_x$yd,
+                        xlim = xlim, ylim = ylim,
+                        col = col_fills,  lty = lty_levels,
+                        levels = levels,
+                        add=TRUE,
+                        ...)
+                .filled.contour(x = xd1,y = xd2, z = F_x$yd,
+                            col = if (is.na(add_fading)) col_fills else fades(col_fills,alpha=1-add_fading),
                             levels = levels)
-            if (lty_levels>0)
-                contour(x = xd1,y = xd2, z = if (!all(is.na(F_x$yd))) F_x$yd else F_x$yd_low,
-                    xlim = xlim, ylim = ylim, zlim = zlim,
-                    col = col_fills,  lty = lty_levels,
-                    levels = levels,
-                    add=TRUE,
-                    ...)
+            }
         } else {
             xlim = rx[,d[1]]
             ylim = rx[,d[2]]
             eval(parse(text=paste(".split.screen.lim[",id,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
-            contour(x = xd1, y = xd2, z = if (!all(is.na(F_x$yd))) F_x$yd else F_x$yd_low,
+            if (!all(is.na(F_x$yd))) {
+                contour(x = xd1, y = xd2, z =  F_x$yd,
                     xlab = Xlab[d[1]], ylab = Xlab[d[2]],
                     xlim = xlim, ylim = ylim,
                     main = title_d,
@@ -203,9 +210,10 @@ filledcontourview.function <- function(fun, vectorized=FALSE,
                     levels = levels,
                     add=FALSE,
                     ...)
-            .filled.contour(x = xd1, y = xd2, z = if (!all(is.na(F_x$yd))) F_x$yd else F_x$yd_low,
+                .filled.contour(x = xd1, y = xd2, z = F_x$yd,
                     col = col_fills,
                     levels = levels)
+            }
             if(D>2) {
                 abline(v=center[d[1]],col=col_center,lty=lty_center)
                 abline(h=center[d[2]],col=col_center,lty=lty_center)
@@ -213,11 +221,25 @@ filledcontourview.function <- function(fun, vectorized=FALSE,
         }
 
 	    if (!all(is.na(F_x$yd_err))) {
-                col_fills_rgba = col2rgb("white")
-                col_err = rgb(col_fills_rgba[1]/255,col_fills_rgba[2]/255,col_fills_rgba[3]/255,seq(from=0,to=1,length=length(levels)))
-                image(x = xd1,y = xd2, z = F_x$yd_err,
-                      col = col_err, breaks=seq(from=min(F_x$yd_err),to=max(F_x$yd_err),length=length(col_err)+1),
-                      add=TRUE)
+                col_fills_rgba = col2rgb(col_interval)
+                fading = col_fading_interval #(add_fading + (1-add)*(1-add_fading))# * col_fading_interval
+                col_err = rgb(col_fills_rgba[1]/255,col_fills_rgba[2]/255,col_fills_rgba[3]/255,
+                              #seq(from=(1-fading)/2, to=1-(1-fading)/2,,length(levels)))
+                              seq(from=0, to=fading,,length(levels)))
+                print(col_err)
+                filledcontourview.function(fun = function(x) {
+                        p = EvalInterval.function(fun, x, vectorized)
+                        p$y_up-p$y_low
+                    }, vectorized=vectorized,
+                    dim = D, center = center,axis = axis,npoints = npoints,
+                    levels = seq(from=min(F_x$yd_err),to=max(F_x$yd_err),length=length(col_err)-1),
+                    col_levels = col_err, lty_levels=0,
+                    col_fading_interval=0,
+                    mfrow = mfrow, Xlim = rx, add = TRUE, add_fading = NA)
+
+                # image(x = xd1,y = xd2, z = F_x$yd_err,
+                #       col = col_err, breaks=seq(from=min(F_x$yd_err),to=max(F_x$yd_err),length=length(col_err)+1),
+                #       add=TRUE)
 	    }
     }
 }
@@ -252,7 +274,7 @@ filledcontourview.km <- function(km_model, type = "UK",
                            npoints = 21,
                            levels = pretty(km_model@y, 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
-                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels, fill=TRUE) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels,fill=TRUE) else col.levels("blue",levels, fill=TRUE),
                            col = NULL,
                            conf_level = 0.5,
                            conf_fading = 0.5,
@@ -264,9 +286,9 @@ filledcontourview.km <- function(km_model, type = "UK",
                            add = FALSE,
                            ...) {
     if (length(levels)==1) {
-        levels = pretty(km_model@y, levels)
-        if (length(col_levels) != length(levels)-1)
-            col_levels = col.levels(col_levels,levels)
+        levels = pretty(c(km_model@y+2*sqrt(km_model@covariance@sd2), km_model@y-2*sqrt(km_model@covariance@sd2)), levels)
+        if (length(col_levels) != length(levels)+1)
+            col_levels = col.levels(col_levels,levels,fill=TRUE)
     }
 
     X_doe <- km_model@X
@@ -313,12 +335,6 @@ filledcontourview.km <- function(km_model, type = "UK",
     mfrow = mfrow, Xlab = Xlab, ylab = ylab,
     Xlim = rx, title = title, add = add, ...)
 
-    contourview.matrix(X = X_doe, y = cbind(y_doe, sdy_doe),
-                       dim = D, center = center, axis = axis,
-                       col_points = col_points,
-                       bg_fading = bg_fading,
-                       mfrow = mfrow, Xlim = rx, add=TRUE)
-
     # plot confidence bands
     for (l in conf_level) {
         filledcontourview.function(fun = function(x) {
@@ -330,6 +346,12 @@ filledcontourview.km <- function(km_model, type = "UK",
             col_fading_interval=conf_fading,
             mfrow = mfrow, Xlim = rx, add = TRUE)
     }
+
+    contourview.matrix(X = X_doe, y = cbind(y_doe, sdy_doe),
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points,
+                       bg_fading = bg_fading,
+                       mfrow = mfrow, Xlim = rx, add=TRUE)
 }
 
 #' @param libKriging_model an object of class \code{"Kriging"}, \code{"NuggetKriging"} or \code{"NoiseKriging"}.
@@ -343,7 +365,7 @@ filledcontourview_libKriging <- function(libKriging_model,
                            npoints = 21,
                            levels = pretty( libKriging_model$y() , 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
-                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels, fill=TRUE) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels,fill=TRUE) else col.levels("blue",levels, fill=TRUE),
                            col = NULL,
                            conf_level = 0.5,
                            conf_fading = 0.5,
@@ -355,9 +377,10 @@ filledcontourview_libKriging <- function(libKriging_model,
                            add = FALSE,
                            ...) {
     if (length(levels)==1) {
-        levels = pretty(libKriging_model$y(), levels)
+        levels = pretty(c(libKriging_model$y()-2*sqrt(libKriging_model$sigma2()),
+                          libKriging_model$y()+2*sqrt(libKriging_model$sigma2())), levels)
         if (length(col_levels) != length(levels)-1)
-            col_levels = col.levels(col_levels,levels)
+            col_levels = col.levels(col_levels,levels,fill=TRUE)
     }
 
     X_doe <- libKriging_model$X()
@@ -405,13 +428,6 @@ filledcontourview_libKriging <- function(libKriging_model,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 
-    # plot design points
-    contourview.matrix(X = X_doe, y = y_doe,
-                       dim = D, center = center, axis = axis,
-                       col_points = col_points,
-                       bg_fading = bg_fading,
-                       mfrow = mfrow, Xlim = rx, add=TRUE)
-
     # plot confidence bands
     for (l in conf_level) {
         filledcontourview.function(fun = function(x) {
@@ -423,6 +439,13 @@ filledcontourview_libKriging <- function(libKriging_model,
             col_fading_interval=conf_fading,
             mfrow = mfrow, Xlim = rx, add = TRUE)
     }
+
+    # plot design points
+    contourview.matrix(X = X_doe, y = y_doe,
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points,
+                       bg_fading = bg_fading,
+                       mfrow = mfrow, Xlim = rx, add=TRUE)
 }
 
 #' @param Kriging_model an object of class \code{"Kriging"}.
@@ -454,7 +477,7 @@ filledcontourview.Kriging <- function(Kriging_model,
                                    npoints = 21,
                                    levels = pretty( Kriging_model$y() , 10),
                                    col_points = if (!is.null(col) & length(col)==1) col else "red",
-                                   col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                                   col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels, fill=TRUE) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels,fill=TRUE) else col.levels("blue",levels, fill=TRUE),
                                    col = NULL,
                                    conf_level = 0.5,
                                    conf_fading = 0.5,
@@ -513,7 +536,7 @@ filledcontourview.NuggetKriging <- function(NuggetKriging_model,
                                 npoints = 21,
                                 levels = pretty( NuggetKriging_model$y() , 10),
                                 col_points = if (!is.null(col) & length(col)==1) col else "red",
-                                col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                                col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels, fill=TRUE) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels,fill=TRUE) else col.levels("blue",levels, fill=TRUE),
                                 col = NULL,
                                 conf_level = 0.5,
                                 conf_fading = 0.5,
@@ -572,7 +595,7 @@ filledcontourview.NoiseKriging <- function(NoiseKriging_model,
                                       npoints = 21,
                                       levels = pretty( NoiseKriging_model$y() , 10),
                                       col_points = if (!is.null(col) & length(col)==1) col else "red",
-                                      col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                                      col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels, fill=TRUE) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels,fill=TRUE) else col.levels("blue",levels, fill=TRUE),
                                       col = NULL,
                                       conf_level = 0.5,
                                       conf_fading = 0.5,
@@ -628,7 +651,7 @@ filledcontourview.glm <- function(glm_model,
                            npoints = 21,
                            levels = pretty( glm_model$fitted.values , 10),
                            col_points = if (!is.null(col) & length(col)==1) col else "red",
-                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                           col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels, fill=TRUE) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels,fill=TRUE) else col.levels("blue",levels, fill=TRUE),
                            col = NULL,
                            conf_level = 0.5,
                            conf_fading = 0.5,
@@ -641,8 +664,8 @@ filledcontourview.glm <- function(glm_model,
                            ...) {
     if (length(levels)==1) {
         levels = pretty(glm_model$fitted.values, levels)
-        if (length(col_levels) != length(levels)-1)
-            col_levels = col.levels(col_levels,levels)
+        if (length(col_levels) != length(levels)+1)
+            col_levels = col.levels(col_levels,levels,fill=TRUE)
     }
 
     # Get X & y labels
@@ -691,15 +714,8 @@ filledcontourview.glm <- function(glm_model,
         mfrow = mfrow, Xlab = Xlab, ylab = ylab,
         Xlim = rx, title = title, add = add, ...)
 
-    # plot design points
-    contourview.matrix(X = X_doe, y = y_doe,
-                       dim = D, center = center, axis = axis,
-                       col_points = col_points,
-                       bg_fading = bg_fading,
-                       mfrow = mfrow,
-                       Xlim = rx,
-                       add=TRUE)
-                           # plot confidence bands
+
+    # plot confidence bands
     for (l in conf_level) {
         filledcontourview.function(fun = function(x) {
                 x = as.data.frame(x)
@@ -712,6 +728,15 @@ filledcontourview.glm <- function(glm_model,
             col_fading_interval=conf_fading,
             mfrow = mfrow, Xlim = rx, add = TRUE)
     }
+
+    # plot design points
+    contourview.matrix(X = X_doe, y = y_doe,
+                       dim = D, center = center, axis = axis,
+                       col_points = col_points,
+                       bg_fading = bg_fading,
+                       mfrow = mfrow,
+                       Xlim = rx,
+                       add=TRUE)
 }
 
 
@@ -742,7 +767,7 @@ filledcontourview.list <- function(modelFit_model,
                             npoints = 21,
                             levels = pretty( modelFit_model$data$Y , 10),
                             col_points = if (!is.null(col) & length(col)==1) col else "red",
-                            col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else col.levels("blue",levels),
+                            col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels, fill=TRUE) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels,fill=TRUE) else col.levels("blue",levels, fill=TRUE),
                             col = NULL,
                             bg_fading = 1,
                             mfrow = NULL,

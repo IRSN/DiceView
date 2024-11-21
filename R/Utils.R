@@ -28,9 +28,12 @@ translude <- function(col, alpha = 0.6) {
 ##========================================================
 
 #' @import grDevices
-col.levels <- function(color,nlevels){
-    if (length(nlevels)!=1) # if nlevels is in fact levels
-        nlevels <- length(nlevels)-1
+col.levels <- function(color, levels, fill=FALSE){
+    if (length(levels)!=1) # if nlevels is in fact levels
+        nlevels <- length(levels)
+    else nlevels <- levels
+    if (fill) nlevels <- nlevels + 1
+
     col.rgb=col2rgb(color)
     col.hsv=rgb2hsv(r=col.rgb[1],g=col.rgb[2],b=col.rgb[3])
     col = hsv(h=col.hsv[1],s=seq(f=0,t=col.hsv[2],l=nlevels),v=col.hsv[3])
@@ -43,7 +46,12 @@ col.levels <- function(color,nlevels){
 ##========================================================
 
 #' @import grDevices
-cols.levels <- function(color1,color2,nlevels) {
+cols.levels <- function(color1,color2,levels, fill=FALSE) {
+    if (length(levels)!=1) # if nlevels is in fact levels
+        nlevels <- length(levels)
+    else nlevels <- levels
+    if (fill) nlevels <- nlevels + 1
+
     col1.rgb=col2rgb(color1)
     col2.rgb=col2rgb(color2)
     col1.hsv=rgb2hsv(r=col1.rgb[1],g=col1.rgb[2],b=col1.rgb[3])
@@ -67,6 +75,7 @@ cols.levels <- function(color1,color2,nlevels) {
 ##
 ##========================================================
 
+#' be careful that fade(.., alpha=0) means total fading, while fade(.., alpha=1) means no fading
 #' @import grDevices
 fade <- function(color = "red",
                  alpha =  seq(from = 0, to = 1, length.out = 5),
@@ -103,6 +112,10 @@ fade <- function(color = "red",
     colors2
 
 }
+
+fades <- function(colors = c('red','blue'),
+                  alpha =  0.5)
+    Vectorize(function(col)fade(col,alpha = alpha,plot=FALSE))(colors)
 
 ##========================================================
 ## try to find a good formatted value for a numeric vector

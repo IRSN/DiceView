@@ -33,7 +33,8 @@
   npoints = 21,
   levels = 10,
   lty_levels = 3,
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels - 1) else
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels - 1) else if
+    (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels - 1) else
     col.levels("blue", levels - 1),
   col = NULL,
   col_fading_interval = 0.5,
@@ -75,7 +76,8 @@
   npoints = 21,
   levels = pretty(km_model@y, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else if
+    (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels - 1) else
     col.levels("blue", levels),
   col = NULL,
   conf_level = 0.5,
@@ -97,7 +99,8 @@
   npoints = 21,
   levels = pretty(Kriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else if
+    (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels - 1) else
     col.levels("blue", levels),
   col = NULL,
   conf_level = 0.5,
@@ -119,7 +122,8 @@
   npoints = 21,
   levels = pretty(NuggetKriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else if
+    (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels - 1) else
     col.levels("blue", levels),
   col = NULL,
   conf_level = 0.5,
@@ -141,7 +145,8 @@
   npoints = 21,
   levels = pretty(NoiseKriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else if
+    (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels - 1) else
     col.levels("blue", levels),
   col = NULL,
   conf_level = 0.5,
@@ -163,7 +168,8 @@
   npoints = 21,
   levels = pretty(glm_model$fitted.values, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else if
+    (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels - 1) else
     col.levels("blue", levels),
   col = NULL,
   conf_level = 0.5,
@@ -185,7 +191,8 @@
   npoints = 21,
   levels = pretty(modelFit_model$data$Y, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else if
+    (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels - 1) else
     col.levels("blue", levels),
   col = NULL,
   bg_fading = 1,

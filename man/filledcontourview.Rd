@@ -28,10 +28,12 @@
   axis = NULL,
   npoints = 21,
   levels = 10,
-  lty_levels = 1,
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels - 1) else
-    col.levels("blue", levels - 1),
+  lty_levels = 0,
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels, fill = TRUE)
+    else if (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels, fill =
+    TRUE) else col.levels("blue", levels, fill = TRUE),
   col = NULL,
+  col_interval = "white",
   col_fading_interval = 0.5,
   mfrow = NULL,
   Xlab = NULL,
@@ -39,6 +41,7 @@
   Xlim = NULL,
   title = NULL,
   add = FALSE,
+  add_fading = 0.5,
   ...
 )
 
@@ -50,8 +53,9 @@
   npoints = 21,
   levels = pretty(km_model@y, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
-    col.levels("blue", levels),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels, fill = TRUE)
+    else if (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels, fill =
+    TRUE) else col.levels("blue", levels, fill = TRUE),
   col = NULL,
   conf_level = 0.5,
   conf_fading = 0.5,
@@ -72,8 +76,9 @@
   npoints = 21,
   levels = pretty(Kriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
-    col.levels("blue", levels),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels, fill = TRUE)
+    else if (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels, fill =
+    TRUE) else col.levels("blue", levels, fill = TRUE),
   col = NULL,
   conf_level = 0.5,
   conf_fading = 0.5,
@@ -94,8 +99,9 @@
   npoints = 21,
   levels = pretty(NuggetKriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
-    col.levels("blue", levels),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels, fill = TRUE)
+    else if (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels, fill =
+    TRUE) else col.levels("blue", levels, fill = TRUE),
   col = NULL,
   conf_level = 0.5,
   conf_fading = 0.5,
@@ -116,8 +122,9 @@
   npoints = 21,
   levels = pretty(NoiseKriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
-    col.levels("blue", levels),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels, fill = TRUE)
+    else if (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels, fill =
+    TRUE) else col.levels("blue", levels, fill = TRUE),
   col = NULL,
   conf_level = 0.5,
   conf_fading = 0.5,
@@ -138,8 +145,9 @@
   npoints = 21,
   levels = pretty(glm_model$fitted.values, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
-    col.levels("blue", levels),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels, fill = TRUE)
+    else if (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels, fill =
+    TRUE) else col.levels("blue", levels, fill = TRUE),
   col = NULL,
   conf_level = 0.5,
   conf_fading = 0.5,
@@ -160,8 +168,9 @@
   npoints = 21,
   levels = pretty(modelFit_model$data$Y, 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels) else
-    col.levels("blue", levels),
+  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels, fill = TRUE)
+    else if (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels, fill =
+    TRUE) else col.levels("blue", levels, fill = TRUE),
   col = NULL,
   bg_fading = 1,
   mfrow = NULL,
@@ -200,6 +209,8 @@ filledcontourview(...)
 
 \item{col}{color of the object (use col_* for specific objects).}
 
+\item{col_interval}{color to display interval width.}
+
 \item{col_fading_interval}{an optional factor of alpha (color channel) fading used to plot function output intervals (if any).}
 
 \item{mfrow}{an optional list to force \code{par(mfrow = ...)} call. The default value  \code{NULL} is automatically set for compact view.}
@@ -213,6 +224,8 @@ filledcontourview(...)
 \item{title}{an optional overload of main title.}
 
 \item{add}{to print graphics on an existing window.}
+
+\item{add_fading}{an optional factor of alpha (color channel) fading used to plot when add=TRUE.}
 
 \item{...}{arguments of the \code{filledcontourview.km}, \code{filledcontourview.glm}, \code{filledcontourview.Kriging} or \code{filledcontourview.function} function}
 
