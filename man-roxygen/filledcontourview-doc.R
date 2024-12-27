@@ -9,9 +9,11 @@
 #' @param lty_center line type for thesection center of the plot (if any).
 #' @param mfrow  an optional list to force \code{par(mfrow = ...)} call. The default value  \code{NULL} is automatically set for compact view.
 #' @param Xlim an optional list to force x range for all plots. The default value \code{NULL} is automatically set to include all design points.
+#' @param ylim an optional list to force y range for all plots.
 #' @param Xlab an optional list of string to overload names for X.
 #' @param ylab an optional string to overload name for y.
 #' @param title an optional overload of main title.
+#' @param title_sep customize subtitle with fixed input.
 #' @param add to print graphics on an existing window.
 #' @param ... optional arguments passed to the first call of \code{filled.contour}.
 #' @author Yann Richet, IRSN

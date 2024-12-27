@@ -25,7 +25,6 @@
 \method{sectionview}{`function`}(
   fun,
   vectorized = FALSE,
-  dim = NULL,
   center = NULL,
   lty_center = 2,
   col_center = "black",
@@ -37,9 +36,10 @@
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
-  Xlim = NULL,
+  Xlim = if (!add) c(0, 1) else NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -58,9 +58,10 @@
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
-  Xlim = NULL,
+  Xlim = if (!add) c(0, 1) else NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -85,6 +86,7 @@
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -106,6 +108,7 @@
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -127,6 +130,7 @@
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -148,6 +152,7 @@
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -169,6 +174,7 @@
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -188,6 +194,7 @@
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -198,8 +205,6 @@ sectionview(...)
 \item{fun}{a function or 'predict()'-like function that returns a simple numeric, or an interval, or mean and standard error: list(mean=...,se=...).}
 
 \item{vectorized}{is fun vectorized?}
-
-\item{dim}{input variables dimension of the model or function.}
 
 \item{center}{optional coordinates (as a list or data frame) of the center of the section view if the model's dimension is > 2.}
 
@@ -228,6 +233,8 @@ sectionview(...)
 \item{ylim}{an optional list to force y range for all plots.}
 
 \item{title}{an optional overload of main title.}
+
+\item{title_sep}{customize subtitle with fixed input.}
 
 \item{add}{to print graphics on an existing window.}
 
@@ -275,15 +282,14 @@ y <- x1 + x2 + rnorm(15)
 model <- lm(y ~ x1 + x2)
 
 sectionview(function(x) sum(x),
-                     dim=2, center=c(0,0), Xlim=cbind(range(x1),range(x2)), col='black')
+                     center=c(0,0), Xlim=cbind(range(x1),range(x2)), col='black')
 
 sectionview(function(x) {
                       x = as.data.frame(x)
                       colnames(x) <- all.vars(model$call)[-1]
                       p = predict.lm(model, newdata=x, se.fit=TRUE)
                       cbind(p$fit-1.96 * p$se.fit, p$fit+1.96 * p$se.fit)
-                    }, vectorized=TRUE, dim=2, center=c(0,0),
-              Xlim=cbind(range(x1),range(x2)), add=TRUE)
+                    }, vectorized=TRUE, add=TRUE)
 
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin)

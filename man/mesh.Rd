@@ -7,7 +7,7 @@
 mesh(intervals, mesh.type = "seq", mesh.sizes = 11)
 }
 \arguments{
-\item{intervals}{bounds to inverse in, each column contains min and max of each dimension}
+\item{intervals}{bounds to inverse in, each column contains min and max (or values) of each dimension}
 
 \item{mesh.type}{function or "unif" or "seq" (default) or "LHS" to preform interval partition}
 

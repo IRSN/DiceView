@@ -10,6 +10,7 @@
 #' @param Xlab an optional list of string to overload names for X.
 #' @param ylab an optional string to overload name for y.
 #' @param title an optional overload of main title.
+#' @param title_sep customize subtitle with fixed input.
 #' @param add to print graphics on an existing window.
 #' @param ... optional arguments passed to the first call of \code{plot}.
 #' @author Yann Richet, IRSN

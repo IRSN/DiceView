@@ -21,7 +21,6 @@
 \method{filledcontourview}{`function`}(
   fun,
   vectorized = FALSE,
-  dim = NULL,
   center = NULL,
   lty_center = 2,
   col_center = "black",
@@ -38,8 +37,10 @@
   mfrow = NULL,
   Xlab = NULL,
   ylab = NULL,
-  Xlim = NULL,
+  Xlim = if (!add) matrix(c(0, 1), 2, 2) else NULL,
+  ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   add_fading = 0.5,
   ...
@@ -51,7 +52,8 @@
   center = NULL,
   axis = NULL,
   npoints = 21,
-  levels = pretty(km_model@y, 10),
+  levels = pretty(c(km_model@y + 2 * sqrt(km_model@covariance@sd2), km_model@y - 2 *
+    sqrt(km_model@covariance@sd2)), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
   col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels, fill = TRUE)
     else if (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels, fill =
@@ -64,7 +66,9 @@
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -87,7 +91,9 @@
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -110,7 +116,9 @@
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -133,7 +141,9 @@
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -156,7 +166,9 @@
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -177,7 +189,9 @@
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   ...
 )
@@ -188,8 +202,6 @@ filledcontourview(...)
 \item{fun}{a function or 'predict()'-like function that returns a simple numeric or mean and standard error: list(mean=...,se=...).}
 
 \item{vectorized}{is fun vectorized?}
-
-\item{dim}{input variables dimension of the model or function.}
 
 \item{center}{optional coordinates (as a list or data frame) of the center of the section view if the model's dimension is > 2.}
 
@@ -221,7 +233,11 @@ filledcontourview(...)
 
 \item{Xlim}{an optional list to force x range for all plots. The default value \code{NULL} is automatically set to include all design points.}
 
+\item{ylim}{an optional list to force y range for all plots.}
+
 \item{title}{an optional overload of main title.}
+
+\item{title_sep}{customize subtitle with fixed input.}
 
 \item{add}{to print graphics on an existing window.}
 
@@ -265,7 +281,7 @@ y <- x1 + x2 + rnorm(15)
 model <- lm(y ~ x1 + x2)
 
 filledcontourview(function(x) sum(x),
-                     dim=2, Xlim=cbind(range(x1),range(x2)), col='black')
+                     Xlim=cbind(range(x1),range(x2)), col='black')
 points(x1,x2)
 
 filledcontourview(function(x) {
@@ -339,7 +355,7 @@ filledcontourview(model)
 }
 
 ## A 2D example - Branin-Hoo function
-filledcontourview(branin, dim=2, levels=30, col='black')
+filledcontourview(branin, levels=30, col='black')
 
 \dontrun{
 ## a 16-points factorial design, and the corresponding response
@@ -352,26 +368,26 @@ if (requireNamespace("DiceKriging")) { library(DiceKriging)
 ## model: km
 model <- DiceKriging::km(design = design.fact, response = y)
 filledcontourview(model, levels=30)
-filledcontourview(branin, dim=2, levels=30, col='red', add=TRUE)
+filledcontourview(branin, levels=30, col='red', add=TRUE)
 }
 
 if (requireNamespace("rlibkriging")) { library(rlibkriging)
 ## model: Kriging
 model <- Kriging(X = as.matrix(design.fact), y = as.matrix(y), kernel="matern3_2")
 filledcontourview(model, levels=30)
-filledcontourview(branin, dim=2, levels=30, col='red', add=TRUE)
+filledcontourview(branin, levels=30, col='red', add=TRUE)
 }
 
 ## model: glm
 model <- glm(y ~ 1+ x1 + x2 + I(x1^2) + I(x2^2) + x1*x2, data=cbind(y,design.fact))
 filledcontourview(model, levels=30)
-filledcontourview(branin, dim=2, levels=30, col='red', add=TRUE)
+filledcontourview(branin, levels=30, col='red', add=TRUE)
 
 if (requireNamespace("DiceEval")) { library(DiceEval)
 ## model: StepLinear
 model <- modelFit(design.fact, y, type = "StepLinear")
 filledcontourview(model, levels=30)
-filledcontourview(branin, dim=2, levels=30, col='red', add=TRUE)
+filledcontourview(branin, levels=30, col='red', add=TRUE)
 }
 }
 

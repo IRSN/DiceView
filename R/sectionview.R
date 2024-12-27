@@ -1,6 +1,5 @@
 #' @param fun a function or 'predict()'-like function that returns a simple numeric, or an interval, or mean and standard error: list(mean=...,se=...).
 #' @param vectorized is fun vectorized?
-#' @param dim input variables dimension of the model or function.
 #' @param col_fun color of the function plot.
 #' @param col_fading_interval an optional factor of alpha (color channel) fading used to plot function output intervals (if any).
 #' @template sectionview-doc
@@ -17,18 +16,16 @@
 #' model <- lm(y ~ x1 + x2)
 #'
 #' sectionview(function(x) sum(x),
-#'                      dim=2, center=c(0,0), Xlim=cbind(range(x1),range(x2)), col='black')
+#'                      center=c(0,0), Xlim=cbind(range(x1),range(x2)), col='black')
 #'
 #' sectionview(function(x) {
 #'                       x = as.data.frame(x)
 #'                       colnames(x) <- all.vars(model$call)[-1]
 #'                       p = predict.lm(model, newdata=x, se.fit=TRUE)
 #'                       cbind(p$fit-1.96 * p$se.fit, p$fit+1.96 * p$se.fit)
-#'                     }, vectorized=TRUE, dim=2, center=c(0,0),
-#'               Xlim=cbind(range(x1),range(x2)), add=TRUE)
+#'                     }, vectorized=TRUE, add=TRUE)
 #'
 sectionview.function <- function(fun, vectorized=FALSE,
-                                dim = NULL,
                              center = NULL,
                              lty_center = 2,
                              col_center = "black",
@@ -39,64 +36,26 @@ sectionview.function <- function(fun, vectorized=FALSE,
                              col_fading_interval = 0.5,
                              mfrow = NULL,
                              Xlab = NULL, ylab = NULL,
-                             Xlim = NULL, ylim = NULL,
-                             title = NULL,
+                             Xlim = if (!add) c(0,1) else NULL, ylim = NULL,
+                             title = NULL, title_sep = " | ",
                              add = FALSE,
                              ...) {
-    if (!is.null(dim)) {
-        D <- dim
-        if (is.null(center))
-            if (D != 1) stop("Section center in 'section' required for >2-D model.")
-    } else {
-        if (is.null(center))
-            stop("dim or center must be specified.")
-        else
-            D <- length(center)
-    }
+    # setup for center/Xlim/axis/mfrow
+    view = getView(1, add, center, Xlim, ylim, axis, mfrow)
+    D = view$D
+    center = view$center
+    Xlim = view$Xlim
+    ylim = view$ylim
+    axis = view$axis
+    mfrow = view$mfrow
 
-    if (is.null(axis)) {
-        axis <- matrix(1:D, ncol = 1)
-    } else {
-        ## added by YD for the vector case
-        axis <- matrix(axis, ncol = 1)
+    if (!add && (is.null(ylim) || all(is.na(ylim)))) { # compute and set ylim
+        ylim <- range(unlist(EvalInterval.function(fun,Xlim, vectorized)), na.rm = TRUE)
+        setView_ylim(ylim)
     }
-
-    if (is.null(mfrow)) {
-        nc <- round(sqrt(nrow(axis)))
-        nl <- ceiling(nrow(axis)/nc)
-        mfrow <- c(nc, nl)
-    }
-
-    if (!isTRUE(add)) {
-        if (D>1){
-            close.screen( all.screens = TRUE )
-            split.screen(figs = mfrow)
-        }
-        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
-    }
-
-    if (!exists(".split.screen.lim",envir=DiceView.env))
-        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
 
     npoints <- rep(npoints, length.out = D)
-
-    ## find limits: 'rx' is matrix with min in row 1 and max in row 2
-    if(!is.null(Xlim))
-        rx <- matrix(Xlim,nrow=2,ncol=D)
-    else {
-        rx <- matrix(c(0,1),nrow=2,ncol=D)
-        if (!is.null(center)) # ensure center is included in Xlim
-            for (i in 1:D) {
-                rx[1,i] <- min(rx[1,i],center[i])
-                rx[2,i] <- max(rx[2,i],center[i])
-            }
-    }
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
-
-    if (is.null(ylim)) ylim <- range(unlist(EvalInterval.function(fun,rbind(rx,center), vectorized)), na.rm = TRUE)
-
-    zlim <- c(NA,NA) #Not used for this kind of plot
+    drx <- unlist(Xlim[2, ]) - unlist(Xlim[1, ])
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- "y"
@@ -111,13 +70,10 @@ sectionview.function <- function(fun, vectorized=FALSE,
 
         d <- axis[id, ]
 
-        xdmin <- unlist(rx["min", d])
-        xdmax <- unlist(rx["max", d])
-        xlim = c(xdmin, xdmax)
-        if (isTRUE(add))
-            xlim <- range(xlim,c(get(x=".split.screen.lim",envir=DiceView.env)[d,1:2]))
+        xlim = Xlim[, d]
 
         xd <- seq(from = xlim[1], to = xlim[2], length.out = npoints[d])
+
         x <- data.frame(t(matrix(as.numeric(center), nrow = D, ncol = npoints[d])))
         if (!is.null(center)) if(!is.null(names(center))) names(x) <- names(center)
         x[ , d] <- xd
@@ -127,7 +83,7 @@ sectionview.function <- function(fun, vectorized=FALSE,
         if (is.null(title)){
             title_d <- paste(collapse = "~",sep = "~", ylab, Xlab[d])
             if (D>1) {
-                title_d <-  paste(collapse = " | ", sep = " | ", title_d, paste(collapse=',',Xlab[-d], '=', fcenter[-d]))
+                title_d <-  paste(collapse =title_sep, sep =title_sep, title_d, paste(collapse=',',Xlab[-d], '=', fcenter[-d]))
             }
         } else {
             title_d <- title
@@ -135,11 +91,6 @@ sectionview.function <- function(fun, vectorized=FALSE,
 
         ## plot mean
         if (isTRUE(add)) {
-            # re-use global settings for limits of this screen
-            .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
-            xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
-            ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
-            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
             if (D>1) {
                 plot(xd, if (!all(is.na(F_x$y))) F_x$y else F_x$y_low,
                      xlim = xlim, ylim  =ylim,
@@ -155,7 +106,6 @@ sectionview.function <- function(fun, vectorized=FALSE,
                       ...)
             }
         } else {
-            eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
             plot(xd, if (!all(is.na(F_x$y))) F_x$y else F_x$y_low,
                  xlab = Xlab[d], ylab = ylab,
                  xlim = xlim, ylim = ylim,
@@ -205,11 +155,21 @@ sectionview.matrix <- function(X, y,
                                bg_fading = 5,
                                mfrow = NULL,
                                Xlab = NULL, ylab = NULL,
-                               Xlim = NULL, ylim=NULL,
-                               title = NULL,
+                               Xlim = if (!add) c(0,1) else NULL, ylim=NULL,
+                               title = NULL, title_sep = " | ",
                                add = FALSE,
                                ...) {
-    D <- ncol(X)
+    # setup for center/Xlim/axis/mfrow
+    view = getView(1, add, center, if (is.null(Xlim) && !add) apply(X, 2, range) else Xlim, if (is.null(ylim) && !add) ylim <- range(y) else ylim, axis, mfrow)
+    D = view$D
+    center = view$center
+    Xlim = view$Xlim
+    ylim = view$ylim
+    axis = view$axis
+    mfrow = view$mfrow
+
+    if (ncol(X) != D)
+        stop(paste0("X must have ",D," columns."))
     n <- nrow(X)
 
     if (is.matrix(y) && ncol(y) == 2) {
@@ -221,43 +181,11 @@ sectionview.matrix <- function(X, y,
         y_up <- NA
     }
 
-    ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim, nrow=2, ncol=D)
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
-
-    if (is.null(ylim)) ylim <- range(y)
-
-    zlim <- c(NA,NA) #Not used for this kind of plot
+    drx <- unlist(Xlim[2, ]) - unlist(Xlim[1, ])
 
     ## define X & y labels
     if (is.null(ylab) && !is.null(names(y))) ylab <- names(y)[1]
     if (is.null(Xlab)) Xlab <- names(X)
-
-    if (is.null(axis)) {
-        axis <- matrix(1:D, ncol = 1)
-    } else {
-        ## added by YD for the vector case
-        axis <- matrix(axis, ncol = 1)
-    }
-
-    if (is.null(mfrow)) {
-        nc <- round(sqrt(nrow(axis)))
-        nl <- ceiling(nrow(axis)/nc)
-        mfrow <- c(nc, nl)
-    }
-
-    if (!isTRUE(add)) {
-        if (D>1){
-            close.screen( all.screens = TRUE )
-            split.screen(figs = mfrow)
-        }
-        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
-    }
-
-    if (!exists(".split.screen.lim",envir=DiceView.env))
-        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- "y"
@@ -271,14 +199,12 @@ sectionview.matrix <- function(X, y,
 
         d <- axis[id,]
 
-        xdmin <- unlist(rx["min", d])
-        xdmax <- unlist(rx["max", d])
-        xlim = c(xdmin,xdmax)
+        xlim = Xlim[, d]
 
         if (is.null(title)){
             title_d <- paste(collapse = "~",sep = "~", ylab, Xlab[d])
             if (D>1) {
-                title_d <-  paste(collapse = " | ", sep = " | ", title_d, paste(Xlab[-d], '=', fcenter[-d]))
+                title_d <-  paste(collapse =title_sep, sep =title_sep, title_d, paste(Xlab[-d], '=', fcenter[-d]))
             }
         } else {
             title_d <- title
@@ -302,10 +228,6 @@ sectionview.matrix <- function(X, y,
         }
 
         if (isTRUE(add) && !all(is.na(y))) {
-            .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
-            xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
-            ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
-            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
             if (D>1)
                 plot(x=X[,d], y=y, # Cannot use 'points' so use 'plot' with these neutral args
                        col = fade(color = col_points, alpha = alpha),
@@ -320,7 +242,6 @@ sectionview.matrix <- function(X, y,
                  xlab="",ylab="", xlim=xlim, ylim=ylim,
                  ...)
         } else {
-            eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
             plot(X[,d], if (!all(is.na(y))) y else y_low,
                  xlab=Xlab[d], ylab=ylab, xlim=xlim, ylim=ylim,
                  main=title_d,
@@ -369,23 +290,15 @@ sectionview.character <- function(eval_str,
 
     if (!exists(".split.screen.lim",envir=DiceView.env))
         stop(paste0("Cannot eval '",eval_str,"' when no previous sectionview() was called."))
-    else
-        .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
 
-    D <- nrow(.split.screen.lim)
-
-    if (is.null(axis)) {
-        axis <- matrix(1:D, ncol = 1)
-    } else {
-        ## added by YD for the vector case
-        axis <- matrix(axis, ncol = 1)
-    }
-
-    if (is.null(mfrow) && (D>1)) {
-        nc <- round(sqrt(D))
-        nl <- ceiling(D/nc)
-        mfrow <- c(nc, nl)
-    }
+    # setup for center/Xlim/axis/mfrow
+    view = getView(1, TRUE, NA, NA, NA, axis, mfrow)
+    D = view$D
+    center = view$center
+    Xlim = view$Xlim
+    ylim = view$ylim
+    axis = view$axis
+    mfrow = view$mfrow
 
     ## Each 'id' will produce a plot
     for (id in 1:dim(axis)[1]) {
@@ -394,13 +307,12 @@ sectionview.character <- function(eval_str,
 
         e = parent.frame()
         assign("d",d,envir=e)
-        assign("xlim",c(.split.screen.lim[d,1],.split.screen.lim[d,2]),envir=e)
-        assign("ylim",c(.split.screen.lim[d,3],.split.screen.lim[d,4]),envir=e)
-        assign("zlim",c(.split.screen.lim[d,5],.split.screen.lim[d,6]),envir=e)
+        assign("xlim",Xlim[,d],envir=e)
+        assign("ylim",ylim,envir=e)
 
         if (D>1) {
             screen(id, new=FALSE)
-            plot(x=c(.split.screen.lim[d,1],.split.screen.lim[d,2]), y=c(.split.screen.lim[d,3],.split.screen.lim[d,4]),
+            plot(x=Xlim[,d], y=ylim,
                  type='n',
                  xlab="",ylab="", main="",
                  bty='n', xaxt='n', yaxt='n', ann=FALSE, # remove all text, that should be already displayed
@@ -448,7 +360,7 @@ sectionview.km <- function(km_model, type = "UK",
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
                            Xlim = NULL, ylim=NULL,
-                           title = NULL,
+                           title = NULL, title_sep = " | ",
                            add = FALSE,
                            ...) {
     X_doe <- km_model@X
@@ -465,13 +377,13 @@ sectionview.km <- function(km_model, type = "UK",
         sdy_doe <- 0
     }
 
-    ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X_doe, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
+    ## find limits
+    if (is.null(Xlim) && !add)
+        Xlim <- apply(X_doe, 2, range)
+    else if (!is.null(Xlim))
+        Xlim <- matrix(Xlim,nrow=2,ncol=D)
 
-    if (is.null(ylim)) {
+    if (is.null(ylim) && !add) {
         ymin <- min(y_doe-3*sdy_doe)
         ymax <- max(y_doe+3*sdy_doe)
         ylim <- c(ymin, ymax)
@@ -481,13 +393,6 @@ sectionview.km <- function(km_model, type = "UK",
     if (is.null(ylab)) ylab <- names(y_doe)
     if (is.null(Xlab)) Xlab <- names(X_doe)
 
-    if (is.null(axis)) {
-        axis <- matrix(1:D, ncol = 1)
-    } else {
-        ## added by YD for the vector case
-        axis <- matrix(axis, ncol = 1)
-    }
-
     if (is.null(conf_fading) || length(conf_fading) != length(conf_level)) {
         conf_fading <- rep(0.5/length(conf_level), length(conf_level))
     }
@@ -496,17 +401,17 @@ sectionview.km <- function(km_model, type = "UK",
     sectionview.function(fun = function(x) {
         DiceKriging::predict.km(km_model,type=type,newdata=x,checkNames=FALSE)$mean
     }, vectorized=TRUE,
-    dim = D, center = center,axis = axis,npoints = npoints,
+    center = center, axis = axis, mfrow = mfrow, Xlim = Xlim, ylim=ylim,
+    npoints = npoints,
     col_fun = col_fun, #conf_fading=conf_fading,
-    mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-    Xlim = rx, ylim=ylim, title = title, add = add, ...)
+    Xlab = Xlab, ylab = ylab,
+    title = title, title_sep  = title_sep, add = add, ...)
 
     # plot design points
     sectionview.matrix(X = X_doe, y = y_doe,
-                       center = center, axis = axis,
                        col_points = col_points,
                        col_fading_interval = conf_fading, bg_fading = bg_fading,
-                       mfrow = mfrow, Xlim = rx, ylim=ylim, add=TRUE)
+                       add=TRUE)
 
     # plot confidence bands
     for (l in conf_level) {
@@ -514,17 +419,16 @@ sectionview.km <- function(km_model, type = "UK",
                 p = DiceKriging::predict.km(km_model,type=type,newdata=x,checkNames=FALSE)
                 cbind(p$mean-qnorm(1-(1-l)/2) * p$sd, p$mean+qnorm(1-(1-l)/2) * p$sd)
             }, vectorized=TRUE,
-            dim = D, center = center,axis = axis,npoints = npoints,
+            npoints = npoints,
             col_fun = col_fun,
             col_fading_interval=conf_fading,
-            mfrow = mfrow, Xlim = rx, ylim=ylim, add = TRUE)
+            add = TRUE)
 
         if (km_model@noise.flag)
             sectionview.matrix(X = X_doe, y = cbind(y_doe-qnorm(1-(1-l)/2) * sdy_doe, y_doe+qnorm(1-(1-l)/2) * sdy_doe),
-                           center = center, axis = axis,
                            col_points = col_points,
                            col_fading_interval = conf_fading, bg_fading = bg_fading,
-                           mfrow = mfrow, Xlim = rx, ylim=ylim, add=TRUE)
+                           add=TRUE)
     }
 
 }
@@ -545,7 +449,7 @@ sectionview_libKriging <- function(libKriging_model,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
                            Xlim = NULL, ylim=NULL,
-                           title = NULL,
+                           title = NULL, title_sep = " | ",
                            add = FALSE,
                            ...) {
     X_doe <- libKriging_model$X()
@@ -563,13 +467,13 @@ sectionview_libKriging <- function(libKriging_model,
     } else
         stop(paste0("Kriging model of class ",class(libKriging_model)," is not yet supported."))
 
-    ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X_doe, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
+    ## find limits
+    if (is.null(Xlim) && !add)
+        Xlim <- apply(X_doe, 2, range)
+    else if (!is.null(Xlim))
+        Xlim <- matrix(Xlim,nrow=2,ncol=D)
 
-    if (is.null(ylim)) {
+    if (is.null(ylim) && !add) {
         if (is.null(sdy_doe))
             ylim = range(y_doe)
         else {
@@ -585,13 +489,6 @@ sectionview_libKriging <- function(libKriging_model,
     if (is.null(Xlab)) Xlab <- names(X_doe)
     if (is.null(Xlab)) Xlab <- paste(sep = "", "X", 1:D)
 
-    if (is.null(axis)) {
-        axis <- matrix(1:D, ncol = 1)
-    } else {
-        ## added by YD for the vector case
-        axis <- matrix(axis, ncol = 1)
-    }
-
     if (is.null(conf_fading) ||
         length(conf_fading) != length(conf_level))
         conf_fading <- rep(0.5/length(conf_level), length(conf_level))
@@ -600,17 +497,17 @@ sectionview_libKriging <- function(libKriging_model,
     sectionview.function(fun = function(x) {
         rlibkriging::predict(libKriging_model,x,return_stdev=FALSE)$mean
     }, vectorized=TRUE,
-    dim = D, center = center,axis = axis,npoints = npoints,
+    center = center, axis = axis, mfrow = mfrow, Xlim = Xlim, ylim=ylim,
+    npoints = npoints,
     col_fun = col_fun, #conf_fading=conf_fading,
-    mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-    Xlim = rx, ylim=ylim, title = title, add = add, ...)
+    Xlab = Xlab, ylab = ylab,
+    title = title, title_sep = title_sep, add = add, ...)
 
     # plot design points
     sectionview.matrix(X = X_doe, y = y_doe,
-                       center = center, axis = axis,
                        col_points = col_points,
                        col_fading_interval = conf_fading, bg_fading = bg_fading,
-                       mfrow = mfrow, Xlim = rx, ylim=ylim, add=TRUE)
+                       add=TRUE)
 
     # plot confidence bands
     for (l in conf_level) {
@@ -618,17 +515,16 @@ sectionview_libKriging <- function(libKriging_model,
                 p = rlibkriging::predict(libKriging_model,x,return_stdev=TRUE)
                 cbind(p$mean-qnorm(1-(1-l)/2) * p$stdev, p$mean+qnorm(1-(1-l)/2) * p$stdev)
             }, vectorized=TRUE,
-            dim = D, center = center,axis = axis,npoints = npoints,
+            npoints = npoints,
             col_fun = col_fun,
             col_fading_interval=conf_fading,
-            mfrow = mfrow, Xlim = rx, ylim=ylim, add = TRUE)
+            add = TRUE)
 
         if (inherits(libKriging_model, "NoiseKriging")) # so sdy_doe!=0
             sectionview.matrix(X = X_doe, y = cbind(y_doe-qnorm(1-(1-l)/2) * sdy_doe, y_doe+qnorm(1-(1-l)/2) * sdy_doe),
-                           center = center, axis = axis,
                            col_points = col_points,
                            col_fading_interval = conf_fading, bg_fading = bg_fading,
-                           mfrow = mfrow, Xlim = rx, ylim=ylim, add=TRUE)
+                           add=TRUE)
     }
 
 }
@@ -669,13 +565,13 @@ sectionview.Kriging <- function(Kriging_model,
                                    mfrow = NULL,
                                    Xlab = NULL, ylab = NULL,
                                    Xlim = NULL, ylim=NULL,
-                                   title = NULL,
+                                   title = NULL, title_sep = " | ",
                                    add = FALSE,
                                    ...) {
     sectionview_libKriging(Kriging_model,center,axis,npoints,
                            col_points=col_points,col_fun=col_fun,col=col,
                            conf_level,conf_fading,bg_fading,
-                           mfrow,Xlab, ylab,Xlim,ylim,title,add,...)
+                           mfrow,Xlab, ylab,Xlim,ylim,title,title_sep,add,...)
 }
 
 #' @param NuggetKriging_model an object of class \code{"Kriging"}.
@@ -714,13 +610,13 @@ sectionview.NuggetKriging <- function(NuggetKriging_model,
                                 mfrow = NULL,
                                 Xlab = NULL, ylab = NULL,
                                 Xlim = NULL, ylim=NULL,
-                                title = NULL,
+                                title = NULL, title_sep = " | ",
                                 add = FALSE,
                                 ...) {
     sectionview_libKriging(NuggetKriging_model,center,axis,npoints,
                            col_points=col_points,col_fun=col_fun,col=col,
                            conf_level,conf_fading,bg_fading,
-                           mfrow,Xlab, ylab,Xlim,ylim,title,add,...)
+                           mfrow,Xlab, ylab,Xlim,ylim,title,title_sep,add,...)
 }
 
 #' @param NoiseKriging_model an object of class \code{"Kriging"}.
@@ -759,13 +655,13 @@ sectionview.NoiseKriging <- function(NoiseKriging_model,
                                       mfrow = NULL,
                                       Xlab = NULL, ylab = NULL,
                                       Xlim = NULL, ylim=NULL,
-                                      title = NULL,
+                                      title = NULL, title_sep = " | ",
                                       add = FALSE,
                                       ...) {
     sectionview_libKriging(NoiseKriging_model,center,axis,npoints,
                            col_points=col_points,col_fun=col_fun,col=col,
                            conf_level,conf_fading,bg_fading,
-                           mfrow,Xlab, ylab,Xlim,ylim,title,add,...)
+                           mfrow,Xlab, ylab,Xlim,ylim,title,title_sep,add,...)
 }
 
 #' @param glm_model an object of class \code{"glm"}.
@@ -801,7 +697,7 @@ sectionview.glm <- function(glm_model,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
                            Xlim = NULL, ylim=NULL,
-                           title = NULL,
+                           title = NULL, title_sep = " | ",
                            add = FALSE,
                            ...) {
 
@@ -823,18 +719,11 @@ sectionview.glm <- function(glm_model,
     y_doe <- do.call(cbind,lapply(ylab,function(yn)glm_model$data[[yn]]))
     colnames(y_doe) <- ylab
 
-    ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X_doe, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
-
-    if (is.null(axis)) {
-        axis <- matrix(1:D, ncol = 1)
-    } else {
-        ## added by YD for the vector case
-        axis <- matrix(axis, ncol = 1)
-    }
+    ## find limits
+    if (is.null(Xlim) && !add)
+        Xlim <- apply(X_doe, 2, range)
+    else if (!is.null(Xlim))
+        Xlim <- matrix(Xlim,nrow=2,ncol=D)
 
     if (is.null(conf_fading) ||
         length(conf_fading) != length(conf_level))
@@ -846,17 +735,17 @@ sectionview.glm <- function(glm_model,
             colnames(x) <- Xlab
             predict.glm(glm_model, newdata=x, se.fit=FALSE)
     }, vectorized=TRUE,
-    dim = D, center = center,axis = axis, npoints = npoints,
+    center = center,axis = axis, mfrow = mfrow, Xlim = Xlim, ylim=range(y_doe),
+    npoints = npoints,
     col_fun = col_fun,
-    mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-    Xlim = rx, ylim=range(y_doe), title = title, add = add, ...)
+    Xlab = Xlab, ylab = ylab,
+    title = title, title_sep  = title_sep, add = add, ...)
 
     # plot design points
     sectionview.matrix(X = X_doe, y = y_doe,
-                   center = center, axis = axis,
                    col_points = col_points,
                    col_fading_interval = conf_fading, bg_fading = bg_fading,
-                   mfrow = mfrow, Xlim = rx, ylim=range(y_doe), add=TRUE)
+                   add=TRUE)
 
     # plot confidence bands
     for (l in conf_level) {
@@ -866,10 +755,10 @@ sectionview.glm <- function(glm_model,
                 p = predict.glm(glm_model, newdata=x, se.fit=TRUE)
                 cbind(p$fit-qnorm(1-(1-l)/2) * p$se.fit, p$fit+qnorm(1-(1-l)/2) * p$se.fit)
             }, vectorized=TRUE,
-            dim = D, center = center,axis = axis,npoints = npoints,
+            npoints = npoints,
             col_fun = col_fun,
             col_fading_interval=conf_fading,
-            mfrow = mfrow, Xlim = rx, ylim=range(y_doe), add = TRUE)
+            add = TRUE)
     }
 }
 
@@ -905,7 +794,7 @@ sectionview.list <- function(modelFit_model,
                             mfrow = NULL,
                             Xlab = NULL, ylab = NULL,
                             Xlim = NULL, ylim=NULL,
-                            title = NULL,
+                            title = NULL, title_sep = " | ",
                             add = FALSE,
                             ...) {
 
@@ -921,18 +810,11 @@ sectionview.list <- function(modelFit_model,
     if (is.null(Xlab)) Xlab <- names(X_doe)
     if (is.null(Xlab)) Xlab <- paste(sep = "", "X", 1:D)
 
-    ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X_doe, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
-
-    if (is.null(axis)) {
-        axis <- matrix(1:D, ncol = 1)
-    } else {
-        ## added by YD for the vector case
-        axis <- matrix(axis, ncol = 1)
-    }
+    ## find limits
+    if (is.null(Xlim) && !add)
+        Xlim <- apply(X_doe, 2, range)
+    else if (!is.null(Xlim))
+        Xlim <- matrix(Xlim,nrow=2,ncol=D)
 
     # plot mean
     sectionview.function(fun = function(x) {
@@ -940,17 +822,17 @@ sectionview.list <- function(modelFit_model,
             colnames(x) <- Xlab
             DiceEval::modelPredict(modelFit_model, x)
     }, vectorized=TRUE,
-    dim = D, center = center,axis = axis,npoints = npoints,
+    center = center,axis = axis,mfrow = mfrow,Xlim = Xlim, ylim=range(y_doe),
+    npoints = npoints,
     col_fun = col_fun, #conf_fading=conf_fading,
-    mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-    Xlim = rx, ylim=range(y_doe), title = title, add = add, ...)
+    Xlab = Xlab, ylab = ylab,
+    title = title, title_sep = title_sep, add = add, ...)
 
     # plot design points
     sectionview.matrix(X = X_doe, y = y_doe,
-                   center = center, axis = axis,
                    col_points = col_points,
                    bg_fading = bg_fading,
-                   mfrow = mfrow, Xlim = rx, ylim=range(y_doe), add=TRUE)
+                   add=TRUE)
 }
 
 

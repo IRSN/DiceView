@@ -25,19 +25,19 @@
 \method{sectionview3d}{`function`}(
   fun,
   vectorized = FALSE,
-  dim = NULL,
   center = NULL,
   axis = NULL,
   npoints = 21,
   col_fun = if (!is.null(col)) col else "blue",
   col = NULL,
   col_fading_interval = 0.5,
-  mfrow = NULL,
+  mfrow = c(1, 1),
   Xlab = NULL,
   ylab = NULL,
-  Xlim = NULL,
+  Xlim = if (!add) matrix(c(0, 1), 2, 2) else NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   engine3d = NULL,
   ...
@@ -52,18 +52,19 @@
   col = NULL,
   col_fading_interval = 0.5,
   bg_fading = 1,
-  mfrow = NULL,
+  mfrow = c(1, 1),
   Xlab = NULL,
   ylab = NULL,
-  Xlim = NULL,
+  Xlim = if (!add) matrix(c(0, 1), 2, 2) else NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   engine3d = NULL,
   ...
 )
 
-\method{sectionview3d}{character}(eval_str, axis = NULL, mfrow = NULL, ...)
+\method{sectionview3d}{character}(eval_str, axis = NULL, mfrow = c(1, 1), ...)
 
 \method{sectionview3d}{km}(
   km_model,
@@ -77,12 +78,13 @@
   conf_level = 0.95,
   conf_fading = 0.5,
   bg_fading = 1,
-  mfrow = NULL,
+  mfrow = c(1, 1),
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   engine3d = NULL,
   ...
@@ -99,12 +101,13 @@
   conf_level = 0.95,
   conf_fading = 0.5,
   bg_fading = 1,
-  mfrow = NULL,
+  mfrow = c(1, 1),
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   engine3d = NULL,
   ...
@@ -121,12 +124,13 @@
   conf_level = 0.95,
   conf_fading = 0.5,
   bg_fading = 1,
-  mfrow = NULL,
+  mfrow = c(1, 1),
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   engine3d = NULL,
   ...
@@ -143,12 +147,13 @@
   conf_level = 0.95,
   conf_fading = 0.5,
   bg_fading = 1,
-  mfrow = NULL,
+  mfrow = c(1, 1),
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   engine3d = NULL,
   ...
@@ -165,12 +170,13 @@
   conf_level = 0.95,
   conf_fading = 0.5,
   bg_fading = 1,
-  mfrow = NULL,
+  mfrow = c(1, 1),
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   engine3d = NULL,
   ...
@@ -185,12 +191,13 @@
   col_fun = if (!is.null(col)) col else "blue",
   col = NULL,
   bg_fading = 1,
-  mfrow = NULL,
+  mfrow = c(1, 1),
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
   ylim = NULL,
   title = NULL,
+  title_sep = " | ",
   add = FALSE,
   engine3d = NULL,
   ...
@@ -202,8 +209,6 @@ sectionview3d(...)
 \item{fun}{a function or 'predict()'-like function that returns a simple numeric, or an interval, or mean and standard error: list(mean=...,se=...).}
 
 \item{vectorized}{is fun vectorized?}
-
-\item{dim}{input variables dimension of the model or function.}
 
 \item{center}{optional coordinates (as a list or data frame) of the center of the section view if the model's dimension is > 2.}
 
@@ -228,6 +233,8 @@ sectionview3d(...)
 \item{ylim}{an optional list to force y range for all plots. The default value \code{NULL} is automatically set to include all design points (and their 1-99 percentiles).}
 
 \item{title}{an optional overload of main title.}
+
+\item{title_sep}{customize subtitle with fixed input.}
 
 \item{add}{to print graphics on an existing window.}
 
@@ -276,18 +283,17 @@ x2 <- rnorm(15)
 y <- x1 + x2 + rnorm(15)
 model <- lm(y ~ x1 + x2)
 
-DiceView:::open3d();
-DiceView:::plot3d(x1,x2,y)
 sectionview3d(function(x) sum(x),
-                     dim=2, Xlim=cbind(range(x1),range(x2)), add=TRUE, col='black')
+                       Xlim=cbind(range(x1),range(x2)), col='black')
+DiceView:::plot3d(x1, x2, y)
 
 sectionview3d(function(x) {
                       x = as.data.frame(x)
                       colnames(x) <- all.vars(model$call)[-1]
                       p = predict.lm(model, newdata=x, se.fit=TRUE)
                       list(mean=p$fit, se=p$se.fit)
-                    }, vectorized=TRUE, dim=2,
-              Xlim=cbind(range(x1),range(x2)), add=TRUE)
+                    }, vectorized=TRUE,
+              add=TRUE)
 
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin)
@@ -367,7 +373,7 @@ sectionview3d(model)
 }
 
 ## A 2D example - Branin-Hoo function
-sectionview3d(branin, dim=2, col='black')
+sectionview3d(branin, col='black')
 
 \dontrun{
 ## a 16-points factorial design, and the corresponding response
@@ -380,26 +386,26 @@ if (requireNamespace("DiceKriging")) { library(DiceKriging)
 ## model: km
 model <- DiceKriging::km(design = design.fact, response = y)
 sectionview3d(model)
-sectionview3d(branin, dim=2, col='red', add=TRUE)
+sectionview3d(branin, col='red', add=TRUE)
 }
 
 if (requireNamespace("rlibkriging")) { library(rlibkriging)
 ## model: Kriging
 model <- Kriging(X = as.matrix(design.fact), y = as.matrix(y), kernel="matern3_2")
 sectionview3d(model)
-sectionview3d(branin, dim=2, col='red', add=TRUE)
+sectionview3d(branin, col='red', add=TRUE)
 }
 
 ## model: glm
 model <- glm(y ~ 1+ x1 + x2 + I(x1^2) + I(x2^2) + x1*x2, data=cbind(y,design.fact))
 sectionview3d(model)
-sectionview3d(branin, dim=2, col='red', add=TRUE)
+sectionview3d(branin, col='red', add=TRUE)
 
 if (requireNamespace("DiceEval")) { library(DiceEval)
 ## model: StepLinear
 model <- modelFit(design.fact, y, type = "StepLinear")
 sectionview3d(model)
-sectionview3d(branin, dim=2, col='red', add=TRUE)
+sectionview3d(branin, col='red', add=TRUE)
 }
 }
 

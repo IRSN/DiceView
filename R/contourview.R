@@ -1,6 +1,5 @@
 #' @param fun a function or 'predict()'-like function that returns a simple numeric or mean and standard error: list(mean=...,se=...).
 #' @param vectorized is fun vectorized?
-#' @param dim input variables dimension of the model or function.
 #' @param col_fading_interval an optional factor of alpha (color channel) fading used to plot function output intervals (if any).
 #' @template contourview-doc
 #' @rdname contourview
@@ -16,18 +15,16 @@
 #' model <- lm(y ~ x1 + x2)
 #'
 #' contourview(function(x) sum(x),
-#'                      dim=2, Xlim=cbind(range(x1),range(x2)), col='black')
+#'                      Xlim=cbind(range(x1),range(x2)), col='black')
 #' points(x1,x2)
 #'
 #' contourview(function(x) {
 #'                       x = as.data.frame(x)
 #'                       colnames(x) <- all.vars(model$call)[-1]
 #'                       predict.lm(model, newdata=x, se.fit=FALSE)
-#'                     }, vectorized=TRUE, dim=2,
-#'               Xlim=cbind(range(x1),range(x2)), add=TRUE)
+#'                     }, vectorized=TRUE, add=TRUE)
 #'
 contourview.function <- function(fun, vectorized=FALSE,
-                                dim = NULL,
                              center = NULL,
                              lty_center = 2,
                              col_center = "black",
@@ -40,80 +37,43 @@ contourview.function <- function(fun, vectorized=FALSE,
                              col_fading_interval = 0.5,
                              mfrow = NULL,
                              Xlab = NULL, ylab = NULL,
-                             Xlim = NULL,
-                             title = NULL,
+                             Xlim = if (!add) matrix(c(0,1),2,2) else NULL, ylim=NULL,
+                             title = NULL, title_sep = " | ",
                              add = FALSE,
                              ...) {
-    if (!is.null(dim)) {
-        D <- dim
-        if (is.null(center))
-            if (D != 2) stop("Section center in 'section' required for >2-D model.")
-    } else {
-        if (is.null(center))
-            stop("dim or center must be specified.")
-        else
-            D <- length(center)
-    }
-
-    if (length(levels)==1) {
-        levels = pretty(range(unlist(EvalInterval.function(fun,X=Xlim,vectorized,dim=D)),na.rm=TRUE), levels)
-        if (length(col_levels) != length(levels))
-            col_levels = col.levels(col_levels,length(levels))
-    }
+    # setup for center/Xlim/axis/mfrow
+    view = getView(2, add, center, Xlim, ylim, axis, mfrow)
+    D = view$D
+    center = view$center
+    Xlim = view$Xlim
+    ylim = view$ylim
+    axis = view$axis
+    mfrow = view$mfrow
 
     if (D == 1) stop("for a model with dim 1, use 'sectionview'")
 
-    if (is.null(axis)) {
-        axis <- t(utils::combn(D, 2))
-    } else {
-        ## added by YD for the vector case
-        axis <- matrix(axis, ncol = 2)
+    if (!add && (is.null(ylim) || all(is.na(ylim)))) { # compute and set ylim
+        ylim <- range(unlist(EvalInterval.function(fun,Xlim, vectorized)), na.rm = TRUE)
+        setView_ylim(ylim)
     }
 
-    if (is.null(mfrow)) {
-        nc <- round(sqrt(nrow(axis)))
-        nl <- ceiling(nrow(axis)/nc)
-        mfrow <- c(nc, nl)
-    }
-
-    if (!isTRUE(add)) {
-        if (D>2) {
-            close.screen( all.screens = TRUE )
-            split.screen(figs = mfrow, erase=TRUE)
+    if ( (length(levels)==1) && is.wholenumber(levels)) {
+        levels = pretty(range(unlist(EvalInterval.function(fun,X=Xlim,vectorized,dim=D)),na.rm=TRUE), levels)
+        if (length(col_levels) != length(levels)) {
+            warning(paste0("col_levels reset to ",length(levels)," values"))
+            if (length(col_levels) == 2)
+                col_levels = cols.levels(col_levels[1],col_levels[2],levels)
+            else
+                col_levels = col.levels(col_levels[1],levels)
         }
-        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
     }
-
-    if (!exists(".split.screen.lim",envir=DiceView.env))
-        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
 
     npoints <- rep(npoints, length.out = D)
-
-    ## find limits: 'rx' is matrix with min in row 1 and max in row 2
-    if(!is.null(Xlim))
-        rx <- matrix(Xlim,nrow=2,ncol=D)
-    else {
-        rx <- matrix(c(0,1),nrow=2,ncol=D)
-        if (!is.null(center)) # ensure center is included in Xlim
-            for (i in 1:D) {
-                rx[1,i] <- min(rx[1,i],center[i])
-                rx[2,i] <- max(rx[2,i],center[i])
-            }
-    }
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
-
-    zlim <- c(NA, NA) #Not used for this kind of plot
+    drx <- unlist(Xlim[2, ]) - unlist(Xlim[1, ])
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- "y"
     if (is.null(Xlab)) Xlab <- paste(sep = "", "X", 1:D)
-
-    ## Added by YD (as in sectionview3d.km)
-    if (is.null(center)) {
-        center <- rep(0, D)
-        names(center) <- Xlab
-    }
 
     ## try to find a good formatted value 'fcenter' for 'center'
     fcenter <- tryFormat(x = center, drx = drx)
@@ -130,19 +90,11 @@ contourview.function <- function(fun, vectorized=FALSE,
         ind.nonfix <- (1:D) %in% c(d[1], d[2])
         ind.nonfix <- !ind.nonfix
 
-        xlim <- unlist(rx[c("min","max"), d[1]])
-        if (isTRUE(add)) {
-            xlim['min'] <- min(xlim['min'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,1:2]))
-            xlim['max'] <- max(xlim['max'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,1:2]))
-        }
-        ylim <- unlist(rx[c("min","max"), d[2]])
-        if (isTRUE(add)) {
-            ylim['min'] <- min(ylim['min'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,3:4]))
-            ylim['max'] <- max(ylim['max'],c(get(x=".split.screen.lim",envir=DiceView.env)[1,3:4]))
-        }
+        x1lim <- Xlim[, d[1]]
+        x2lim <- Xlim[, d[2]]
 
-        xd1 <- seq(from = as.numeric(xlim['min']), to = as.numeric(xlim['max']), length.out = npoints[1])
-        xd2 <- seq(from = as.numeric(ylim['min']), to = as.numeric(ylim['max']), length.out = npoints[2])
+        xd1 <- seq(from = as.numeric(x1lim[1]), to = as.numeric(x1lim[2]), length.out = npoints[d[1]])
+        xd2 <- seq(from = as.numeric(x2lim[1]), to = as.numeric(x2lim[2]), length.out = npoints[d[2]])
 
         x <- data.frame(t(matrix(as.numeric(center), nrow = D, ncol = npoints_all)))
         if (!is.null(center)) if(!is.null(names(center))) names(x) <- names(center)
@@ -156,32 +108,24 @@ contourview.function <- function(fun, vectorized=FALSE,
         if (is.null(title)){
             title_d <- paste(collapse = "~",sep = "~", ylab, paste(collapse = ",", sep = ",", Xlab[d[1]], Xlab[d[2]]))
             if (D>2) {
-                title_d <-  paste(collapse = " | ", sep = " | ", title_d, paste(collapse=',',Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
+                title_d <-  paste(collapse =title_sep, sep =title_sep, title_d, paste(collapse=',',Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
             }
         } else {
-            title_d <-  title
+            title_d <- title
         }
 
         ## plot mean
         if (isTRUE(add)) {
-            # re-use global settings for limits of this screen
-            .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
-            xlim <- c(.split.screen.lim[d,1],.split.screen.lim[d,2])
-            ylim <- c(.split.screen.lim[d,3],.split.screen.lim[d,4])
-            zlim <- c(.split.screen.lim[d,5],.split.screen.lim[d,6])
             contour(x = xd1,y = xd2, z = if (!all(is.na(F_x$yd))) F_x$yd else F_x$yd_low,
-                    xlim = xlim, ylim = ylim, zlim = zlim,
+                    xlim = x1lim, ylim = x2lim, zlim = ylim,
                     col = col_levels,  lty = if (!all(is.na(F_x$yd))) lty_levels else 0,
                     levels = levels,
                     add=TRUE,
                     ...)
         } else {
-            xlim = rx[,d[1]]
-            ylim = rx[,d[2]]
-            eval(parse(text=paste(".split.screen.lim[",id,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
             contour(x = xd1, y = xd2, z = if (!all(is.na(F_x$yd))) F_x$yd else F_x$yd_low,
                     xlab = Xlab[d[1]], ylab = Xlab[d[2]],
-                    xlim = xlim, ylim = ylim,
+                    xlim = x1lim, ylim = x2lim, zlim = ylim,
                     main = title_d,
                     col = col_levels,  lty = if (!all(is.na(F_x$yd))) lty_levels else 0,
                     levels = levels,
@@ -193,17 +137,13 @@ contourview.function <- function(fun, vectorized=FALSE,
             }
         }
 
+        ## 'confidence band' filled with the suitable color
 	    if (!all(is.na(F_x$yd_low)) && !all(is.na(F_x$yd_up))) {
                 for (i in 1:length(levels)) {
                     .filled.contour(x = xd1, y = xd2, z = abs((F_x$yd_low+F_x$yd_up)/2 - levels[i])-(F_x$yd_up-F_x$yd_low)/2,
                                     #xlim = xlim, ylim = ylim, zlim = zlim,
                                     col = fade(col_levels[i],alpha = 1-col_fading_interval),
                                     levels = c(-max(F_x$yd_up-F_x$yd_low),0))
-                    #.filled.contour(x = xd1, y = xd2, z = abs(yd_mean - levels[i])-0.25*yd_sd,
-                    #                #xlim = xlim, ylim = ylim, zlim = zlim,
-                    #                col = fade(col_levels,alpha = (1-0.25)*col_fading_interval),
-                    #                levels = c(-max(y_sd),0))
-
             }
 	    }
     }
@@ -236,11 +176,21 @@ contourview.matrix <- function(X, y,
                            bg_fading = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
-                           Xlim = NULL,
-                           title = NULL,
+                           Xlim = if (!add) matrix(c(0,1),2,2) else NULL, ylim=NULL,
+                           title = NULL, title_sep = " | ",
                            add = FALSE,
                            ...) {
-    D <- ncol(X)
+    # setup for center/Xlim/axis/mfrow
+    view = getView(2, add, center, if (is.null(Xlim) && !add) apply(X, 2, range) else Xlim, if (is.null(ylim) && !add) ylim <- range(y) else ylim, axis, mfrow)
+    D = view$D
+    center = view$center
+    Xlim = view$Xlim
+    ylim = view$ylim
+    axis = view$axis
+    mfrow = view$mfrow
+
+    if (ncol(X) != D)
+        stop(paste0("X must have ",D," columns."))
     n <- nrow(X)
 
     if (is.matrix(y) && ncol(y) == 2) {
@@ -252,40 +202,11 @@ contourview.matrix <- function(X, y,
         y_up <- NA
     }
 
-    ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
-
-    zlim <- c(NA, NA) #Not used for this kind of plot
+    drx <- unlist(Xlim[2, ]) - unlist(Xlim[1, ])
 
     ## define X & y labels
     if (is.null(ylab) && !is.null(names(y))) ylab <- names(y)[1]
     if (is.null(Xlab)) Xlab <- names(X)
-
-    if (is.null(axis)) {
-        axis <- t(utils::combn(D, 2))
-    } else {
-        axis <- matrix(axis, ncol = 2)
-    }
-
-    if (is.null(mfrow)) {
-        nc <- round(sqrt(nrow(axis)))
-        nl <- ceiling(nrow(axis)/nc)
-        mfrow <- c(nc, nl)
-    }
-
-    if (!isTRUE(add)) {
-        if (D>2) {
-            close.screen( all.screens = TRUE )
-            split.screen(figs = mfrow, erase=TRUE)
-        }
-        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env) # xmin,xmax,ymin,ymax matrix of limits, each row for one dim combination
-    }
-
-    if (!exists(".split.screen.lim",envir=DiceView.env))
-        assign(".split.screen.lim",matrix(NaN,ncol=6,nrow=D),envir=DiceView.env)
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- "y"
@@ -303,13 +224,13 @@ contourview.matrix <- function(X, y,
         ind.nonfix <- (1:D) %in% c(d[1], d[2])
         ind.nonfix <- !ind.nonfix
 
-        xlim <- unlist(rx[ , d[1]])
-        ylim <- unlist(rx[ , d[2]])
+        x1lim = Xlim[, d[1]]
+        x2lim = Xlim[, d[2]]
 
         if (is.null(title)){
-            title_d <- paste(collapse = "~",sep = "~", ylab, Xlab[d])
-            if (D>1) {
-                title_d <-  paste(collapse = " | ", sep = " | ", title_d, paste(Xlab[-d], '=', fcenter[-d]))
+            title_d <- paste(collapse = "~",sep = "~", ylab, paste(collapse = ",", sep = ",", Xlab[d[1]], Xlab[d[2]]))
+            if (D>2) {
+                title_d <-  paste(collapse =title_sep, sep =title_sep, title_d, paste(collapse=',',Xlab[ind.nonfix],'=', fcenter[ind.nonfix]))
             }
         } else {
             title_d <- title
@@ -333,27 +254,22 @@ contourview.matrix <- function(X, y,
         }
 
         if (isTRUE(add)) {
-            # re-use global settings for limits of this screen
-            .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
-            xlim <- c(.split.screen.lim[1,1],.split.screen.lim[1,2])
-            ylim <- c(.split.screen.lim[1,3],.split.screen.lim[1,4])
-            zlim <- c(.split.screen.lim[1,5],.split.screen.lim[1,6])
             if (D>2)
-                plot(x=X[,d],  # Cannot use 'points' so use 'plot' with these neutral args
+                plot(x=X[,d[1]], y=X[,d[2]],  # Cannot use 'points' so use 'plot' with these neutral args
                      col = fade(color = col_points, alpha = alpha),
                      pch = 20,type='p',
-                     xlab="",ylab="", main="", xlim=xlim, ylim=ylim,
+                     xlab="",ylab="", main="", xlim=x1lim, ylim=x2lim,
                      bty='n', xaxt='n', yaxt='n', ann=FALSE, # remove all text, that should be already     displayed
                      )
             else
-                points(X[,d],
+                points(x=X[,d[1]], y=X[,d[2]],
                        col = fade(color = col_points, alpha = alpha),
-                       xlim=xlim,ylim=ylim,
+                       xlim = x1lim, ylim = x2lim,
                        pch = 20)
         } else {
-            eval(parse(text=paste(".split.screen.lim[",d,",] = matrix(c(",xlim[1],",",xlim[2],",",ylim[1],",",ylim[2],",",zlim[1],",",zlim[2],"),nrow=1)")),envir=DiceView.env)
-            plot(X[,d],
-                 xlab=Xlab[d[1]], ylab=Xlab[d[1]], xlim=xlim, ylim=ylim,
+            plot(x=X[,d[1]], y=X[,d[2]],
+                 xlab=Xlab[d[1]], ylab=Xlab[d[1]],
+                 xlim=x1lim, ylim=x2lim,
                  main=title_d,
                  pch = 20, type = "p",
                  col = fade(color = col_points, alpha = alpha),
@@ -391,23 +307,15 @@ contourview.character <- function(eval_str,
 
     if (!exists(".split.screen.lim",envir=DiceView.env))
         stop(paste0("Cannot eval '",eval_str,"' when no previous sectionview() was called."))
-    else
-        .split.screen.lim = get(x=".split.screen.lim",envir=DiceView.env)
 
-    D <- nrow(.split.screen.lim)
-
-    if (is.null(axis)) {
-        axis <- matrix(1:D, ncol = 1)
-    } else {
-        ## added by YD for the vector case
-        axis <- matrix(axis, ncol = 1)
-    }
-
-    if (is.null(mfrow) && (D>1)) {
-        nc <- round(sqrt(D))
-        nl <- ceiling(D/nc)
-        mfrow <- c(nc, nl)
-    }
+    # setup for center/Xlim/axis/mfrow
+    view = getView(2, TRUE, NA, NA, NA, axis, mfrow)
+    D = view$D
+    center = view$center
+    Xlim = view$Xlim
+    ylim = view$ylim
+    axis = view$axis
+    mfrow = view$mfrow
 
     ## Each 'id' will produce a plot
     for (id in 1:dim(axis)[1]) {
@@ -416,13 +324,13 @@ contourview.character <- function(eval_str,
 
         e = parent.frame()
         assign("d",d,envir=e)
-        assign("xlim",c(.split.screen.lim[d,1],.split.screen.lim[d,2]),envir=e)
-        assign("ylim",c(.split.screen.lim[d,3],.split.screen.lim[d,4]),envir=e)
-        assign("zlim",c(.split.screen.lim[d,5],.split.screen.lim[d,6]),envir=e)
+        assign("xlim",Xlim[,d[1]],envir=e)
+        assign("ylim",Xlim[,d[2]],envir=e)
+        assign("zlim",ylim,envir=e)
 
         if (D>2) {
             screen(id, new=FALSE)
-            plot(x=c(.split.screen.lim[d,1],.split.screen.lim[d,2]), y=c(.split.screen.lim[d,3],.split.screen.lim[d,4]),
+            plot(x=Xlim[,d[1]], y=Xlim[,d[2]],
                  type='n',
                  xlab="",ylab="", main="",
                  bty='n', xaxt='n', yaxt='n', ann=FALSE, # remove all text, that should be already displayed
@@ -470,14 +378,19 @@ contourview.km <- function(km_model, type = "UK",
                            bg_fading = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
-                           Xlim = NULL,
-                           title = NULL,
+                           Xlim = NULL, ylim=NULL,
+                           title = NULL, title_sep = " | ",
                            add = FALSE,
                            ...) {
-    if (length(levels)==1) {
+    if ( (length(levels)==1) && is.wholenumber(levels)) {
         levels = pretty(c(km_model@y+2*sqrt(km_model@covariance@sd2), km_model@y-2*sqrt(km_model@covariance@sd2)), levels)
-        if (length(col_levels) != length(levels)-1)
-            col_levels = col.levels(col_levels,levels)
+        if (length(col_levels) != length(levels)) {
+            warning(paste0("col_levels reset to ",length(levels)," values"))
+            if (length(col_levels) == 2)
+                col_levels = cols.levels(col_levels[1],col_levels[2],levels)
+            else
+                col_levels = col.levels(col_levels[1],levels)
+        }
     }
 
     X_doe <- km_model@X
@@ -494,21 +407,21 @@ contourview.km <- function(km_model, type = "UK",
         sdy_doe <- 0
     }
 
-    ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X_doe, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
+    ## find limits
+    if (is.null(Xlim) && !add)
+        Xlim <- apply(X_doe, 2, range)
+    else if (!is.null(Xlim))
+        Xlim <- matrix(Xlim,nrow=2,ncol=D)
+
+    if (is.null(ylim) && !add) {
+        ymin <- min(y_doe-3*sdy_doe)
+        ymax <- max(y_doe+3*sdy_doe)
+        ylim <- c(ymin, ymax)
+    }
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- names(y_doe)
     if (is.null(Xlab)) Xlab <- names(X_doe)
-
-    if (is.null(axis)) {
-        axis <- t(utils::combn(D, 2))
-    } else {
-        axis <- matrix(axis, ncol = 2)
-    }
 
     if (is.null(conf_fading) ||
         length(conf_fading) != length(conf_level))
@@ -518,10 +431,11 @@ contourview.km <- function(km_model, type = "UK",
     contourview.function(fun = function(x) {
             DiceKriging::predict.km(km_model,type=type,newdata=x,checkNames=FALSE)$mean
         }, vectorized=TRUE,
-        dim = D, center = center,axis = axis,npoints = npoints,
+        center = center, axis = axis, mfrow = mfrow, Xlim = Xlim, ylim=ylim,
+        npoints = npoints,
         levels = levels, col_levels = col_levels,
-        mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-        Xlim = rx, title = title, add = add, ...)
+        Xlab = Xlab, ylab = ylab,
+        title = title, title_sep  = title_sep, add = add, ...)
 
     # plot confidence bands
     for (l in conf_level) {
@@ -529,18 +443,17 @@ contourview.km <- function(km_model, type = "UK",
                 p = DiceKriging::predict.km(km_model,type=type,newdata=x,checkNames=FALSE)
                 cbind(p$mean-qnorm(1-(1-l)/2) * p$sd, p$mean+qnorm(1-(1-l)/2) * p$sd)
             }, vectorized=TRUE,
-            dim = D, center = center,axis = axis,npoints = npoints,
+            npoints = npoints,
             levels = levels, col_levels = col_levels,
             col_fading_interval=conf_fading,
-            mfrow = mfrow, Xlim = rx, add = TRUE)
+            add = TRUE)
     }
 
     # plot design points
     contourview.matrix(X = X_doe, y = y_doe,
-                       dim = D, center = center, axis = axis,
                        col_points = col_points,
                        bg_fading = bg_fading,
-                       mfrow = mfrow, Xlim = rx, add=TRUE)
+                       add=TRUE)
 }
 
 #' @param libKriging_model an object of class \code{"Kriging"}, \code{"NuggetKriging"} or \code{"NoiseKriging"}.
@@ -561,15 +474,20 @@ contourview_libKriging <- function(libKriging_model,
                            bg_fading = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
-                           Xlim = NULL,
-                           title = NULL,
+                           Xlim = NULL, ylim=NULL,
+                           title = NULL, title_sep = " | ",
                            add = FALSE,
                            ...) {
-    if (length(levels)==1) {
+    if ( (length(levels)==1) && is.wholenumber(levels)) {
         levels = pretty(c(libKriging_model$y()-2*sqrt(libKriging_model$sigma2()),
                           libKriging_model$y()+2*sqrt(libKriging_model$sigma2())), levels)
-        if (length(col_levels) != length(levels)-1)
-            col_levels = col.levels(col_levels,levels)
+        if (length(col_levels) != length(levels)) {
+            warning(paste0("col_levels reset to ",length(levels)," values"))
+            if (length(col_levels) == 2)
+                col_levels = cols.levels(col_levels[1],col_levels[2],levels)
+            else
+                col_levels = col.levels(col_levels[1],levels)
+        }
     }
 
     X_doe <- libKriging_model$X()
@@ -587,23 +505,27 @@ contourview_libKriging <- function(libKriging_model,
     } else
         stop(paste0("Kriging model of class ",class(libKriging_model)," is not yet supported."))
 
-    ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X_doe, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
+    ## find limits
+    if (is.null(Xlim) && !add)
+        Xlim <- apply(X_doe, 2, range)
+    else if (!is.null(Xlim))
+        Xlim <- matrix(Xlim,nrow=2,ncol=D)
+
+    if (is.null(ylim) && !add) {
+        if (is.null(sdy_doe))
+            ylim = range(y_doe)
+        else {
+            ymin <- min(y_doe-3*sdy_doe)
+            ymax <- max(y_doe+3*sdy_doe)
+            ylim <- c(ymin, ymax)
+        }
+    }
 
     ## define X & y labels
     if (is.null(ylab)) ylab <- names(y_doe)
     if (is.null(ylab)) ylab <- "y"
     if (is.null(Xlab)) Xlab <- names(X_doe)
     if (is.null(Xlab)) Xlab <- paste(sep = "", "X", 1:D)
-
-    if (is.null(axis)) {
-        axis <- t(utils::combn(D, 2))
-    } else {
-        axis <- matrix(axis, ncol = 2)
-    }
 
     if (is.null(conf_fading) ||
         length(conf_fading) != length(conf_level))
@@ -613,10 +535,11 @@ contourview_libKriging <- function(libKriging_model,
     contourview.function(fun = function(x) {
             rlibkriging::predict(libKriging_model,x,return_stdev=FALSE)$mean
         }, vectorized=TRUE,
-        dim = D, center = center,axis = axis,npoints = npoints,
+        center = center, axis = axis, mfrow = mfrow, Xlim = Xlim, ylim=ylim,
+        npoints = npoints,
         levels = levels, col_levels = col_levels,
-        mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-        Xlim = rx, title = title, add = add, ...)
+        Xlab = Xlab, ylab = ylab,
+        title = title, title_sep = title_sep, add = add, ...)
 
     # plot confidence bands
     for (l in conf_level) {
@@ -624,18 +547,17 @@ contourview_libKriging <- function(libKriging_model,
                 p = rlibkriging::predict(libKriging_model,x,return_stdev=TRUE)
                 cbind(p$mean-qnorm(1-(1-l)/2) * p$stdev, p$mean+qnorm(1-(1-l)/2) * p$stdev)
             }, vectorized=TRUE,
-            dim = D, center = center,axis = axis,npoints = npoints,
+            npoints = npoints,
             levels = levels, col_levels = col_levels,
             col_fading_interval=conf_fading,
-            mfrow = mfrow, Xlim = rx, add = TRUE)
+            add = TRUE)
     }
 
     # plot design points
     contourview.matrix(X = X_doe, y = y_doe,
-                       dim = D, center = center, axis = axis,
                        col_points = col_points,
                        bg_fading = bg_fading,
-                       mfrow = mfrow, Xlim = rx, add=TRUE)
+                       add=TRUE)
 }
 
 #' @param Kriging_model an object of class \code{"Kriging"}.
@@ -674,8 +596,8 @@ contourview.Kriging <- function(Kriging_model,
                                    bg_fading = 1,
                                    mfrow = NULL,
                                    Xlab = NULL, ylab = NULL,
-                                   Xlim = NULL,
-                                   title = NULL,
+                                   Xlim = NULL, ylim=NULL,
+                                   title = NULL, title_sep = " | ",
                                    add = FALSE,
                                    ...) {
     contourview_libKriging(libKriging_model = Kriging_model,
@@ -691,7 +613,7 @@ contourview.Kriging <- function(Kriging_model,
                            bg_fading = bg_fading,
                            mfrow = mfrow,
                            Xlab = Xlab, ylab = ylab,
-                           Xlim = Xlim,
+                           Xlim = Xlim, ylim=ylim,
                            title = title,
                            add = add,
                            ...)
@@ -733,8 +655,8 @@ contourview.NuggetKriging <- function(NuggetKriging_model,
                                 bg_fading = 1,
                                 mfrow = NULL,
                                 Xlab = NULL, ylab = NULL,
-                                Xlim = NULL,
-                                title = NULL,
+                                Xlim = NULL, ylim=NULL,
+                                title = NULL, title_sep = " | ",
                                 add = FALSE,
                                 ...) {
     contourview_libKriging(libKriging_model = NuggetKriging_model,
@@ -750,7 +672,7 @@ contourview.NuggetKriging <- function(NuggetKriging_model,
                            bg_fading = bg_fading,
                            mfrow = mfrow,
                            Xlab = Xlab, ylab = ylab,
-                           Xlim = Xlim,
+                           Xlim = Xlim, ylim=ylim,
                            title = title,
                            add = add,
                            ...)
@@ -792,8 +714,8 @@ contourview.NoiseKriging <- function(NoiseKriging_model,
                                       bg_fading = 1,
                                       mfrow = NULL,
                                       Xlab = NULL, ylab = NULL,
-                                      Xlim = NULL,
-                                      title = NULL,
+                                      Xlim = NULL, ylim=NULL,
+                                      title = NULL, title_sep = " | ",
                                       add = FALSE,
                                       ...) {
     contourview_libKriging(libKriging_model = NoiseKriging_model,
@@ -809,7 +731,7 @@ contourview.NoiseKriging <- function(NoiseKriging_model,
                            bg_fading = bg_fading,
                            mfrow = mfrow,
                            Xlab = Xlab, ylab = ylab,
-                           Xlim = Xlim,
+                           Xlim = Xlim, ylim=ylim,
                            title = title,
                            add = add,
                            ...)
@@ -848,14 +770,19 @@ contourview.glm <- function(glm_model,
                            bg_fading = 1,
                            mfrow = NULL,
                            Xlab = NULL, ylab = NULL,
-                           Xlim = NULL,
-                           title = NULL,
+                           Xlim = NULL, ylim=NULL,
+                           title = NULL, title_sep = " | ",
                            add = FALSE,
                            ...) {
-    if (length(levels)==1) {
+    if ( (length(levels)==1) && is.wholenumber(levels)) {
         levels = pretty(glm_model$fitted.values, levels)
-        if (length(col_levels) != length(levels)-1)
-            col_levels = col.levels(col_levels,levels)
+        if (length(col_levels) != length(levels)) {
+            warning(paste0("col_levels reset to ",length(levels)," values"))
+            if (length(col_levels) == 2)
+                col_levels = cols.levels(col_levels[1],col_levels[2],levels)
+            else
+                col_levels = col.levels(col_levels[1],levels)
+        }
     }
 
     # Get X & y labels
@@ -876,17 +803,11 @@ contourview.glm <- function(glm_model,
     y_doe <- do.call(cbind,lapply(ylab,function(yn)glm_model$data[[yn]]))
     colnames(y_doe) <- ylab
 
-    ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X_doe, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
-
-    if (is.null(axis)) {
-        axis <- t(utils::combn(D, 2))
-    } else {
-        axis <- matrix(axis, ncol = 2)
-    }
+    ## find limits
+    if (is.null(Xlim) && !add)
+        Xlim <- apply(X_doe, 2, range)
+    else if (!is.null(Xlim))
+        Xlim <- matrix(Xlim,nrow=2,ncol=D)
 
     if (is.null(conf_fading) ||
         length(conf_fading) != length(conf_level))
@@ -899,10 +820,11 @@ contourview.glm <- function(glm_model,
             colnames(x) <- Xlab
             predict.glm(glm_model, newdata=x, se.fit=FALSE)
         }, vectorized=TRUE,
-        dim = D, center = center,axis = axis, npoints = npoints,
+        center = center,axis = axis, mfrow = mfrow, Xlim = Xlim, ylim=range(y_doe),
+        npoints = npoints,
         levels = levels, col_levels = col_levels,
-        mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-        Xlim = rx, title = title, add = add, ...)
+        Xlab = Xlab, ylab = ylab,
+        title = title, title_sep  = title_sep, add = add, ...)
 
                            # plot confidence bands
     for (l in conf_level) {
@@ -912,19 +834,16 @@ contourview.glm <- function(glm_model,
                 p = predict.glm(glm_model, newdata=x, se.fit=TRUE)
                 cbind(p$fit-qnorm(1-(1-l)/2) * p$se.fit, p$fit+qnorm(1-(1-l)/2) * p$se.fit)
             }, vectorized=TRUE,
-            dim = D, center = center,axis = axis,npoints = npoints,
+            npoints = npoints,
             levels = levels, col_levels = col_levels,
             col_fading_interval=conf_fading,
-            mfrow = mfrow, Xlim = rx, add = TRUE)
+            add = TRUE)
     }
 
     # plot design points
     contourview.matrix(X = X_doe, y = y_doe,
-                       dim = D, center = center, axis = axis,
                        col_points = col_points,
                        bg_fading = bg_fading,
-                       mfrow = mfrow,
-                       Xlim = rx,
                        add=TRUE)
 }
 
@@ -961,14 +880,19 @@ contourview.list <- function(modelFit_model,
                             bg_fading = 1,
                             mfrow = NULL,
                             Xlab = NULL, ylab = NULL,
-                            Xlim = NULL,
-                            title = NULL,
+                            Xlim = NULL, ylim=NULL,
+                            title = NULL, title_sep = " | ",
                             add = FALSE,
                             ...) {
-    if (length(levels)==1) {
+    if ( (length(levels)==1) && is.wholenumber(levels)) {
         levels = pretty(modelFit_model$data$Y, levels)
-        if (length(col_levels) != length(levels)-1)
-            col_levels = col.levels(col_levels,levels)
+        if (length(col_levels) != length(levels)) {
+            warning(paste0("col_levels reset to ",length(levels)," values"))
+            if (length(col_levels) == 2)
+                col_levels = cols.levels(col_levels[1],col_levels[2],levels)
+            else
+                col_levels = col.levels(col_levels[1],levels)
+        }
     }
 
     X_doe <- modelFit_model$data$X
@@ -983,17 +907,11 @@ contourview.list <- function(modelFit_model,
     if (is.null(Xlab)) Xlab <- names(X_doe)
     if (is.null(Xlab)) Xlab <- paste(sep = "", "X", 1:D)
 
-    ## find limits: rx is matrix with min in row 1 and max in row 2
-    rx <- apply(X_doe, 2, range)
-    if(!is.null(Xlim)) rx <- matrix(Xlim,nrow=2,ncol=D)
-    rownames(rx) <- c("min", "max")
-    drx <- unlist(rx["max", ]) - unlist(rx["min", ])
-
-    if (is.null(axis)) {
-        axis <- t(utils::combn(D, 2))
-    } else {
-        axis <- matrix(axis, ncol = 2)
-    }
+    ## find limits
+    if (is.null(Xlim) && !add)
+        Xlim <- apply(X_doe, 2, range)
+    else if (!is.null(Xlim))
+        Xlim <- matrix(Xlim,nrow=2,ncol=D)
 
     # plot mean
     contourview.function(
@@ -1002,17 +920,17 @@ contourview.list <- function(modelFit_model,
             colnames(x) <- Xlab
             DiceEval::modelPredict(modelFit_model, x)
         }, vectorized=TRUE,
-        dim = D, center = center,axis = axis, npoints = npoints,
+        center = center,axis = axis,mfrow = mfrow,Xlim = Xlim, ylim=range(y_doe),
+        npoints = npoints,
         levels = levels, col_levels = col_levels,
-        mfrow = mfrow, Xlab = Xlab, ylab = ylab,
-        Xlim = rx, title = title, add = add, ...)
+        Xlab = Xlab, ylab = ylab,
+        title = title, title_sep  = title_sep, add = add, ...)
 
     # plot design points
     contourview.matrix(X = X_doe, y = y_doe,
-                       dim = D, center = center, axis = axis,
                        col_points = col_points,
                        bg_fading = bg_fading,
-                       mfrow = mfrow, Xlim = rx, add=TRUE)
+                       add=TRUE)
 }
 
 
@@ -1032,7 +950,7 @@ if(!isGeneric("contourview")) {
 #' @export
 #' @examples
 #' ## A 2D example - Branin-Hoo function
-#' contourview(branin, dim=2, levels=30, col='black')
+#' contourview(branin, levels=30, col='black')
 #'
 #' \dontrun{
 #' ## a 16-points factorial design, and the corresponding response
@@ -1045,26 +963,26 @@ if(!isGeneric("contourview")) {
 #' ## model: km
 #' model <- DiceKriging::km(design = design.fact, response = y)
 #' contourview(model, levels=30)
-#' contourview(branin, dim=2, levels=30, col='red', add=TRUE)
+#' contourview(branin, levels=30, col='red', add=TRUE)
 #' }
 #'
 #' if (requireNamespace("rlibkriging")) { library(rlibkriging)
 #' ## model: Kriging
 #' model <- Kriging(X = as.matrix(design.fact), y = as.matrix(y), kernel="matern3_2")
 #' contourview(model, levels=30)
-#' contourview(branin, dim=2, levels=30, col='red', add=TRUE)
+#' contourview(branin, levels=30, col='red', add=TRUE)
 #' }
 #'
 #' ## model: glm
 #' model <- glm(y ~ 1+ x1 + x2 + I(x1^2) + I(x2^2) + x1*x2, data=cbind(y,design.fact))
 #' contourview(model, levels=30)
-#' contourview(branin, dim=2, levels=30, col='red', add=TRUE)
+#' contourview(branin, levels=30, col='red', add=TRUE)
 #'
 #' if (requireNamespace("DiceEval")) { library(DiceEval)
 #' ## model: StepLinear
 #' model <- modelFit(design.fact, y, type = "StepLinear")
 #' contourview(model, levels=30)
-#' contourview(branin, dim=2, levels=30, col='red', add=TRUE)
+#' contourview(branin, levels=30, col='red', add=TRUE)
 #' }
 #' }
 #'
