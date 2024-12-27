@@ -188,13 +188,13 @@ plot2d_mesh = function(mesh,color.nodes='black',color.mesh='darkgray',alpha=0.4,
 #' }
 plot3d_mesh = function(mesh,engine3d=NULL,color.nodes='black',color.mesh='darkgray',alpha=0.4,...){
     nodes.rgb=col2rgb(color.nodes)/255
-    package = load3d(engine3d)
+    package = DiceView:::load3d(engine3d)
     if (is.null(package)) return()
-    p3d = plot3d(mesh$p,col=rgb(nodes.rgb[1,],nodes.rgb[2,],nodes.rgb[3,],alpha), package=package,...)
+    p3d = DiceView:::plot3d(mesh$p,col=rgb(nodes.rgb[1,],nodes.rgb[2,],nodes.rgb[3,],alpha), package=package,...)
     mesh.rgb=col2rgb(color.mesh)/255
     apply(mesh$tri,1,function(tri) {
-        quads3d(mesh$p[tri,],col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,]),alpha=alpha/10, package=package)
-        quads3d(mesh$p[tri,][c(4,3,2,1),],col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,]),alpha=alpha/10, package=package)
+        DiceView:::quads3d(mesh$p[tri,],col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,]),alpha=alpha/10, package=package)
+        DiceView:::quads3d(mesh$p[tri,][c(4,3,2,1),],col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,]),alpha=alpha/10, package=package)
         # triangles3d(mesh$p[tri,][-1,],col=color,alpha=0.05, package=package)
         # triangles3d(mesh$p[tri,][-2,],col=color,alpha=0.05, package=package)
         # triangles3d(mesh$p[tri,][-3,],col=color,alpha=0.05, package=package)
@@ -318,7 +318,7 @@ is.mesh = function(x) {
 #### Build mesh (on hypercube) ####
 
 #' @title Builds a mesh from a design aor set of points
-#' @param intervals bounds to inverse in, each column contains min and max of each dimension
+#' @param intervals bounds to inverse in, each column contains min and max (or values) of each dimension
 #' @param mesh.type function or "unif" or "seq" (default) or "LHS" to preform interval partition
 #' @param mesh.sizes number of parts for mesh (duplicate for each dimension if using "seq")
 #' @return delaunay mesh (list(p,tri,...) from geometry)
@@ -329,6 +329,8 @@ is.mesh = function(x) {
 mesh = function(intervals, mesh.type = "seq", mesh.sizes = 11) {
     # setup bounds & dim
     if (is.matrix(intervals)) {
+        if (nrow(intervals)!=2 && ncol(intervals)==2)
+            intervals = t(intervals)
         lowers = apply(intervals, 2, min)
         uppers = apply(intervals, 2, max)
         d = ncol(intervals)
@@ -369,12 +371,12 @@ mesh = function(intervals, mesh.type = "seq", mesh.sizes = 11) {
     } else stop("unsupported mesh setup : ", mesh.type)
 
     # add bounds
-    b = cbind(lowers[1], uppers[1])
+    b = rbind(lowers[1], uppers[1])
     if (d>1) for (id in 1:(d - 1)) { # efficient way for factorial design
-        b = rbind(cbind(b, lowers[id + 1]), cbind(b, uppers[id + 1]))
+        b = rbind(cbind(b, lowers[id + 1]),cbind(b, uppers[id + 1]))
     }
-    for (i in 1:nrow(b)) if (min_dist(b[i, ], ridge.points) > .Machine$double.eps)
-        ridge.points = rbind(ridge.points, b[i, ])
+    for (i in 1:nrow(b)) if (min_dist(b[i, ,drop=FALSE], ridge.points) > .Machine$double.eps)
+        ridge.points = rbind(ridge.points, b[i, ,drop=FALSE])
 
     return( geometry::delaunayn(ridge.points, output.options = TRUE) )
 }
