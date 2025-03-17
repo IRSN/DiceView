@@ -32,6 +32,7 @@
 #'
 #'   plot(e$p,xlim=c(-1,1),ylim=c(-1,1));
 #'   apply(e$tri,1,function(tri) polygon(e$p[tri,],col=rgb(.4,.4,.4,.4)))
+#'   apply(e$frontiers,1,function(front) lines(e$p[front,],col='red'))
 #'
 #'   if (requireNamespace("rgl")) {
 #'     e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
@@ -104,12 +105,36 @@ mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
 
     new_mesh <- mesh(intervals, mesh.type = all_points)
 
+    # identify points belonging to the excursion set
     new_mesh$y = f_vec(new_mesh$p, ...)
     I = which(apply(new_mesh$tri, 1,
               function(i) ex_filter.tri(new_mesh$y[i] >= (threshold - 2 * maxerror_f))))
+
+    # identify edges at the frontier: one point of the tri is outside, the other inside
+    d = ncol(new_mesh$p)
+    frontiers = matrix(NA, nrow = 0, ncol = d)
+    for (i in 1:nrow(new_mesh$tri)) {
+        tri = new_mesh$tri[i,]
+        outs = tri[ which(new_mesh$y[tri] <  (threshold - 2 * maxerror_f))]
+        ins =  tri[ which(new_mesh$y[tri] >= (threshold - 2 * maxerror_f))]
+        if (length(outs) == 1) {
+            if (d==1)
+                frontiers = rbind(frontiers, ins)
+            else
+                frontiers = rbind(frontiers, t(combn(ins, d)))
+        }
+    }
+    frontiers = unique(frontiers)
+
     colnames(new_mesh$p) <- colnames(intervals)
-    return(list(p = new_mesh$p, tri = new_mesh$tri[I, ], areas = new_mesh$areas[I],
-                neighbours = new_mesh$neighbours[I]))
+
+    return(list(p = new_mesh$p, y = new_mesh$y,
+                tri = new_mesh$tri[I, ],
+                all_tri = new_mesh$tri,
+                areas = new_mesh$areas[I],
+                all_areas = new_mesh$areas,
+                neighbours = new_mesh$neighbours[I],
+                frontiers = frontiers))
 }
 
 #### Plot meshes ####
@@ -315,6 +340,54 @@ is.mesh = function(x) {
     is.list(x) && all(c("p","tri") %in% names(x))
 }
 
+
+#' @title Compute distance between a point and a mesh
+#' @param x point to compute distance from
+#' @param mesh mesh to compute distance to
+#' @return distance between x and mesh
+#' @export
+#' @examples
+#'  x = matrix(0,ncol=2)
+#'  m = list(p = matrix(c(0,1,1,0,1,1),ncol=2,byrow=TRUE), tri = matrix(c(1,2,3),nrow=1))
+#'  plot2d_mesh(m)
+#'  points(x)
+#'  min = min_dist.mesh(x,m)
+#'  lines(rbind(x,attr(min,"proj")),col='red')
+#'
+#'  m = mesh_exsets(function(x) (0.25+x[1])^2+(0.5+x[2]/2)^2, vec=FALSE, 1 ,1, intervals=rbind(cbind(0,0),cbind(1,1)))
+#'  plot2d_mesh(m)
+#'  x = matrix(c(0.25,0.25),ncol=2)
+#'  points(x)
+#'  min = min_dist.mesh(x,m)
+#'  lines(rbind(x,attr(min,"proj")),col='red')
+min_dist.mesh = function(p,mesh, norm=rep(1,ncol(mesh$p))) {
+    dist2_to_p = function(x) sum(((p-x)/norm)^2)
+    dists = NULL
+    projs = NULL
+    dim = ncol(mesh$p)
+    for (i in 1:nrow(mesh$tri)) {
+        trip = mesh$p[mesh$tri[i,],,drop=F]
+        # find min dist bw p and tri, as a weighted barycenter of all points in the tri
+        o = optim(rep(1,dim+1), # not optimal: 1 df too much
+                  function(x) dist2_to_p((x/sum(x)) %*% trip),
+                  method="L-BFGS-B",
+                  lower=rep(1e-5,dim+1),upper=rep(1,dim+1)) # 1e-5: avoid 0 for sum(x)!=0, but that also excludes extreme points
+        # ...so also compare dist with the extreme points of the tri:
+        o$par = o$par/sum(o$par)
+        best_points = rbind((o$par/sum(o$par)) %*% trip, trip)
+        best_dists = sqrt(apply(best_points,1,dist2_to_p))
+        best_i = which.min(best_dists)
+
+        dists = c(dists, best_dists[best_i])
+        projs = rbind(projs, best_points[best_i,])
+    }
+    im = which.min(dists)
+    m = dists[im]
+    attr(m,"proj") <- projs[im,]
+    return(m)
+}
+
+
 #### Build mesh (on hypercube) ####
 
 #' @title Builds a mesh from a design aor set of points
@@ -378,5 +451,5 @@ mesh = function(intervals, mesh.type = "seq", mesh.sizes = 11) {
     for (i in 1:nrow(b)) if (min_dist(b[i, ,drop=FALSE], ridge.points) > .Machine$double.eps)
         ridge.points = rbind(ridge.points, b[i, ,drop=FALSE])
 
-    return( geometry::delaunayn(ridge.points, output.options = TRUE) )
+    return( geometry::delaunayn(ridge.points, output.options = "Fn Fa", options= "Qt Qc Qz QbB Qcc") )
 }
