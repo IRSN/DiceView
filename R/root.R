@@ -88,16 +88,20 @@ root <- function(f, lower, upper, maxerror_f = 1e-07,
                 #f_lower = f_upper.old, f_upper = f_lower.old,
                 tol = tol, convexity = convexity, rec=rec+1, ...))
     }
-    r = NULL
-    try(r <- uniroot(f = f, lower = lower, upper = upper,
-                     f.lower = f_lower, f.upper = f_upper,
-                     tol = tol, ...), silent = FALSE)
-    if (is.null(r)) {
-        warning(paste0("No root found in [", lower, ",", upper, "] -> [", f_lower, ",", f_upper, "]"))
-        return(NULL)
-    }
+    # r = NULL
+    # if (nocheck)
+       r <- .External2(stats:::C_zeroin2, function(x) f(x, ...),
+                       lower, upper, f.lower = f_lower, f.upper = f_upper, tol, 1000)[1]
+    # else
+    #   try(r <- uniroot(f = f, lower = lower, upper = upper,
+    #                  f.lower = f_lower, f.upper = f_upper,
+    #                  tol = tol, ...)$root, silent = FALSE)
+    # if (is.null(r)) {
+    #     warning(paste0("No root found in [", lower, ",", upper, "] -> [", f_lower, ",", f_upper, "]"))
+    #     return(NULL)
+    # }
 
-    r_root = r$root
+    r_root = r
     f_root = f(r_root, ...)
     err = abs(f_root)/maxerror_f
 
@@ -140,7 +144,7 @@ root <- function(f, lower, upper, maxerror_f = 1e-07,
         } else stop(paste0("Error in root at x0=",x0,", f(x0)=",f_x0," root=",r_root," f(root)=",f_root))
 
     } else stop(paste0("Error in root with lower=",lower," r_root=",r_root,", upper=",upper,", f_lower=",f_lower," f_root=",f_root,", f_upper=",f_upper))
-  } else r$root
+  } else r_root
 }
 
 #' @title One Dimensional Multiple Roots (Zero) Finding
