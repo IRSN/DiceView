@@ -46,12 +46,15 @@
 #' }
 mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
           mesh.type = "seq", mesh.sizes = 11, maxerror_f = 1e-09, tol = .Machine$double.eps^0.25,
-          ex_filter.tri = all, ...) {
+          ex_filter.tri = all, mc.cores=parallel::detectCores(), ...) {
+
+    # .t0 <<- Sys.time()
+
     if (sign == "lower" || sign == -1 || sign == "inf" || sign == "<" || isFALSE(sign))
         return(
             mesh_exsets(f = function(...) { -f(...) }, vectorized = vectorized, threshold = -threshold, sign = 1,
             intervals = intervals, mesh.type = mesh.type, mesh.sizes = mesh.sizes,
-            maxerror_f = maxerror_f, tol = tol, ...))
+            maxerror_f = maxerror_f, tol = tol, mc.cores=mc.cores, ...))
     if (sign != "upper" && sign != 1 && sign != "sup" && sign != ">" && !isTRUE(sign))
         stop("unknown sign: '", sign, "'")
 
@@ -74,49 +77,68 @@ mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
     else
         stop("Cannot decide how to vectorize f")
 
-    f_0 <- function(...) return(f(...) - threshold)
-    f_vec_0 <- function(...) return(f_vec(...) - threshold)
+    # warning(paste0("[mesh_exsets] init: ",Sys.time() - .t0))
+    # .t0 <<- Sys.time()
+
+    k0 = 0#-1
+    f_0 <- function(...) return(f(...) - (threshold + k0*maxerror_f))
+    f_vec_0 <- function(...) return(f_vec(...) - (threshold + k0*maxerror_f))
     r <- roots_mesh(f = f_0, vectorized = f_vec_0, intervals = intervals,
                     mesh.type = mesh.type, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
-                    tol = tol, ...)
+                    tol = tol, mc.cores=mc.cores, ...)
+
+    # warning(paste0("[mesh_exsets] roots_mesh: ",Sys.time() - .t0))
+    # .t0 <<- Sys.time()
 
     if (all(is.na(r)))
         all_points = attr(r, "mesh")$p
     else
         all_points = rbind(attr(r, "mesh")$p, r)
 
-    if (maxerror_f != 0) { # try add points on each side of the frontier
-        f_inf <- function(...) return(f(...) - (threshold - maxerror_f))
-        f_vec_inf <- function(...) return(f_vec(...) - (threshold - maxerror_f))
+    if (maxerror_f != 0) { # try add points on each side of the frontier at threshold
+        kinf = -1#-2
+        f_inf <- function(...) return(f(...) - (threshold + kinf*maxerror_f))
+        f_vec_inf <- function(...) return(f_vec(...) - (threshold + kinf*maxerror_f))
         r_inf <- roots_mesh(f = f_inf, vectorized = f_vec_inf, intervals = intervals,
                             mesh.type = mesh.type, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
-                            tol = tol, ...)
+                            tol = tol, mc.cores=mc.cores, ...)
+        # warning(paste0("[mesh_exsets] roots_mesh/inf: ",Sys.time() - .t0))
+        # .t0 <<- Sys.time()
         if (!all(is.na(r_inf)))
             all_points = rbind(all_points, r_inf)
 
-        f_sup <- function(...) return(f(...) - (threshold + maxerror_f))
-        f_vec_sup <- function(...) return(f_vec(...) - (threshold + maxerror_f))
+        ksup = +1#0
+        f_sup <- function(...) return(f(...) - (threshold + ksup*maxerror_f))
+        f_vec_sup <- function(...) return(f_vec(...) - (threshold + ksup*maxerror_f))
         r_sup <- roots_mesh(f = f_sup, vectorized = f_vec_sup, intervals = intervals,
                             mesh.type = mesh.type, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
-                            tol = tol, ...)
+                            tol = tol, mc.cores=mc.cores, ...)
+        # warning(paste0("[mesh_exsets] roots_mesh/sup: ",Sys.time() - .t0))
+        # .t0 <<- Sys.time()
         if (!all(is.na(r_sup)))
             all_points = rbind(all_points, r_sup)
     }
 
     new_mesh <- mesh(intervals, mesh.type = all_points)
+    # warning(paste0("[mesh_exsets] mesh: ",Sys.time() - .t0))
+    # .t0 <<- Sys.time()
 
     # identify points belonging to the excursion set
     new_mesh$y = f_vec(new_mesh$p, ...)
+    # warning(paste0("[mesh_exsets] f_vec: ",Sys.time() - .t0))
+    # .t0 <<- Sys.time()
     I = which(apply(new_mesh$tri, 1,
-              function(i) ex_filter.tri(new_mesh$y[i] >= (threshold - 2 * maxerror_f))))
+              function(i) ex_filter.tri(new_mesh$y[i] >= (threshold - 2*maxerror_f))))
+    # warning(paste0("[mesh_exsets] I: ",Sys.time() - .t0))
+    # .t0 <<- Sys.time()
 
     # identify edges at the frontier: one point of the tri is outside, the other inside
     d = ncol(new_mesh$p)
     frontiers = matrix(NA, nrow = 0, ncol = d)
     for (i in 1:nrow(new_mesh$tri)) {
         tri = new_mesh$tri[i,]
-        outs = tri[ which(new_mesh$y[tri] <  (threshold - 2 * maxerror_f))]
-        ins =  tri[ which(new_mesh$y[tri] >= (threshold - 2 * maxerror_f))]
+        outs = tri[ which(new_mesh$y[tri] <  (threshold - 2*maxerror_f))]
+        ins =  tri[ which(new_mesh$y[tri] >= (threshold - 2*maxerror_f))]
         if (length(outs) == 1) {
             if (d==1)
                 frontiers = rbind(frontiers, ins)

@@ -267,7 +267,10 @@ min_dist <- function (x, X, norm=rep(1,ncol(X))){
 #' roots_mesh(function(x)exp(x)-1,intervals=c(-1,2))
 #' roots_mesh(function(x)exp(1000*x)-1,intervals=c(-1,2))
 roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh.sizes = 11,
-                       maxerror_f = 1e-07, tol = .Machine$double.eps^0.25, ...) {
+                       maxerror_f = 1e-07, tol = .Machine$double.eps^0.25, mc.cores=parallel::detectCores(), ...) {
+
+  # .t1 <<- Sys.time()
+
   # if (is.matrix(intervals)) {
   #   lowers = apply(intervals, 2, min)
   #   uppers = apply(intervals, 2, max)
@@ -286,9 +289,13 @@ roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh
   else
     d = 1
 
-  if (d == 1)
-    return(roots(f, vectorized = vectorized, interval = intervals, split = mesh.type, split.size = mesh.sizes,
-                 maxerror_f = maxerror_f, tol = tol, ...))
+  if (d == 1) {
+    r = roots(f, vectorized = vectorized, interval = intervals, split = mesh.type, split.size = mesh.sizes,
+              maxerror_f = maxerror_f, tol = tol, ...)
+    # warning(paste0("    [roots_mesh] roots d=1: ",Sys.time() - .t1))
+    # .t1 <<- Sys.time()
+    return(r)
+  }
 
   # if (length(mesh.sizes) != d)
   #   mesh.size = rep(mesh.sizes, d)
@@ -328,6 +335,8 @@ roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh
   # simplexes <- geometry::delaunayn(ridge.points, output.options = TRUE)
 
   simplexes = mesh(intervals, mesh.type, mesh.sizes)
+  # warning(paste0("    [roots_mesh] mesh: ",Sys.time() - .t1))
+  # .t1 <<- Sys.time()
   ridge.points = simplexes$p
 
   if (isTRUE(vectorized) && is.function(f))
@@ -341,6 +350,9 @@ roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh
     stop("Cannot decide how to vectorize f")
 
   ridge.y = f_vec(ridge.points, ...)
+  print(ridge.y)
+  # warning(paste0("    [roots_mesh] f_vec: ",Sys.time() - .t1))
+  # .t1 <<- Sys.time()
 
   if (requireNamespace("arrangements"))
     tcombn2 = function(x) arrangements::combinations(x, 2)
@@ -353,6 +365,8 @@ roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh
       if (ridge.y[more_ridges[j,1]] * ridge.y[more_ridges[j, 2]] < 0)
         ridges = rbind(ridges, more_ridges[j, ])
   }
+  # warning(paste0("    [roots_mesh] comb: ",Sys.time() - .t1))
+  # .t1 <<- Sys.time()
 
   if (is.null(ridges)) {
     r = NA
@@ -380,18 +394,41 @@ roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh
   #     else return(NULL)
   # }, .combine = rbind)
 
-  r = do.call(rbind,parallel::mclapply(X = 1:nrow(ridges), FUN = function(ridge_i,...) {
-    X = ridge.points[ridges[ridge_i,], , drop = FALSE]
-    y = ridge.y[ridges[ridge_i,]]
-    if (isFALSE((all(y > 0) || all(y < 0)))) {
-      f_r = function(alpha, ...) {
-        as.numeric(f(alpha * X[1, ] + (1 - alpha) * X[2, ], ...))} # assumes one only root (inside current mesh element)
-      alpha_i = 0 # default value if root finding fails after:
-      try({alpha_i <- root(f=f_r, lower = 0, upper = 1, maxerror_f = maxerror_f,
-                           tol = tol, f_lower = y[2], f_upper = y[1], max.rec=10, ...)})
-      return(alpha_i * X[1, ,drop=FALSE] + (1 - alpha_i) * X[2, ,drop=FALSE])
-    } else return(NULL)
-  }))
+  root_fun = function(y,X,maxerror_f,tol) {
+      if (isFALSE((all(y > 0) || all(y < 0)))) {
+          f_r = function(alpha, ...) {
+              as.numeric(f(alpha * X[1, ] + (1 - alpha) * X[2, ], ...))} # assumes one only root (inside current mesh element)
+          alpha_i = 0 # default value if root finding fails after:
+          try({alpha_i <- root(f=f_r, lower = 0, upper = 1, maxerror_f = maxerror_f,
+                               tol = tol, f_lower = y[2], f_upper = y[1], max.rec=10, ...)})
+          #return(alpha_i * X[1, ,drop=FALSE] + (1 - alpha_i) * X[2, ,drop=FALSE])
+          # benchmark:
+          #X = matrix(runif(10),ncol=5)
+          #alpha_i = 0.25
+          #rbenchmark::benchmark({c(alpha_i,1-alpha_i)%*%X},{alpha_i * X[1, ,drop=FALSE] + (1 - alpha_i) * X[2, ,drop=FALSE]},replications=100000)
+          return( c(alpha_i,1-alpha_i) %*% X )
+      } else return(NULL)
+  }
+
+  if (mc.cores>1)
+      r = do.call(rbind,parallel::mclapply(X = 1:nrow(ridges), FUN = function(ridge_i,...) {
+        root_fun( y = ridge.y[ridges[ridge_i,]],
+                  X = ridge.points[ridges[ridge_i,], , drop = FALSE],
+                  maxerror_f,tol)
+      }, mc.cores=mc.cores))
+  else
+      r = do.call(rbind,lapply(X = 1:nrow(ridges), FUN = function(ridge_i,...) {
+          root_fun( y = ridge.y[ridges[ridge_i,]],
+                    X = ridge.points[ridges[ridge_i,], , drop = FALSE],
+                    maxerror_f,tol)
+      }))
+  # r = apply(matrix(1:nrow(ridges)), 1, function(ridge_i) {
+  #         root_fun( y = ridge.y[ridges[ridge_i,]],
+  #                   X = ridge.points[ridges[ridge_i,], , drop = FALSE],
+  #                   maxerror_f,tol)})
+
+  # warning(paste0("    [roots_mesh] ridges root_fun: ",Sys.time() - .t1))
+  # .t1 <<- Sys.time()
 
   if (is.null(r) || length(r) == 0)
     r = NA
