@@ -1,10 +1,58 @@
 #### Generalization of optim (multistart) ####
 
+#' Title optim wrapper for early stopping criterion
+#' @param par starting point for optim
+#' @param fn objective function, like in optim().
+#' @param fn.stop early stopping criterion
+#' @param fn.NaN replacement value of fn when returns NaN
+#' @param control control parameters for optim()
+#' @param ... additional arguments passed to optim()
+#' @return list with best solution and all solutions
+#' @export
+#' @author Yann Richet, IRSN
+#' @examples
+#' fn = function(x) x^6
+#' o = optim( par=15, fn,lower=-20,upper=20,method='L-BFGS-B')
+#' o.s = optim.stop( par=15, fn,lower=-20,upper=20,method='L-BFGS-B',fn.stop=0.1)
+#' #check o.s$value == 0.1 && o.s$counts < o$counts
+optim.stop <- function(par, fn, gr=NULL,
+                       fn.stop=NA, fn.NaN=NaN,
+                       control=list(), ...) {
+    if (is.na(fn.stop)) {
+        fn.o = function(...) {
+            y = fn(...)
+            y[which(is.nan(y))] <- fn.NaN
+            return(y)
+        }
+        gr.o = gr
+    } else {
+        fn.o = function(...) {
+            y = fn(...)
+            if ((isTRUE(fn.stop > y) && !isFALSE(control$fnscale > 0)) || (isTRUE(fn.stop < y) && isTRUE(control$fnscale < 0))) {# reach early stopping criterion
+                warning(paste("Early stopping criterion reached at", paste0(round(y, 3), collapse = ","), "for", paste0(round(par, 3), collapse = ",")))
+                return(fn.stop)
+            }
+            y[which(is.nan(y))] <- fn.NaN
+            return(y)
+        }
+        gr.o = if (is.null(gr)) NULL else function(...) {
+            dy = gr(...)
+            y = fn(...)
+            if ((isTRUE(fn.stop > y) && !isFALSE(control$fnscale > 0)) || (isTRUE(fn.stop < y) && isTRUE(control$fnscale < 0))) # reach early stopping criterion
+                return(rep(0,length(dy)))
+            return(dy)
+        }
+
+    }
+    optim(par=par, fn=fn.o, gr=gr.o, control=control,...)
+}
+
 #' Title Multi-local optimization wrapper for optim, using (possibly parallel) multistart.
 #'
 #' @param pars starting points for optim
 #' @param fn objective function, like in optim().
 #' @param fn.NaN replacement value of fn when returns NaN
+#' @param fn.stop early stopping criterion
 #' @param .apply loop/parallelization backend for multistart ("mclapply", "lapply" or "foreach")
 #' @param pars.eps minimal distance between two solutions to be considered different
 #' @param control control parameters for optim()
@@ -29,27 +77,25 @@
 #' }
 #' # expect to find 3 local minimas
 #' optims(pars=matrix(runif(100),ncol=2),f,method="L-BFGS-B",lower=c(0,0),upper=c(1,1))
-optims <- function(pars,fn,fn.NaN=NaN,.apply="mclapply",pars.eps=1E-5,control=list(),...) {
-    fn.o = function(...) {
-        y = fn(...)
-        y[which(is.nan(y))] <- fn.NaN
-        #if (is.nan(y))
-        #  return(fn.NaN)
-        #else
-        return(y)
-    }
-
+optims <- function(pars,fn,fn.NaN=NaN,fn.stop=NA,.apply="mclapply",pars.eps=1E-5,control=list(),...) {
     if (is.character(.apply)) {
         if (.apply=="lapply")
-            O = lapply(X=as.list(as.data.frame(t(pars))),FUN=function(x0){try(optim(par=x0,fn=fn.o,control=control,...))})
+            O = lapply(X=as.list(as.data.frame(t(pars))),
+                       FUN=function(x0){
+                           try(optim.stop(par=x0,fn=fn, fn.stop=fn.stop,fn.NaN=fn.NaN, control=control,...))})
         else if (.apply=="mclapply")
-            O = parallel::mclapply(X=as.list(as.data.frame(t(pars))),FUN=function(x0){try(optim(par=x0,fn=fn.o,control=control,...))})
+            O = parallel::mclapply(X=as.list(as.data.frame(t(pars))),
+                                   FUN=function(x0){
+                                       try(optim.stop(par=x0,fn=fn, fn.stop=fn.stop,fn.NaN=fn.NaN, control=control,...))})
         else if (.apply=="foreach") {
             i.o = NULL
-            O = foreach::foreach(i.o = 1:nrow(pars),.errorhandling = "remove") %dopar% { return(try(optim(par=pars[i.o,],fn=fn.o,control=control,...))) }
+            O = foreach::foreach(i.o = 1:nrow(pars),.errorhandling = "remove") %dopar% { return(
+                try(optim.stop(par=pars[i.o,],fn=fn, fn.stop=fn.stop,fn.NaN=fn.NaN, control=control,...))) }
         }
     } else
-        O = .apply(X=as.list(as.data.frame(t(pars))),FUN=function(x0){return(try(optim(par=x0,fn=fn.o,control=control,...)))})
+        O = .apply(X=as.list(as.data.frame(t(pars))),
+                   FUN=function(x0){return(
+                       try(optim.stop(par=x0,fn=fn, fn.stop=fn.stop,fn.NaN=fn.NaN, control=control,...)))})
 
     best = list(par=NA,value=NA)
     all = NULL
