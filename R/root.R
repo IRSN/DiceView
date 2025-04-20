@@ -13,7 +13,6 @@
 #' @param rec counter of recursive level.
 #' @param max.rec maximal number of recursive level before failure (stop).
 #' @param ... additional named or unnamed arguments to be passed to f.
-#' @import stats
 #' @export
 #' @author Yann Richet, IRSN
 #' @examples
@@ -242,6 +241,7 @@ min_dist <- function (x, X, norm=rep(1,ncol(X))){
 #' @param vectorized is f already vectorized ? (default: no)
 #' @param maxerror_f the maximum error on f evaluation (iterates over uniroot to converge).
 #' @param tol the desired accuracy (convergence tolerance on f arg).
+#' @param num_workers number of parallel roots finding
 #' @param ... Other args for f
 #' @import stats
 #' @importFrom DiceDesign lhsDesign
@@ -267,7 +267,7 @@ min_dist <- function (x, X, norm=rep(1,ncol(X))){
 #' roots_mesh(function(x)exp(x)-1,intervals=c(-1,2))
 #' roots_mesh(function(x)exp(1000*x)-1,intervals=c(-1,2))
 roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh.sizes = 11,
-                       maxerror_f = 1e-07, tol = .Machine$double.eps^0.25, mc.cores=parallel::detectCores(), ...) {
+                       maxerror_f = 1e-07, tol = .Machine$double.eps^0.25, num_workers=maxWorkers(), ...) {
 
   # .t1 <<- Sys.time()
 
@@ -350,7 +350,6 @@ roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh
     stop("Cannot decide how to vectorize f")
 
   ridge.y = f_vec(ridge.points, ...)
-  print(ridge.y)
   # warning(paste0("    [roots_mesh] f_vec: ",Sys.time() - .t1))
   # .t1 <<- Sys.time()
 
@@ -410,12 +409,12 @@ roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh
       } else return(NULL)
   }
 
-  if (mc.cores>1)
+  if (num_workers>1)
       r = do.call(rbind,parallel::mclapply(X = 1:nrow(ridges), FUN = function(ridge_i,...) {
         root_fun( y = ridge.y[ridges[ridge_i,]],
                   X = ridge.points[ridges[ridge_i,], , drop = FALSE],
                   maxerror_f,tol)
-      }, mc.cores=mc.cores))
+      }, num_workers=num_workers))
   else
       r = do.call(rbind,lapply(X = 1:nrow(ridges), FUN = function(ridge_i,...) {
           root_fun( y = ridge.y[ridges[ridge_i,]],

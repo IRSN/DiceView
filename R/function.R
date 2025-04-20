@@ -93,7 +93,7 @@ Memoize.function <- function(fun) {
 #' @param d number of variables (taken in following arguments with modulo)
 #' @param ... variables to combine, as arrays of values
 #' @return data frame of all possible combinations of variables values
-#' @tests
+#' @examples
 #' expand.grids(d=1)
 #' expand.grids(d=1,seq(f=0,t=1,l=11))
 #' expand.grids(d=2)

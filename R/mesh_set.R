@@ -12,7 +12,9 @@
 #' @param ... parameters to forward to roots_mesh(...) call
 #' @param vectorized boolean: is f already vectorized ? (default: FALSE) or if function: vectorized version of f.
 #' @param tol the desired accuracy (convergence tolerance on f arg).
+#' @param num_workers number of cores to use for parallelization
 #' @importFrom geometry delaunayn
+#' @importFrom utils combn
 #' @export
 #' @examples
 #' # mesh_exsets(function(x) x, threshold=.51, sign=1, intervals=rbind(0,1),
@@ -46,7 +48,7 @@
 #' }
 mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
           mesh.type = "seq", mesh.sizes = 11, maxerror_f = 1e-09, tol = .Machine$double.eps^0.25,
-          ex_filter.tri = all, mc.cores=parallel::detectCores(), ...) {
+          ex_filter.tri = all, num_workers=maxWorkers(), ...) {
 
     # .t0 <<- Sys.time()
 
@@ -54,7 +56,7 @@ mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
         return(
             mesh_exsets(f = function(...) { -f(...) }, vectorized = vectorized, threshold = -threshold, sign = 1,
             intervals = intervals, mesh.type = mesh.type, mesh.sizes = mesh.sizes,
-            maxerror_f = maxerror_f, tol = tol, mc.cores=mc.cores, ...))
+            maxerror_f = maxerror_f, tol = tol, num_workers=num_workers, ...))
     if (sign != "upper" && sign != 1 && sign != "sup" && sign != ">" && !isTRUE(sign))
         stop("unknown sign: '", sign, "'")
 
@@ -85,7 +87,7 @@ mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
     f_vec_0 <- function(...) return(f_vec(...) - (threshold + k0*maxerror_f))
     r <- roots_mesh(f = f_0, vectorized = f_vec_0, intervals = intervals,
                     mesh.type = mesh.type, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
-                    tol = tol, mc.cores=mc.cores, ...)
+                    tol = tol, num_workers=num_workers, ...)
 
     # warning(paste0("[mesh_exsets] roots_mesh: ",Sys.time() - .t0))
     # .t0 <<- Sys.time()
@@ -101,7 +103,7 @@ mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
         f_vec_inf <- function(...) return(f_vec(...) - (threshold + kinf*maxerror_f))
         r_inf <- roots_mesh(f = f_inf, vectorized = f_vec_inf, intervals = intervals,
                             mesh.type = mesh.type, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
-                            tol = tol, mc.cores=mc.cores, ...)
+                            tol = tol, num_workers=num_workers, ...)
         # warning(paste0("[mesh_exsets] roots_mesh/inf: ",Sys.time() - .t0))
         # .t0 <<- Sys.time()
         if (!all(is.na(r_inf)))
@@ -112,7 +114,7 @@ mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
         f_vec_sup <- function(...) return(f_vec(...) - (threshold + ksup*maxerror_f))
         r_sup <- roots_mesh(f = f_sup, vectorized = f_vec_sup, intervals = intervals,
                             mesh.type = mesh.type, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
-                            tol = tol, mc.cores=mc.cores, ...)
+                            tol = tol, num_workers=num_workers, ...)
         # warning(paste0("[mesh_exsets] roots_mesh/sup: ",Sys.time() - .t0))
         # .t0 <<- Sys.time()
         if (!all(is.na(r_sup)))
@@ -364,8 +366,9 @@ is.mesh = function(x) {
 
 
 #' @title Compute distance between a point and a mesh
-#' @param x point to compute distance from
+#' @param p point to compute distance from
 #' @param mesh mesh to compute distance to
+#' @param norm vector of weights for each dimension (default: 1)
 #' @return distance between x and mesh
 #' @export
 #' @examples
@@ -376,7 +379,8 @@ is.mesh = function(x) {
 #'  min = min_dist.mesh(x,m)
 #'  lines(rbind(x,attr(min,"proj")),col='red')
 #'
-#'  m = mesh_exsets(function(x) (0.25+x[1])^2+(0.5+x[2]/2)^2, vec=FALSE, 1 ,1, intervals=rbind(cbind(0,0),cbind(1,1)))
+#'  m = mesh_exsets(function(x) (0.25+x[1])^2+(0.5+x[2]/2)^2, vec=FALSE,
+#'                  1 ,1, intervals=rbind(cbind(0,0),cbind(1,1)))
 #'  plot2d_mesh(m)
 #'  x = matrix(c(0.25,0.25),ncol=2)
 #'  points(x)

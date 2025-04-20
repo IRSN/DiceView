@@ -8,6 +8,7 @@ optims(
   pars,
   fn,
   fn.NaN = NaN,
+  fn.stop = NA,
   .apply = "mclapply",
   pars.eps = 1e-05,
   control = list(),
@@ -20,6 +21,8 @@ optims(
 \item{fn}{objective function, like in optim().}
 
 \item{fn.NaN}{replacement value of fn when returns NaN}
+
+\item{fn.stop}{early stopping criterion}
 
 \item{.apply}{loop/parallelization backend for multistart ("mclapply", "lapply" or "foreach")}
 

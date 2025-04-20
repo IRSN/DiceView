@@ -252,3 +252,16 @@ branin <- function(x) {
     x2 <- x[2] * 15
     (x2 - 5/(4 * pi^2) * (x1^2) + 5/pi * x1 - 6)^2 + 10 * (1 - 1/(8 * pi)) * cos(x1) + 10
 }
+
+maxWorkers <- function() {
+    chk <- Sys.getenv("_R_CHECK_LIMIT_CORES_", "")
+    if (nzchar(chk) && chk == "TRUE") {
+        return(2)
+    } else {
+        if (Sys.info()[["sysname"]] == "Windows") {
+            return(parallel::detectCores() - 1)
+        } else {
+            return(parallel::detectCores())
+        }
+    }
+}

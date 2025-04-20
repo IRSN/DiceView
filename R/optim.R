@@ -3,6 +3,7 @@
 #' Title optim wrapper for early stopping criterion
 #' @param par starting point for optim
 #' @param fn objective function, like in optim().
+#' @param gr gradient function, like in optim().
 #' @param fn.stop early stopping criterion
 #' @param fn.NaN replacement value of fn when returns NaN
 #' @param control control parameters for optim()

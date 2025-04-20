@@ -12,6 +12,7 @@ roots_mesh(
   mesh.sizes = 11,
   maxerror_f = 1e-07,
   tol = .Machine$double.eps^0.25,
+  num_workers = maxWorkers(),
   ...
 )
 }
@@ -29,6 +30,8 @@ roots_mesh(
 \item{maxerror_f}{the maximum error on f evaluation (iterates over uniroot to converge).}
 
 \item{tol}{the desired accuracy (convergence tolerance on f arg).}
+
+\item{num_workers}{number of parallel roots finding}
 
 \item{...}{Other args for f}
 }

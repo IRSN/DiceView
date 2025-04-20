@@ -15,6 +15,7 @@ mesh_exsets(
   maxerror_f = 1e-09,
   tol = .Machine$double.eps^0.25,
   ex_filter.tri = all,
+  num_workers = maxWorkers(),
   ...
 )
 }
@@ -39,6 +40,8 @@ mesh_exsets(
 
 \item{ex_filter.tri}{boolean function to validate a geometry::tri as considered in excursion : 'any' or 'all'}
 
+\item{num_workers}{number of cores to use for parallelization}
+
 \item{...}{parameters to forward to roots_mesh(...) call}
 }
 \description{
@@ -62,6 +65,7 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) { # too long for CRAN on Windows
 
   plot(e$p,xlim=c(-1,1),ylim=c(-1,1));
   apply(e$tri,1,function(tri) polygon(e$p[tri,],col=rgb(.4,.4,.4,.4)))
+  apply(e$frontiers,1,function(front) lines(e$p[front,],col='red'))
 
   if (requireNamespace("rgl")) {
     e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
