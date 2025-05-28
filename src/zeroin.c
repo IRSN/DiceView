@@ -85,6 +85,9 @@
 
 #include <R_ext/Applic.h>
 #include <R_ext/RS.h>	       	/* for Memcpy */
+#include <R_ext/Error.h>
+#include <R.h>
+#include <Rinternals.h>
 
 #include "zeroin2.h"
 
