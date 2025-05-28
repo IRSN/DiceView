@@ -89,7 +89,7 @@ root <- function(f, lower, upper, maxerror_f = 1e-07,
     }
     # r = NULL
     # if (nocheck)
-       r <- .External2(stats:::C_zeroin2, function(x) f(x, ...),
+       r <- .External2(C_zeroin2, function(x) f(x, ...),
                        lower, upper, f.lower = f_lower, f.upper = f_upper, tol, 1000)[1]
     # else
     #   try(r <- uniroot(f = f, lower = lower, upper = upper,
