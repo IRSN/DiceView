@@ -18,6 +18,8 @@
  */
 
 #include <R_ext/RS.h>
+#include <R.h>
+#include <Rinternals.h>
 
 double R_zeroin2(double ax, double bx, double fa, double fb, 
 		 double (*f)(double x, void *info), void *info, 
