@@ -84,7 +84,6 @@
 #include <math.h>
 
 #include <R_ext/Applic.h>
-#include <Defn.h>               // for PrintDefaults
 #include <R_ext/RS.h>	       	/* for Memcpy */
 
 #include "zeroin2.h"
