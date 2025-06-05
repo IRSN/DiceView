@@ -17,3 +17,14 @@ data frame of all possible combinations of variables values
 \description{
 Generalization of base::expand.grid to more than 2 variables.
 }
+\examples{
+expand.grids(d=1)
+expand.grids(d=1,seq(f=0,t=1,l=11))
+expand.grids(d=2)
+expand.grids(d=2,seq(f=0,t=1,l=11))
+expand.grids(d=2,seq(f=0,t=1,l=11),seq(0,1,l=3))
+expand.grids(d=3,seq(f=0,t=1,l=5))
+expand.grids(d=NULL,seq(f=0,t=1,l=5),seq(f=0,t=1,l=5),seq(f=0,t=1,l=5))
+expand.grids(seq(f=0,t=1,l=5),seq(f=0,t=1,l=5),seq(f=0,t=1,l=5))
+expand.grids(d=4,seq(f=0,t=1,l=5))
+}

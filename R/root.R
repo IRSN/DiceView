@@ -100,6 +100,32 @@ root <- function(f, lower, upper, maxerror_f = 1e-07,
     #     return(NULL)
     # }
 
+## benchmark uniroot / C_zeroin2 : 6 times faster (!)
+# f = function(x) x^2-1.2
+# f_lower = f(0)
+# f_upper = f(2)
+# tol= 1e-5
+# rbenchmark::benchmark(
+#   brentDekker = pracma::brentDekker(f, a=0, b=2,
+#                         # f.lower = f_lower, f.upper = f_upper,
+#                         tol = tol, maxiter=1000),
+#   brent = pracma::brent(f, a=0, b=2,
+#                         # f.lower = f_lower, f.upper = f_upper,
+#                         tol = tol, maxiter=1000),
+#   fzero = pracma::fzero(f, x=1,
+#                         # lower = 0, upper = 2,
+#            # f.lower = f_lower, f.upper = f_upper,
+#            tol = tol, maxiter=1000),
+#   uniroot = uniroot(f = f, lower = 0, upper = 2,
+#                     f.lower = f_lower, f.upper = f_upper,
+#                     tol = tol, maxiter=1000,extendInt="no"),
+#   C_zeroin2 = .External2(stats:::C_zeroin2, f,
+#                           0, 2, f.lower = f_lower, f.upper = f_upper, tol, 1000)[1],
+#   replications = 1000,
+#   columns = c("test", "replications", "elapsed", "relative"),
+#   order = "relative"
+# )
+
     r_root = r
     f_root = f(r_root, ...)
     err = abs(f_root)/maxerror_f
