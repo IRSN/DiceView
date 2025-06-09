@@ -1,7 +1,7 @@
 Package: DiceView
 Title: Methods for Visualization of Computer Experiments Design and Surrogate
-Version: 3.1-1
-Date: 2024-12-01
+Version: 3.1-2
+Date: 2025-09-06
 Authors@R: 
     c(person(given = "Yann",
              family = "Richet",

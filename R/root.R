@@ -1,5 +1,89 @@
 #### Generalization of root finding ####
 
+# Brent's method root-finding (translated from C version in stats::R_zeroin2)
+R_zeroin2 <- function(f, ax, bx, fa, fb, Tol, Maxit) {
+  EPSILON <- .Machine$double.eps
+  a <- ax
+  b <- bx
+  c <- a
+  fc <- fa
+  maxit <- Maxit + 1
+  tol <- Tol
+
+  if (fa == 0.0) {
+    Tol <- 0.0
+    Maxit <- 0
+    return(a)
+  }
+  if (fb == 0.0) {
+    Tol <- 0.0
+    Maxit <- 0
+    return(b)
+  }
+
+  while (maxit > 0) {
+    maxit <- maxit - 1
+    prev_step <- b - a
+    tol_act <- 2 * EPSILON * abs(b) + tol / 2
+    new_step <- (c - b) / 2
+
+    if (abs(new_step) <= tol_act || fb == 0.0) {
+      Maxit <- Maxit - maxit
+      Tol <- abs(c - b)
+      return(b)
+    }
+
+    if (abs(prev_step) >= tol_act && abs(fa) > abs(fb)) {
+      cb <- c - b
+      if (a == c) {
+        # Linear interpolation
+        t1 <- fb / fa
+        p <- cb * t1
+        q <- 1.0 - t1
+      } else {
+        # Quadratic inverse interpolation
+        qv <- fa / fc
+        t1 <- fb / fc
+        t2 <- fb / fa
+        p <- t2 * (cb * qv * (qv - t1) - (b - a) * (t1 - 1.0))
+        q <- (qv - 1.0) * (t1 - 1.0) * (t2 - 1.0)
+      }
+      if (exists("q")) {
+        if (p > 0) {
+          q <- -q
+        } else {
+          p <- -p
+        }
+        if (p < (0.75 * cb * q - abs(tol_act * q) / 2) &&
+            p < abs(prev_step * q / 2)) {
+          new_step <- p / q
+        }
+      }
+    }
+
+    if (abs(new_step) < tol_act) {
+      if (new_step > 0) {
+        new_step <- tol_act
+      } else {
+        new_step <- -tol_act
+      }
+    }
+
+    a <- b
+    fa <- fb
+    b <- b + new_step
+    fb <- f(b)
+    if ((fb > 0 && fc > 0) || (fb < 0 && fc < 0)) {
+      c <- a
+      fc <- fa
+    }
+  }
+
+  Tol <- abs(c - b)
+  Maxit <- -1
+  return(b)
+}
+
 #' @title One Dimensional Root (Zero) Finding
 #' @description Search one root with given precision (on y). Iterate over uniroot as long as necessary.
 #' @param f the function for which the root is sought.
@@ -87,18 +171,23 @@ root <- function(f, lower, upper, maxerror_f = 1e-07,
                 #f_lower = f_upper.old, f_upper = f_lower.old,
                 tol = tol, convexity = convexity, rec=rec+1, ...))
     }
-    # r = NULL
-    # if (nocheck)
-       r <- .External2(C_zeroin2, function(x) f(x, ...),
-                       lower, upper, f.lower = f_lower, f.upper = f_upper, tol, 1000)[1]
-    # else
+    r = NULL
+    ## Safe but slow
     #   try(r <- uniroot(f = f, lower = lower, upper = upper,
     #                  f.lower = f_lower, f.upper = f_upper,
     #                  tol = tol, ...)$root, silent = FALSE)
-    # if (is.null(r)) {
-    #     warning(paste0("No root found in [", lower, ",", upper, "] -> [", f_lower, ",", f_upper, "]"))
-    #     return(NULL)
-    # }
+    ## Cannot use C function form stats, as raise WARNING for CRAN
+    # r <- .Call(stats:::zeroin2, function(x) f(x, ...),
+    #                 lower, upper, f.lower = f_lower, f.upper = f_upper, tol, 1000)[1]
+    ## Use a R port instead
+    r <- R_zeroin2(f = function(x) f(x, ...),
+                        ax = lower, bx = upper,
+                        fa = f_lower, fb = f_upper,
+                        Tol = tol, Maxit = 1000)
+    if (is.null(r)) {
+        warning(paste0("No root found in [", lower, ",", upper, "] -> [", f_lower, ",", f_upper, "]"))
+        return(NULL)
+    }
 
 ## benchmark uniroot / C_zeroin2 : 6 times faster (!)
 # f = function(x) x^2-1.2
