@@ -353,7 +353,7 @@ min_dist <- function (x, X, norm=rep(1,ncol(X))){
 #' @param intervals bounds to inverse in, each column contains min and max of each dimension
 #' @param mesh.type function or "unif" or "seq" (default) to preform interval partition
 #' @param mesh.sizes number of parts for mesh (duplicate for each dimension if using "seq")
-#' @param vectorized is f already vectorized ? (default: no)
+#' @param vectorized vectorized f: function, TRUE (use f directly), or wrap in Vectorize.function: FALSE (default args), "lapply", "mclapply", ...
 #' @param maxerror_f the maximum error on f evaluation (iterates over uniroot to converge).
 #' @param tol the desired accuracy (convergence tolerance on f arg).
 #' @param num_workers number of parallel roots finding
@@ -454,14 +454,16 @@ roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh
   # .t1 <<- Sys.time()
   ridge.points = simplexes$p
 
-  if (isTRUE(vectorized) && is.function(f))
+  if (isTRUE(vectorized) && is.function(f)) {
     f_vec = function(x, ...) f(x, ...)
-  else if (is.function(vectorized)) {
+  } else if (is.function(vectorized)) {
     f_vec = function(x, ...) vectorized(x, ...)
     if (is.null(f)) f = f_vec
-  } else if (isFALSE(vectorized) && !is.null(f))
+  } else if (isFALSE(vectorized) && !is.null(f)) {
     f_vec = Vectorize.function(f, dim = ncol(ridge.points))
-  else
+  } else if (is.character(vectorized) && !is.null(f)) {
+    f_vec = Vectorize.function(f, dim = ncol(ridge.points), .lapply = match.fun(vectorized))
+  } else
     stop("Cannot decide how to vectorize f")
 
   ridge.y = f_vec(ridge.points, ...)
@@ -529,7 +531,7 @@ roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh
         root_fun( y = ridge.y[ridges[ridge_i,]],
                   X = ridge.points[ridges[ridge_i,], , drop = FALSE],
                   maxerror_f,tol)
-      }, num_workers=num_workers))
+      }, mc.cores=num_workers))
   else
       r = do.call(rbind,lapply(X = 1:nrow(ridges), FUN = function(ridge_i,...) {
           root_fun( y = ridge.y[ridges[ridge_i,]],
