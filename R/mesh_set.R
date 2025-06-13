@@ -47,16 +47,18 @@
 #'   }
 #' }
 mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
-          mesh.type = "seq", mesh.sizes = 11, maxerror_f = 1e-09, tol = .Machine$double.eps^0.25,
-          ex_filter.tri = all, num_workers=maxWorkers(), ...) {
-
+      mesh.type = "seq", mesh.sizes = 11, maxerror_f = 1e-09, tol = .Machine$double.eps^0.25,
+      ex_filter.tri = all, num_workers=maxWorkers(), ...) {
     # .t0 <<- Sys.time()
 
     if (sign == "lower" || sign == -1 || sign == "inf" || sign == "<" || isFALSE(sign))
         return(
-            mesh_exsets(f = function(...) { -f(...) }, vectorized = vectorized, threshold = -threshold, sign = 1,
-            intervals = intervals, mesh.type = mesh.type, mesh.sizes = mesh.sizes,
-            maxerror_f = maxerror_f, tol = tol, num_workers=num_workers, ...))
+            mesh_exsets(f = function(...) { -f(...) },
+                        vectorized = vectorized, threshold = -threshold, sign = 1,
+                        intervals = intervals, mesh.type = mesh.type, mesh.sizes = mesh.sizes,
+                        maxerror_f = maxerror_f, tol = tol, ex_filter.tri=ex_filter.tri,
+                        num_workers=num_workers, ...))
+
     if (sign != "upper" && sign != 1 && sign != "sup" && sign != ">" && !isTRUE(sign))
         stop("unknown sign: '", sign, "'")
 
@@ -69,14 +71,16 @@ mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
     else
         stop("cannot identify dim of mesh")
 
-    if (isTRUE(vectorized) && is.function(f))
+    if (isTRUE(vectorized) && is.function(f)) {
         f_vec = function(x, ...) f(x, ...)
-    else if (is.function(vectorized)) {
+    } else if (is.function(vectorized)) {
         f_vec = function(x, ...) vectorized(x, ...)
         if (is.null(f)) f = f_vec
-    } else if (isFALSE(vectorized) && !is.null(f))
+    } else if (isFALSE(vectorized) && !is.null(f)) {
         f_vec = Vectorize.function(f, dim = d)
-    else
+    } else if (is.character(vectorized) && !is.null(f)) { # arbitrary lapply-like function
+        f_vec = Vectorize.function(f, dim = d, .lapply = match.fun(vectorized))
+    } else
         stop("Cannot decide how to vectorize f")
 
     # warning(paste0("[mesh_exsets] init: ",Sys.time() - .t0))
@@ -86,51 +90,30 @@ mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
     f_0 <- function(...) return(f(...) - (threshold + k0*maxerror_f))
     f_vec_0 <- function(...) return(f_vec(...) - (threshold + k0*maxerror_f))
     r <- roots_mesh(f = f_0, vectorized = f_vec_0, intervals = intervals,
-                    mesh.type = mesh.type, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
-                    tol = tol, num_workers=num_workers, ...)
+                     mesh.type = mesh.type, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
+                     tol = tol, num_workers=num_workers, ...)
 
     # warning(paste0("[mesh_exsets] roots_mesh: ",Sys.time() - .t0))
     # .t0 <<- Sys.time()
 
-    if (all(is.na(r)))
-        all_points = attr(r, "mesh")$p
-    else
-        all_points = rbind(attr(r, "mesh")$p, r)
-
-    if (maxerror_f != 0) { # try add points on each side of the frontier at threshold
-        kinf = -1#-2
-        f_inf <- function(...) return(f(...) - (threshold + kinf*maxerror_f))
-        f_vec_inf <- function(...) return(f_vec(...) - (threshold + kinf*maxerror_f))
-        r_inf <- roots_mesh(f = f_inf, vectorized = f_vec_inf, intervals = intervals,
-                            mesh.type = mesh.type, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
-                            tol = tol, num_workers=num_workers, ...)
-        # warning(paste0("[mesh_exsets] roots_mesh/inf: ",Sys.time() - .t0))
-        # .t0 <<- Sys.time()
-        if (!all(is.na(r_inf)))
-            all_points = rbind(all_points, r_inf)
-
-        ksup = +1#0
-        f_sup <- function(...) return(f(...) - (threshold + ksup*maxerror_f))
-        f_vec_sup <- function(...) return(f_vec(...) - (threshold + ksup*maxerror_f))
-        r_sup <- roots_mesh(f = f_sup, vectorized = f_vec_sup, intervals = intervals,
-                            mesh.type = mesh.type, mesh.sizes = mesh.sizes, maxerror_f = maxerror_f,
-                            tol = tol, num_workers=num_workers, ...)
-        # warning(paste0("[mesh_exsets] roots_mesh/sup: ",Sys.time() - .t0))
-        # .t0 <<- Sys.time()
-        if (!all(is.na(r_sup)))
-            all_points = rbind(all_points, r_sup)
-    }
+    all_points = attr(r, "mesh")$p
+    if (!all(is.na(r)))
+        all_points = rbind(all_points, r)
 
     new_mesh <- mesh(intervals, mesh.type = all_points)
+
     # warning(paste0("[mesh_exsets] mesh: ",Sys.time() - .t0))
     # .t0 <<- Sys.time()
 
     # identify points belonging to the excursion set
-    new_mesh$y = f_vec(new_mesh$p, ...)
+    new_mesh$y = f_vec(new_mesh$p, ...) # re-evaluate f to get exact values (ie. close to frontier are 0.0 +/- maxrror_f)
+
     # warning(paste0("[mesh_exsets] f_vec: ",Sys.time() - .t0))
     # .t0 <<- Sys.time()
+
     I = which(apply(new_mesh$tri, 1,
-              function(i) ex_filter.tri(new_mesh$y[i] >= (threshold - 2*maxerror_f))))
+                    function(i) ex_filter.tri(new_mesh$y[i] >= (threshold - 2*maxerror_f))))
+
     # warning(paste0("[mesh_exsets] I: ",Sys.time() - .t0))
     # .t0 <<- Sys.time()
 
