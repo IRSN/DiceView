@@ -42,15 +42,19 @@ matrix of x, so f(x)=0
 Multi Dimensional Multiple Roots (Zero) Finding, sampled by a mesh
 }
 \examples{
-roots_mesh(function(x) x-.51, intervals=rbind(0,1))
-roots_mesh(function(x) sum(x)-.51, intervals=cbind(rbind(0,1),rbind(0,1)))
-roots_mesh(sin,intervals=c(pi/2,5*pi/2))
+roots_mesh(function(x) x-.51, intervals=rbind(0,1),
+  num_workers=1)
+roots_mesh(function(x) sum(x)-.51, intervals=cbind(rbind(0,1),rbind(0,1)),
+  num_workers=1)
+roots_mesh(sin,intervals=c(pi/2,5*pi/2),
+  num_workers=1)
 roots_mesh(f = function(x) sin(pi*x[1])*sin(pi*x[2]),
            intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2),
            num_workers=1)
 
 r = roots_mesh(f = function(x) (0.25+x[1])^2+(0.5+x[2])^2 - .25,
-intervals=matrix(c(-1,1,-1,1),nrow=2), mesh.size=5)
+intervals=matrix(c(-1,1,-1,1),nrow=2), mesh.size=5,
+  num_workers=1)
 plot(r,xlim=c(-1,1),ylim=c(-1,1))
 
 r = roots_mesh(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2 - .5,
