@@ -368,7 +368,8 @@ min_dist <- function (x, X, norm=rep(1,ncol(X))){
 #' roots_mesh(function(x) sum(x)-.51, intervals=cbind(rbind(0,1),rbind(0,1)))
 #' roots_mesh(sin,intervals=c(pi/2,5*pi/2))
 #' roots_mesh(f = function(x) sin(pi*x[1])*sin(pi*x[2]),
-#'            intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2))
+#'            intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2),
+#'            num_workers=1)
 #'
 #' r = roots_mesh(f = function(x) (0.25+x[1])^2+(0.5+x[2])^2 - .25,
 #' intervals=matrix(c(-1,1,-1,1),nrow=2), mesh.size=5)
@@ -376,11 +377,14 @@ min_dist <- function (x, X, norm=rep(1,ncol(X))){
 #'
 #' r = roots_mesh(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2 - .5,
 #'                mesh.sizes = 11,
-#'                intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2))
+#'                intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
+#'                num_workers=1)
 #' scatterplot3d::scatterplot3d(r,xlim=c(-1,1),ylim=c(-1,1),zlim=c(-1,1))
 #'
-#' roots_mesh(function(x)exp(x)-1,intervals=c(-1,2))
-#' roots_mesh(function(x)exp(1000*x)-1,intervals=c(-1,2))
+#' roots_mesh(function(x)exp(x)-1,intervals=c(-1,2),
+#'            num_workers=1)
+#' roots_mesh(function(x)exp(1000*x)-1,intervals=c(-1,2),
+#'            num_workers=1)
 roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh.sizes = 11,
                        maxerror_f = 1e-07, tol = .Machine$double.eps^0.25, num_workers=maxWorkers(), ...) {
 
