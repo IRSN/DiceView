@@ -29,5 +29,6 @@ Plot a two dimensional mesh
 \examples{
 plot2d_mesh(mesh_exsets(f = function(x) sin(pi*x[1])*sin(pi*x[2]),
                         threshold=0,sign=1, mesh.type="unif",mesh.size=11,
-                        intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2)))
+                        intervals = matrix(c(1/2,5/2,1/2,5/2),nrow=2),
+                        num_workers=1))
 }

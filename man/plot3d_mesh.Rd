@@ -36,7 +36,7 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) { # too long for CRAN on Windows
                           threshold = .25,sign=-1, mesh.type="unif",
                           maxerror_f=1E-2,tol=1E-2, # faster display
                           intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
-                          num_workers=2),
+                          num_workers=1),
                           engine3d='scatterplot3d')
 
   if (requireNamespace("rgl")) {
@@ -44,7 +44,7 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) { # too long for CRAN on Windows
                             threshold = .25,sign=-1, mesh.type="unif",
                             maxerror_f=1E-2,tol=1E-2, # faster display
                             intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
-                            num_workers=2),engine3d='rgl')
+                            num_workers=1),engine3d='rgl')
   }
 }
 }
