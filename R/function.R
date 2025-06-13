@@ -68,10 +68,10 @@ Vectorize.function = function(fun, dim, .combine=rbind, .lapply=parallel::mclapp
 #' f=function(n) rnorm(n);
 #' F=Memoize.function(f);
 #' F(5); F(6); F(5)
-Memoize.function <- function(fun) {
+Memoize.function <- function(fun, suffix=".RcacheDiceView") {
     function(...) {
         arg = list(...)
-        res <- loadCache(arg)
+        res <- loadCache(arg, suffix=suffix)
         if (!is.null(res)) {
             # cat("Loaded cached result\n")
             #cat(".")
@@ -83,7 +83,7 @@ Memoize.function <- function(fun) {
         res <- fun(...)
         # Emulate slow algorithm
         # cat("ok\n")
-        saveCache(res, key=arg, comment="fun()")
+        saveCache(res, key=arg, comment="DiceView", suffix=suffix)
         res
     }
 }
