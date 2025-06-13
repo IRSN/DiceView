@@ -19,7 +19,7 @@ roots_mesh(
 \arguments{
 \item{f}{Function (one or more dimensions) to find roots of}
 
-\item{vectorized}{is f already vectorized ? (default: no)}
+\item{vectorized}{vectorized f: function, TRUE (use f directly), or wrap in Vectorize.function: FALSE (default args), "lapply", "mclapply", ...}
 
 \item{intervals}{bounds to inverse in, each column contains min and max of each dimension}
 

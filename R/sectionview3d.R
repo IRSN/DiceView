@@ -17,7 +17,7 @@
 #'
 #' sectionview3d(function(x) sum(x),
 #'                        Xlim=cbind(range(x1),range(x2)), col='black')
-#' DiceView:::plot3d(x1, x2, y)
+#' DiceView:::.plot3d(x1, x2, y)
 #'
 #' sectionview3d(function(x) {
 #'                       x = as.data.frame(x)
@@ -41,7 +41,7 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
                              add = FALSE,
                              engine3d = NULL,
                              ...) {
-    engine3d = DiceView:::load3d(engine3d)
+    engine3d = .load3d(engine3d)
 
     # setup for center/Xlim/axis/mfrow
     view = getView(2, add, center, Xlim, ylim, axis, mfrow)
@@ -113,8 +113,8 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
             # do nothing
         } else {
             # empty plot
-            DiceView:::open3d()
-            DiceView:::plot3d(x = x[ , 1], y = x[ , 2], z = if (!all(is.na(F_x$y))) F_x$y else F_x$y_low,
+            .open3d()
+            .plot3d(x = x[ , 1], y = x[ , 2], z = if (!all(is.na(F_x$y))) F_x$y else F_x$y_low,
                 xlab = Xlab[d[1]], ylab = Xlab[d[2]], zlab = ylab,
                 xlim = x1lim, ylim = x2lim, zlim = ylim,
                 type = "n",
@@ -124,20 +124,20 @@ sectionview3d.function <- function(fun, vectorized=FALSE,
         }
         ## plot mean
 	    if (!any(is.na(F_x$yd)))
-	        DiceView:::surface3d(x = xd1,y = xd2, z = F_x$yd,
+	        .surface3d(x = xd1,y = xd2, z = F_x$yd,
                     col = col_fun, alpha = 0.5,
                     box = FALSE)
 
         ## 'confidence band' filled with the suitable color
 	    if (!all(is.na(F_x$yd_low)) && !all(is.na(F_x$yd_up))) {
-	        DiceView:::surface3d(x = xd1,
+	        .surface3d(x = xd1,
                         y = xd2,
                         z =  F_x$yd_low,
                         col = col_fun,
                         alpha = col_fading_interval,
                         box = FALSE)
 
-	        DiceView:::surface3d(x = xd1,
+	        .surface3d(x = xd1,
                         y = xd2,
                         z = F_x$yd_up,
                         col = col_fun,
@@ -179,7 +179,7 @@ sectionview3d.matrix <- function(X, y,
                              add = FALSE,
                              engine3d = NULL,
                              ...) {
-    engine3d = DiceView:::load3d(engine3d)
+    engine3d = .load3d(engine3d)
 
     # setup for center/Xlim/axis/mfrow
     view = getView(1, add, center, if (is.null(Xlim) && !add) apply(X, 2, range) else Xlim, if (is.null(ylim) && !add) ylim <- range(y) else ylim, axis, mfrow)
@@ -261,14 +261,14 @@ sectionview3d.matrix <- function(X, y,
         }
 
         if (isTRUE(add)) {
-            DiceView:::points3d(x = X[ , d[1]], y = X[ , d[2]], z = if (!all(is.na(y))) y else y_low,
+            .points3d(x = X[ , d[1]], y = X[ , d[2]], z = if (!all(is.na(y))) y else y_low,
                      col = col_points,
                      alpha = alpha,
                      pch = 20, size=if (!all(is.na(y))) 3 else 0, box = FALSE,
                      xlim=x1lim, ylim=x2lim, zlim=ylim)
         } else {
-            DiceView:::open3d()
-            DiceView:::plot3d(x = X[ , d[1]], y = X[ , d[2]], z = if (!all(is.na(y))) y else y_low,
+            .open3d()
+            .plot3d(x = X[ , d[1]], y = X[ , d[2]], z = if (!all(is.na(y))) y else y_low,
                      col = col_points,
                      alpha = alpha,
                      pch = 20, size=if (!all(is.na(y))) 3 else 0, box = TRUE,
@@ -279,7 +279,7 @@ sectionview3d.matrix <- function(X, y,
         if (!all(is.na(y_low)) && !all(is.na(y_up)))
             #for (p in 1:length(conf_level)) {
                 for (i in 1:n) {
-                    DiceView:::lines3d(x = c(X[i, d[1]], X[i, d[1]]),
+                    .lines3d(x = c(X[i, d[1]], X[i, d[1]]),
                     y = c(X[i, d[2]], X[i, d[2]]),
                     z = c(y_low[i], y_up[i]),
                     col = col_points,
@@ -290,7 +290,7 @@ sectionview3d.matrix <- function(X, y,
         # else
         #     for (p in 1:length(conf_level)) {
         #         for (i in 1:n) {
-        #             points3d(x = X_doe[i, d[1]],
+        #             .points3d(x = X_doe[i, d[1]],
         #              y = X_doe[i, d[2]],
         #              z = y_doe[i],
         #              col = col_points,
@@ -349,7 +349,7 @@ sectionview3d.character <- function(eval_str,
 
         if (D>2) {
             screen(id, new=FALSE)
-            DiceView:::plot3d(x=Xlim[,d[1]], y=Xlim[,d[2]],z=ylim,
+            .plot3d(x=Xlim[,d[1]], y=Xlim[,d[2]],z=ylim,
                  type='n', box = FALSE,
                  xlab="",ylab="",zlab="",
                  xlim=Xlim[,d[1]], ylim=Xlim[,d[2]], zlim=ylim,

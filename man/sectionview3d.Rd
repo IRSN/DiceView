@@ -285,7 +285,7 @@ model <- lm(y ~ x1 + x2)
 
 sectionview3d(function(x) sum(x),
                        Xlim=cbind(range(x1),range(x2)), col='black')
-DiceView:::plot3d(x1, x2, y)
+DiceView:::.plot3d(x1, x2, y)
 
 sectionview3d(function(x) {
                       x = as.data.frame(x)

@@ -4,10 +4,12 @@
 \alias{Memoize.function}
 \title{Memoize a function}
 \usage{
-Memoize.function(fun)
+Memoize.function(fun, suffix = ".RcacheDiceView")
 }
 \arguments{
 \item{fun}{function to memoize}
+
+\item{suffix}{suffix to use for cache files (default ".RcacheDiceView")}
 }
 \value{
 a function with same behavior than argument one, but using cache.

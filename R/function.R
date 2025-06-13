@@ -60,6 +60,7 @@ Vectorize.function = function(fun, dim, .combine=rbind, .lapply=parallel::mclapp
 #' @title Memoize a function
 #' @description Before each call of a function, check that the cache holds the results and returns it if available. Otherwise, compute f and cache the result for next evluations.
 #' @param fun function to memoize
+#' @param suffix suffix to use for cache files (default ".RcacheDiceView")
 #' @return a function with same behavior than argument one, but using cache.
 #' @importFrom R.cache loadCache
 #' @importFrom R.cache saveCache

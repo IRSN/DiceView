@@ -220,17 +220,17 @@ plot2d_mesh = function(mesh,color.nodes='black',color.mesh='darkgray',alpha=0.4,
 #' }
 plot3d_mesh = function(mesh,engine3d=NULL,color.nodes='black',color.mesh='darkgray',alpha=0.4,...){
     nodes.rgb=col2rgb(color.nodes)/255
-    package = DiceView:::load3d(engine3d)
+    package = .load3d(engine3d)
     if (is.null(package)) return()
-    p3d = DiceView:::plot3d(mesh$p,col=rgb(nodes.rgb[1,],nodes.rgb[2,],nodes.rgb[3,],alpha), package=package,...)
+    p3d = .plot3d(mesh$p,col=rgb(nodes.rgb[1,],nodes.rgb[2,],nodes.rgb[3,],alpha), package=package,...)
     mesh.rgb=col2rgb(color.mesh)/255
     apply(mesh$tri,1,function(tri) {
-        DiceView:::quads3d(mesh$p[tri,],col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,]),alpha=alpha/10, package=package)
-        DiceView:::quads3d(mesh$p[tri,][c(4,3,2,1),],col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,]),alpha=alpha/10, package=package)
-        # triangles3d(mesh$p[tri,][-1,],col=color,alpha=0.05, package=package)
-        # triangles3d(mesh$p[tri,][-2,],col=color,alpha=0.05, package=package)
-        # triangles3d(mesh$p[tri,][-3,],col=color,alpha=0.05, package=package)
-        # triangles3d(mesh$p[tri,][-4,],col=color,alpha=0.05, package=package)
+        .quads3d(mesh$p[tri,],col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,]),alpha=alpha/10, package=package)
+        .quads3d(mesh$p[tri,][c(4,3,2,1),],col=rgb(mesh.rgb[1,],mesh.rgb[2,],mesh.rgb[3,]),alpha=alpha/10, package=package)
+        # .triangles3d(mesh$p[tri,][-1,],col=color,alpha=0.05, package=package)
+        # .triangles3d(mesh$p[tri,][-2,],col=color,alpha=0.05, package=package)
+        # .triangles3d(mesh$p[tri,][-3,],col=color,alpha=0.05, package=package)
+        # .triangles3d(mesh$p[tri,][-4,],col=color,alpha=0.05, package=package)
     }) #rgl::lines3d(mesh$p[t(combn(tri,2)),],col=color))
     invisible(p3d)
 }

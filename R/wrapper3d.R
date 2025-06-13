@@ -1,5 +1,5 @@
 #' @importFrom utils installed.packages
-load3d = function(package = NULL) {
+.load3d = function(package = NULL) {
     if (!is.null(package)) { # prefered package defined
         if (!(package %in% rownames(installed.packages()))) {
             warning(paste0("Package ",package," should be available to use any DiceView::*3d functions."))
@@ -26,8 +26,8 @@ load3d = function(package = NULL) {
 
 env3d <- new.env()
 
-open3d = function(...) {
-    package = load3d()
+.open3d = function(...) {
+    package = .load3d()
     if (is.null(package)) {
         stop("No 3D package available.")
     } else if (package=="rgl") {
@@ -37,8 +37,8 @@ open3d = function(...) {
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
-#' @examples plot3d(runif(10),runif(10),runif(10))
-plot3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, add = FALSE, package = load3d(),...) {
+#' @examples .plot3d(runif(10),runif(10),runif(10))
+.plot3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, add = FALSE, package = .load3d(),...) {
     if (is.null(y) & is.null(z)) {y = x[,2]; z = x[,3]; x=x[,1]}
     if (is.null(package)) {
         stop("No 3D package available.")
@@ -56,8 +56,8 @@ plot3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, add = FALSE, packa
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
-#' @examples plot3d(runif(10),runif(10),runif(10)); points3d(runif(10),runif(10),runif(10),col='red')
-points3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, box=FALSE, package = load3d(), ...) {
+#' @examples .plot3d(runif(10),runif(10),runif(10)); .points3d(runif(10),runif(10),runif(10),col='red')
+.points3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, box=FALSE, package = .load3d(), ...) {
     if (is.null(y) & is.null(z)) {y = x[,2]; z = x[,3]; x=x[,1]}
     if (is.null(package)) {
         stop("No 3D package available.")
@@ -69,8 +69,8 @@ points3d = function(x, y=NULL, z=NULL,  col='black', alpha=0.5, box=FALSE, packa
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
-#' @examples plot3d(runif(10),runif(10),runif(10)); lines3d(runif(10),runif(10),runif(10),col='red')
-lines3d = function(x, y=NULL, z=NULL,  col='black' , alpha=0.5, box=FALSE, package = load3d(),...) {
+#' @examples .plot3d(runif(10),runif(10),runif(10)); .lines3d(runif(10),runif(10),runif(10),col='red')
+.lines3d = function(x, y=NULL, z=NULL,  col='black' , alpha=0.5, box=FALSE, package = .load3d(),...) {
     if (is.null(package)) {
         stop("No 3D package available.")
     } else if (package=="rgl") {
@@ -81,8 +81,8 @@ lines3d = function(x, y=NULL, z=NULL,  col='black' , alpha=0.5, box=FALSE, packa
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
-#' @examples plot3d(runif(10),runif(10),runif(10)); triangles3d(runif(3),runif(3),runif(3),col='red')
-triangles3d = function(x, y=NULL, z=NULL, col='black', alpha=0.5, box=FALSE, package = load3d(), ...) {
+#' @examples .plot3d(runif(10),runif(10),runif(10)); .triangles3d(runif(3),runif(3),runif(3),col='red')
+.triangles3d = function(x, y=NULL, z=NULL, col='black', alpha=0.5, box=FALSE, package = .load3d(), ...) {
     if (is.null(y) & is.null(z)) {
         if (is.matrix(x)) {
             y = x[,2]; z = x[,3]; x=x[,1]
@@ -100,8 +100,8 @@ triangles3d = function(x, y=NULL, z=NULL, col='black', alpha=0.5, box=FALSE, pac
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
-#' @examples plot3d(runif(10),runif(10),runif(10)); x=runif(4); y=runif(4); z=runif(4); quads3d(x,y,z,col='red'); p=c(4,3,2,1); quads3d(x[p],y[p],z[p],col='red')
-quads3d = function(x, y=NULL, z=NULL, col='black', alpha=0.5, box=FALSE, package = load3d(), ...) {
+#' @examples .plot3d(runif(10),runif(10),runif(10)); x=runif(4); y=runif(4); z=runif(4); .quads3d(x,y,z,col='red'); p=c(4,3,2,1); .quads3d(x[p],y[p],z[p],col='red')
+.quads3d = function(x, y=NULL, z=NULL, col='black', alpha=0.5, box=FALSE, package = .load3d(), ...) {
     if (is.null(y) & is.null(z)) {
         if (is.matrix(x)) {
             y = x[,2]; z = x[,3]; x=x[,1]
@@ -119,7 +119,7 @@ quads3d = function(x, y=NULL, z=NULL, col='black', alpha=0.5, box=FALSE, package
     } else stop(paste0("Unsupported 3D package: ",package))
 }
 
-surface3d = function(x, y, z, col='black', alpha = 0.5, box=FALSE, package = load3d(), ...) {
+.surface3d = function(x, y, z, col='black', alpha = 0.5, box=FALSE, package = .load3d(), ...) {
     if (is.null(package)) {
         stop("No 3D package available.")
     } else if (package=="rgl") {
@@ -149,18 +149,18 @@ surface3d = function(x, y, z, col='black', alpha = 0.5, box=FALSE, package = loa
 #                                )))
 # Y = f(X)
 #
-# plot3d(x=X[,1],y=X[,2],z=Y)
+# .plot3d(x=X[,1],y=X[,2],z=Y)
 #
 # X2 = matrix(runif(40),ncol=2)
 # Y2 = f(X2)
-# points3d(x=X2[,1],y=X2[,2],z=Y2,col='red')
-# lines3d(x=X2[,1],y=X2[,2],z=Y2,col='red')
+# .points3d(x=X2[,1],y=X2[,2],z=Y2,col='red')
+# .lines3d(x=X2[,1],y=X2[,2],z=Y2,col='red')
 #
 # X3 = matrix(runif(6),ncol=2)
 # Y3 = f(X3)
-# triangles3d(x=X3[,1],y=X3[,2],z=Y3,col='red')
+# .triangles3d(x=X3[,1],y=X3[,2],z=Y3,col='red')
 #
 # X4_1 = seq(0,1,,21)
 # X4_2 = seq(0,1,,31)
 # Y4 = f(expand.grid(X4_1,X4_2))
-# surface3d(x=X4_1,y=X4_2,z=Y4,col='red')
+# .surface3d(x=X4_1,y=X4_2,z=Y4,col='red')
