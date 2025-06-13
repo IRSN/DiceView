@@ -259,7 +259,7 @@ maxWorkers <- function() {
         return(2)
     } else {
         if (Sys.info()[["sysname"]] == "Windows") {
-            return(parallel::detectCores() - 1)
+            return(1) #parallel::detectCores() - 1)
         } else {
             return(parallel::detectCores())
         }
