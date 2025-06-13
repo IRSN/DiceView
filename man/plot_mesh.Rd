@@ -30,6 +30,8 @@ plot_mesh(
 Plot a one dimensional mesh
 }
 \examples{
-plot_mesh(mesh_exsets(function(x) x, threshold=.51, sign=1, intervals=rbind(0,1)))
-plot_mesh(mesh_exsets(function(x) (x-.5)^2, threshold=.1, sign=-1, intervals=rbind(0,1)))
+plot_mesh(mesh_exsets(function(x) x, threshold=.51, sign=1,
+intervals=rbind(0,1), num_workers=2))
+plot_mesh(mesh_exsets(function(x) (x-.5)^2, threshold=.1, sign=-1,
+intervals=rbind(0,1), num_workers=2))
 }

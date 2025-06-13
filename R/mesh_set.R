@@ -18,19 +18,20 @@
 #' @export
 #' @examples
 #' # mesh_exsets(function(x) x, threshold=.51, sign=1, intervals=rbind(0,1),
-#' #   maxerror_f=1E-2,tol=1E-2) # for faster testing
+#' #   maxerror_f=1E-2,tol=1E-2, num_workers=2) # for faster testing
 #' # mesh_exsets(function(x) x, threshold=.50000001, sign=1, intervals=rbind(0,1),
-#' #   maxerror_f=1E-2,tol=1E-2) # for faster testing
+#' #   maxerror_f=1E-2,tol=1E-2, num_workers=2) # for faster testing
 #' # mesh_exsets(function(x) sum(x), threshold=.51,sign=1, intervals=cbind(rbind(0,1),rbind(0,1)),
-#' #   maxerror_f=1E-2,tol=1E-2) # for faster testing
+#' #   maxerror_f=1E-2,tol=1E-2, num_workers=2) # for faster testing
 #' # mesh_exsets(sin,threshold=0,sign="sup",interval=c(pi/2,5*pi/2),
-#' #   maxerror_f=1E-2,tol=1E-2) # for faster testing
+#' #   maxerror_f=1E-2,tol=1E-2, num_workers=2) # for faster testing
 #'
 #' if (identical(Sys.getenv("NOT_CRAN"), "true")) { # too long for CRAN on Windows
 #'
 #'   e = mesh_exsets(function(x) (0.25+x[1])^2+(0.5+x[2])^2 ,
 #'                 threshold =0.25,sign=-1, intervals=matrix(c(-1,1,-1,1),nrow=2),
-#'                 maxerror_f=1E-2,tol=1E-2) # for faster testing
+#'                 maxerror_f=1E-2,tol=1E-2, # for faster testing
+#'                 num_workers=2)
 #'
 #'   plot(e$p,xlim=c(-1,1),ylim=c(-1,1));
 #'   apply(e$tri,1,function(tri) polygon(e$p[tri,],col=rgb(.4,.4,.4,.4)))
@@ -40,7 +41,8 @@
 #'     e = mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
 #'                   threshold = .25,sign=-1, mesh.type="unif",
 #'                   intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
-#'                   maxerror_f=1E-2,tol=1E-2) # for faster testing
+#'                   maxerror_f=1E-2,tol=1E-2, # for faster testing
+#'                   num_workers=2)
 #'
 #'     rgl::plot3d(e$p,xlim=c(-1,1),ylim=c(-1,1),zlim=c(-1,1));
 #'     apply(e$tri,1,function(tri)rgl::lines3d(e$p[tri,]))
@@ -156,8 +158,10 @@ mesh_exsets = function (f, vectorized = FALSE, threshold, sign, intervals,
 #' @import graphics
 #' @export
 #' @examples
-#' plot_mesh(mesh_exsets(function(x) x, threshold=.51, sign=1, intervals=rbind(0,1)))
-#' plot_mesh(mesh_exsets(function(x) (x-.5)^2, threshold=.1, sign=-1, intervals=rbind(0,1)))
+#' plot_mesh(mesh_exsets(function(x) x, threshold=.51, sign=1,
+#' intervals=rbind(0,1), num_workers=2))
+#' plot_mesh(mesh_exsets(function(x) (x-.5)^2, threshold=.1, sign=-1,
+#' intervals=rbind(0,1), num_workers=2))
 plot_mesh = function(mesh,y=0,color.nodes='black',color.mesh='darkgray',alpha=0.4, ...){
     nodes.rgb=col2rgb(color.nodes)/255
     p = plot(x=mesh$p,y=rep(y,length(mesh$p)),ylab="",col=rgb(nodes.rgb[1,],nodes.rgb[2,],nodes.rgb[3,],alpha),...)
@@ -208,14 +212,16 @@ plot2d_mesh = function(mesh,color.nodes='black',color.mesh='darkgray',alpha=0.4,
 #'   plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
 #'                           threshold = .25,sign=-1, mesh.type="unif",
 #'                           maxerror_f=1E-2,tol=1E-2, # faster display
-#'                           intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),
+#'                           intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
+#'                           num_workers=2),
 #'                           engine3d='scatterplot3d')
 #'
 #'   if (requireNamespace("rgl")) {
 #'     plot3d_mesh(mesh_exsets(function(x) (0.5+x[1])^2+(-0.5+x[2])^2+(0.+x[3])^2,
 #'                             threshold = .25,sign=-1, mesh.type="unif",
 #'                             maxerror_f=1E-2,tol=1E-2, # faster display
-#'                             intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2)),engine3d='rgl')
+#'                             intervals=matrix(c(-1,1,-1,1,-1,1),nrow=2),
+#'                             num_workers=2),engine3d='rgl')
 #'   }
 #' }
 plot3d_mesh = function(mesh,engine3d=NULL,color.nodes='black',color.mesh='darkgray',alpha=0.4,...){
@@ -363,7 +369,7 @@ is.mesh = function(x) {
 #'  lines(rbind(x,attr(min,"proj")),col='red')
 #'
 #'  m = mesh_exsets(function(x) (0.25+x[1])^2+(0.5+x[2]/2)^2, vec=FALSE,
-#'                  1 ,1, intervals=rbind(cbind(0,0),cbind(1,1)))
+#'                  1 ,1, intervals=rbind(cbind(0,0),cbind(1,1)), num_workers=2)
 #'  plot2d_mesh(m)
 #'  x = matrix(c(0.25,0.25),ncol=2)
 #'  points(x)

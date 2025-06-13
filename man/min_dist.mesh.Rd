@@ -28,7 +28,7 @@ Compute distance between a point and a mesh
  lines(rbind(x,attr(min,"proj")),col='red')
 
  m = mesh_exsets(function(x) (0.25+x[1])^2+(0.5+x[2]/2)^2, vec=FALSE,
-                 1 ,1, intervals=rbind(cbind(0,0),cbind(1,1)))
+                 1 ,1, intervals=rbind(cbind(0,0),cbind(1,1)), num_workers=2)
  plot2d_mesh(m)
  x = matrix(c(0.25,0.25),ncol=2)
  points(x)
