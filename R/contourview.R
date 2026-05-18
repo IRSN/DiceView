@@ -456,7 +456,7 @@ contourview.km <- function(km_model, type = "UK",
                        add=TRUE)
 }
 
-#' @param libKriging_model an object of class \code{"Kriging"}, \code{"NuggetKriging"} or \code{"NoiseKriging"}.
+#' @param libKriging_model an object of class \code{"Kriging"} or \code{"WarpKriging"}.
 #' @param col_points color of points.
 #' @param conf_level confidence level hull to display.
 #' @param col_fading_interval an optional factor of alpha (color channel) fading used to plot confidence hull.
@@ -497,11 +497,16 @@ contourview_libKriging <- function(libKriging_model,
     n <- nrow(X_doe)
 
     if (inherits(libKriging_model, "Kriging")) {
-        sdy_doe <- 0
-    } else if (inherits(libKriging_model, "NuggetKriging")) {
-        sdy_doe <- rep(sqrt(libKriging_model$nugget()),n)
-    } else if (inherits(libKriging_model, "NoiseKriging")) {
-        sdy_doe <- sqrt(libKriging_model$noise())
+        nm <- libKriging_model$noise_model()
+        if (nm == "nugget") {
+            sdy_doe <- rep(sqrt(libKriging_model$nugget()), n)
+        } else if (nm == "heterogeneous") {
+            sdy_doe <- sqrt(libKriging_model$noise())
+        } else {
+            sdy_doe <- rep(0, n)
+        }
+    } else if (inherits(libKriging_model, "WarpKriging")) {
+        sdy_doe <- rep(0, n)
     } else
         stop(paste0("Kriging model of class ",class(libKriging_model)," is not yet supported."))
 
@@ -619,34 +624,34 @@ contourview.Kriging <- function(Kriging_model,
                            ...)
 }
 
-#' @param NuggetKriging_model an object of class \code{"Kriging"}.
+#' @param WarpKriging_model an object of class \code{"WarpKriging"}.
 #' @param col_points color of points.
 #' @param conf_level an optional list of confidence hulls to display.
 #' @param conf_fading an optional factor of alpha (color channel) fading used to plot confidence intervals.
 #' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 #' @template contourview-doc
 #' @rdname contourview
-#' @method contourview NuggetKriging
-#' @aliases contourview,NuggetKriging,NuggetKriging-method
+#' @method contourview WarpKriging
+#' @aliases contourview,WarpKriging,WarpKriging-method
 #' @export
-#' @seealso \code{\link{sectionview.NuggetKriging}} for a section plot, and \code{\link{sectionview3d.NuggetKriging}} for a 2D section plot.
+#' @seealso \code{\link{sectionview.WarpKriging}} for a section plot, and \code{\link{sectionview3d.WarpKriging}} for a 2D section plot.
 #' @examples
 #' if (requireNamespace("rlibkriging")) { library(rlibkriging)
 #'
 #' X = matrix(runif(15*2),ncol=2)
 #' y = apply(X,1,branin) + 5*rnorm(15)
 #'
-#' model <- NuggetKriging(X = X, y = y, kernel="matern3_2")
+#' model <- WarpKriging(y = y, X = X, warping = c("affine","affine"), kernel="matern3_2")
 #'
 #' contourview(model)
 #'
 #' }
 #'
-contourview.NuggetKriging <- function(NuggetKriging_model,
+contourview.WarpKriging <- function(WarpKriging_model,
                                 center = NULL,
                                 axis = NULL,
                                 npoints = 21,
-                                levels = pretty( NuggetKriging_model$y() , 10),
+                                levels = pretty( WarpKriging_model$y() , 10),
                                 col_points = if (!is.null(col) & length(col)==1) col else "red",
                                 col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels-1) else col.levels("blue",levels),
                                 col = NULL,
@@ -659,66 +664,7 @@ contourview.NuggetKriging <- function(NuggetKriging_model,
                                 title = NULL, title_sep = " | ",
                                 add = FALSE,
                                 ...) {
-    contourview_libKriging(libKriging_model = NuggetKriging_model,
-                           center = center,
-                           axis = axis,
-                           npoints = npoints,
-                           levels = levels,
-                           col_points = col_points,
-                           col_levels = col_levels,
-                           col = col,
-                           conf_level = conf_level,
-                           conf_fading = conf_fading,
-                           bg_fading = bg_fading,
-                           mfrow = mfrow,
-                           Xlab = Xlab, ylab = ylab,
-                           Xlim = Xlim, ylim=ylim,
-                           title = title,
-                           add = add,
-                           ...)
-    }
-
-#' @param NoiseKriging_model an object of class \code{"Kriging"}.
-#' @param col_points color of points.
-#' @param conf_level an optional list of confidence hulls to display.
-#' @param conf_fading an optional factor of alpha (color channel) fading used to plot confidence intervals.
-#' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
-#' @template contourview-doc
-#' @rdname contourview
-#' @method contourview NoiseKriging
-#' @aliases contourview,NoiseKriging,NoiseKriging-method
-#' @export
-#' @seealso \code{\link{sectionview.NoiseKriging}} for a section plot, and \code{\link{sectionview3d.NoiseKriging}} for a 2D section plot.
-#' @examples
-#' if (requireNamespace("rlibkriging")) { library(rlibkriging)
-#'
-#' X = matrix(runif(15*2),ncol=2)
-#' y = apply(X,1,branin) + 5*rnorm(15)
-#'
-#' model <- NoiseKriging(X = X, y = y, kernel="matern3_2", noise=rep(5^2,15))
-#'
-#' contourview(model)
-#'
-#' }
-#'
-contourview.NoiseKriging <- function(NoiseKriging_model,
-                                      center = NULL,
-                                      axis = NULL,
-                                      npoints = 21,
-                                      levels = pretty( NoiseKriging_model$y() , 10),
-                                      col_points = if (!is.null(col) & length(col)==1) col else "red",
-                                      col_levels = if (!is.null(col) & length(col)==1) col.levels(col,levels) else if (!is.null(col) & length(col)==2) cols.levels(col[1],col[2],levels-1) else col.levels("blue",levels),
-                                      col = NULL,
-                                      conf_level = 0.5,
-                                      conf_fading = 0.5,
-                                      bg_fading = 1,
-                                      mfrow = NULL,
-                                      Xlab = NULL, ylab = NULL,
-                                      Xlim = NULL, ylim=NULL,
-                                      title = NULL, title_sep = " | ",
-                                      add = FALSE,
-                                      ...) {
-    contourview_libKriging(libKriging_model = NoiseKriging_model,
+    contourview_libKriging(libKriging_model = WarpKriging_model,
                            center = center,
                            axis = axis,
                            npoints = npoints,

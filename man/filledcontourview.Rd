@@ -7,10 +7,8 @@
 \alias{filledcontourview,km,km-method}
 \alias{filledcontourview.Kriging}
 \alias{filledcontourview,Kriging,Kriging-method}
-\alias{filledcontourview.NuggetKriging}
-\alias{filledcontourview,NuggetKriging,NuggetKriging-method}
-\alias{filledcontourview.NoiseKriging}
-\alias{filledcontourview,NoiseKriging,NoiseKriging-method}
+\alias{filledcontourview.WarpKriging}
+\alias{filledcontourview,WarpKriging,WarpKriging-method}
 \alias{filledcontourview.glm}
 \alias{filledcontourview,glm,glm-method}
 \alias{filledcontourview.list}
@@ -98,37 +96,12 @@
   ...
 )
 
-\method{filledcontourview}{NuggetKriging}(
-  NuggetKriging_model,
+\method{filledcontourview}{WarpKriging}(
+  WarpKriging_model,
   center = NULL,
   axis = NULL,
   npoints = 21,
-  levels = pretty(NuggetKriging_model$y(), 10),
-  col_points = if (!is.null(col) & length(col) == 1) col else "red",
-  col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels, fill = TRUE)
-    else if (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels, fill =
-    TRUE) else col.levels("blue", levels, fill = TRUE),
-  col = NULL,
-  conf_level = 0.5,
-  conf_fading = 0.5,
-  bg_fading = 1,
-  mfrow = NULL,
-  Xlab = NULL,
-  ylab = NULL,
-  Xlim = NULL,
-  ylim = NULL,
-  title = NULL,
-  title_sep = " | ",
-  add = FALSE,
-  ...
-)
-
-\method{filledcontourview}{NoiseKriging}(
-  NoiseKriging_model,
-  center = NULL,
-  axis = NULL,
-  npoints = 21,
-  levels = pretty(NoiseKriging_model$y(), 10),
+  levels = pretty(WarpKriging_model$y(), 10),
   col_points = if (!is.null(col) & length(col) == 1) col else "red",
   col_levels = if (!is.null(col) & length(col) == 1) col.levels(col, levels, fill = TRUE)
     else if (!is.null(col) & length(col) == 2) cols.levels(col[1], col[2], levels, fill =
@@ -259,9 +232,7 @@ filledcontourview(...)
 
 \item{Kriging_model}{an object of class \code{"Kriging"}.}
 
-\item{NuggetKriging_model}{an object of class \code{"Kriging"}.}
-
-\item{NoiseKriging_model}{an object of class \code{"Kriging"}.}
+\item{WarpKriging_model}{an object of class \code{"WarpKriging"}.}
 
 \item{glm_model}{an object of class \code{"glm"}.}
 
@@ -318,18 +289,7 @@ if (requireNamespace("rlibkriging")) { library(rlibkriging)
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin) + 5*rnorm(15)
 
-model <- NuggetKriging(X = X, y = y, kernel="matern3_2")
-
-filledcontourview(model)
-
-}
-
-if (requireNamespace("rlibkriging")) { library(rlibkriging)
-
-X = matrix(runif(15*2),ncol=2)
-y = apply(X,1,branin) + 5*rnorm(15)
-
-model <- NoiseKriging(X = X, y = y, kernel="matern3_2", noise=rep(5^2,15))
+model <- WarpKriging(y = y, X = X, warping = c("affine","affine"), kernel="matern3_2")
 
 filledcontourview(model)
 
@@ -399,9 +359,7 @@ filledcontourview(branin, levels=30, col='red', add=TRUE)
 
 \code{\link{sectionview.Kriging}} for a section plot, and \code{\link{sectionview3d.Kriging}} for a 2D section plot.
 
-\code{\link{sectionview.NuggetKriging}} for a section plot, and \code{\link{sectionview3d.NuggetKriging}} for a 2D section plot.
-
-\code{\link{sectionview.NoiseKriging}} for a section plot, and \code{\link{sectionview3d.NoiseKriging}} for a 2D section plot.
+\code{\link{sectionview.WarpKriging}} for a section plot, and \code{\link{sectionview3d.WarpKriging}} for a 2D section plot.
 
 \code{\link{sectionview.glm}} for a section plot, and \code{\link{sectionview3d.glm}} for a 2D section plot.
 

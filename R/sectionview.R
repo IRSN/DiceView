@@ -433,7 +433,7 @@ sectionview.km <- function(km_model, type = "UK",
 
 }
 
-#' @param libKriging_model an object of class \code{"Kriging"}, \code{"NuggetKriging"} or \code{"NoiseKriging"}.
+#' @param libKriging_model an object of class \code{"Kriging"} or \code{"WarpKriging"}.
 #' @param col_points color of points.
 #' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 sectionview_libKriging <- function(libKriging_model,
@@ -459,11 +459,16 @@ sectionview_libKriging <- function(libKriging_model,
     n <- nrow(X_doe)
 
     if (inherits(libKriging_model, "Kriging")) {
-        sdy_doe <- 0
-    } else if (inherits(libKriging_model, "NuggetKriging")) {
-        sdy_doe <- rep(sqrt(libKriging_model$nugget()),n)
-    } else if (inherits(libKriging_model, "NoiseKriging")) {
-        sdy_doe <- sqrt(libKriging_model$noise())
+        nm <- libKriging_model$noise_model()
+        if (nm == "nugget") {
+            sdy_doe <- rep(sqrt(libKriging_model$nugget()), n)
+        } else if (nm == "heterogeneous") {
+            sdy_doe <- sqrt(libKriging_model$noise())
+        } else {
+            sdy_doe <- rep(0, n)
+        }
+    } else if (inherits(libKriging_model, "WarpKriging")) {
+        sdy_doe <- rep(0, n)
     } else
         stop(paste0("Kriging model of class ",class(libKriging_model)," is not yet supported."))
 
@@ -520,7 +525,7 @@ sectionview_libKriging <- function(libKriging_model,
             col_fading_interval=conf_fading,
             add = TRUE)
 
-        if (inherits(libKriging_model, "NoiseKriging")) # so sdy_doe!=0
+        if (any(sdy_doe != 0)) # so sdy_doe!=0
             sectionview.matrix(X = X_doe, y = cbind(y_doe-qnorm(1-(1-l)/2) * sdy_doe, y_doe+qnorm(1-(1-l)/2) * sdy_doe),
                            col_points = col_points,
                            col_fading_interval = conf_fading, bg_fading = bg_fading,
@@ -574,30 +579,30 @@ sectionview.Kriging <- function(Kriging_model,
                            mfrow,Xlab, ylab,Xlim,ylim,title,title_sep,add,...)
 }
 
-#' @param NuggetKriging_model an object of class \code{"Kriging"}.
+#' @param WarpKriging_model an object of class \code{"WarpKriging"}.
 #' @param col_points color of points.
 #' @param conf_level an optional list of confidence intervals to display.
 #' @param conf_fading an optional factor of alpha (color channel) fading used to plot confidence intervals.
 #' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
 #' @template sectionview-doc
 #' @rdname sectionview
-#' @method sectionview NuggetKriging
-#' @aliases sectionview,NuggetKriging,NuggetKriging-method
+#' @method sectionview WarpKriging
+#' @aliases sectionview,WarpKriging,WarpKriging-method
 #' @export
-#' @seealso \code{\link{sectionview.NuggetKriging}} for a section plot, and \code{\link{sectionview3d.NuggetKriging}} for a 2D section plot.
+#' @seealso \code{\link{sectionview.Kriging}} for a section plot, and \code{\link{sectionview3d.WarpKriging}} for a 2D section plot.
 #' @examples
 #' if (requireNamespace("rlibkriging")) { library(rlibkriging)
 #'
 #' X = matrix(runif(15*2),ncol=2)
 #' y = apply(X,1,branin) + 5*rnorm(15)
 #'
-#' model <- NuggetKriging(X = X, y = y, kernel="matern3_2")
+#' model <- WarpKriging(y = y, X = X, warping = c("affine","affine"), kernel="matern3_2")
 #'
 #' sectionview(model, center=c(.5,.5))
 #'
 #' }
 #'
-sectionview.NuggetKriging <- function(NuggetKriging_model,
+sectionview.WarpKriging <- function(WarpKriging_model,
                                 center = NULL,
                                 axis = NULL,
                                 npoints = 101,
@@ -613,52 +618,7 @@ sectionview.NuggetKriging <- function(NuggetKriging_model,
                                 title = NULL, title_sep = " | ",
                                 add = FALSE,
                                 ...) {
-    sectionview_libKriging(NuggetKriging_model,center,axis,npoints,
-                           col_points=col_points,col_fun=col_fun,col=col,
-                           conf_level,conf_fading,bg_fading,
-                           mfrow,Xlab, ylab,Xlim,ylim,title,title_sep,add,...)
-}
-
-#' @param NoiseKriging_model an object of class \code{"Kriging"}.
-#' @param col_points color of points.
-#' @param conf_level an optional list of confidence intervals to display.
-#' @param conf_fading an optional factor of alpha (color channel) fading used to plot confidence intervals.
-#' @param bg_fading  an optional factor of alpha (color channel) fading used to plot design points outside from this section.
-#' @template sectionview-doc
-#' @rdname sectionview
-#' @method sectionview NoiseKriging
-#' @aliases sectionview,NoiseKriging,NoiseKriging-method
-#' @export
-#' @seealso \code{\link{sectionview.NoiseKriging}} for a section plot, and \code{\link{sectionview3d.NoiseKriging}} for a 2D section plot.
-#' @examples
-#' if (requireNamespace("rlibkriging")) { library(rlibkriging)
-#'
-#' X = matrix(runif(15*2),ncol=2)
-#' y = apply(X,1,branin) + 5*rnorm(15)
-#'
-#' model <- NoiseKriging(X = X, y = y, kernel="matern3_2", noise=rep(5^2,15))
-#'
-#' sectionview(model, center=c(.5,.5))
-#'
-#' }
-#'
-sectionview.NoiseKriging <- function(NoiseKriging_model,
-                                      center = NULL,
-                                      axis = NULL,
-                                      npoints = 101,
-                                      col_points = if (!is.null(col)) col else "red",
-                                      col_fun = if (!is.null(col)) col else "blue",
-                                      col = NULL,
-                                      conf_level = 0.95,
-                                      conf_fading = 0.5,
-                                      bg_fading = 5,
-                                      mfrow = NULL,
-                                      Xlab = NULL, ylab = NULL,
-                                      Xlim = NULL, ylim=NULL,
-                                      title = NULL, title_sep = " | ",
-                                      add = FALSE,
-                                      ...) {
-    sectionview_libKriging(NoiseKriging_model,center,axis,npoints,
+    sectionview_libKriging(WarpKriging_model,center,axis,npoints,
                            col_points=col_points,col_fun=col_fun,col=col,
                            conf_level,conf_fading,bg_fading,
                            mfrow,Xlab, ylab,Xlim,ylim,title,title_sep,add,...)

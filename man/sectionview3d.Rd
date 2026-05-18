@@ -11,10 +11,8 @@
 \alias{sectionview3d,km,km-method}
 \alias{sectionview3d.Kriging}
 \alias{sectionview3d,Kriging,Kriging-method}
-\alias{sectionview3d.NuggetKriging}
-\alias{sectionview3d,NuggetKriging,NuggetKriging-method}
-\alias{sectionview3d.NoiseKriging}
-\alias{sectionview3d,NoiseKriging,NoiseKriging-method}
+\alias{sectionview3d.WarpKriging}
+\alias{sectionview3d,WarpKriging,WarpKriging-method}
 \alias{sectionview3d.glm}
 \alias{sectionview3d,glm,glm-method}
 \alias{sectionview3d.list}
@@ -113,31 +111,8 @@
   ...
 )
 
-\method{sectionview3d}{NuggetKriging}(
-  NuggetKriging_model,
-  center = NULL,
-  axis = NULL,
-  npoints = 21,
-  col_points = if (!is.null(col)) col else "red",
-  col_fun = if (!is.null(col)) col else "blue",
-  col = NULL,
-  conf_level = 0.95,
-  conf_fading = 0.5,
-  bg_fading = 1,
-  mfrow = c(1, 1),
-  Xlab = NULL,
-  ylab = NULL,
-  Xlim = NULL,
-  ylim = NULL,
-  title = NULL,
-  title_sep = " | ",
-  add = FALSE,
-  engine3d = NULL,
-  ...
-)
-
-\method{sectionview3d}{NoiseKriging}(
-  NoiseKriging_model,
+\method{sectionview3d}{WarpKriging}(
+  WarpKriging_model,
   center = NULL,
   axis = NULL,
   npoints = 21,
@@ -262,9 +237,7 @@ sectionview3d(...)
 
 \item{Kriging_model}{an object of class \code{"Kriging"}.}
 
-\item{NuggetKriging_model}{an object of class \code{"Kriging"}.}
-
-\item{NoiseKriging_model}{an object of class \code{"Kriging"}.}
+\item{WarpKriging_model}{an object of class \code{"WarpKriging"}.}
 
 \item{glm_model}{an object of class \code{"glm"}.}
 
@@ -336,18 +309,7 @@ if (requireNamespace("rlibkriging")) { library(rlibkriging)
 X = matrix(runif(15*2),ncol=2)
 y = apply(X,1,branin) + 5*rnorm(15)
 
-model <- NuggetKriging(X = X, y = y, kernel="matern3_2")
-
-sectionview3d(model)
-
-}
-
-if (requireNamespace("rlibkriging")) { library(rlibkriging)
-
-X = matrix(runif(15*2),ncol=2)
-y = apply(X,1,branin) + 5*rnorm(15)
-
-model <- NoiseKriging(X = X, y = y, kernel="matern3_2", noise=rep(5^2,15))
+model <- WarpKriging(y = y, X = X, warping = c("affine","affine"), kernel="matern3_2")
 
 sectionview3d(model)
 
@@ -421,9 +383,7 @@ sectionview3d(branin, col='red', add=TRUE)
 
 \code{\link{sectionview.Kriging}} for a section plot, and \code{\link{sectionview3d.Kriging}} for a 2D section plot.
 
-\code{\link{sectionview.NuggetKriging}} for a section plot, and \code{\link{sectionview3d.NuggetKriging}} for a 2D section plot.
-
-\code{\link{sectionview.NoiseKriging}} for a section plot, and \code{\link{sectionview3d.NoiseKriging}} for a 2D section plot.
+\code{\link{sectionview.WarpKriging}} for a section plot, and \code{\link{sectionview3d.WarpKriging}} for a 2D section plot.
 
 \code{\link{sectionview.glm}} for a section plot, and \code{\link{sectionview3d.glm}} for a 2D section plot.
 
