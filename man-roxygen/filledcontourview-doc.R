@@ -16,4 +16,4 @@
 #' @param title_sep customize subtitle with fixed input.
 #' @param add to print graphics on an existing window.
 #' @param ... optional arguments passed to the first call of \code{filled.contour}.
-#' @author Yann Richet, IRSN
+#' @author Yann Richet, ASNR

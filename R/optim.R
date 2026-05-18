@@ -10,7 +10,7 @@
 #' @param ... additional arguments passed to optim()
 #' @return list with best solution and all solutions
 #' @export
-#' @author Yann Richet, IRSN
+#' @author Yann Richet, ASNR
 #' @examples
 #' fn = function(x) x^6
 #' o = optim( par=15, fn,lower=-20,upper=20,method='L-BFGS-B')
@@ -63,7 +63,7 @@ optim.stop <- function(par, fn, gr=NULL,
 #' @importFrom foreach foreach
 #' @importFrom foreach %dopar%
 #' @export
-#' @author Yann Richet, IRSN
+#' @author Yann Richet, ASNR
 #' @examples
 #' fn = function(x) ifelse(x==0,1,sin(x)/x)
 #' # plot(fn, xlim=c(-20,20))

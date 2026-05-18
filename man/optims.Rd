@@ -54,5 +54,5 @@ f = function (x) {
 optims(pars=matrix(runif(100),ncol=2),f,method="L-BFGS-B",lower=c(0,0),upper=c(1,1))
 }
 \author{
-Yann Richet, IRSN
+Yann Richet, ASNR
 }

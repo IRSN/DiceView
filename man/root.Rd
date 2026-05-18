@@ -96,5 +96,5 @@ f=function(x) {cat("f");exp(100*x)-1}; f(root(f,lower=-1,upper=2))
 }
 }
 \author{
-Yann Richet, IRSN
+Yann Richet, ASNR
 }

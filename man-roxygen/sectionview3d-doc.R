@@ -12,4 +12,4 @@
 #' @param add to print graphics on an existing window.
 #' @param engine3d 3D view package to use. "rgl" if available, otherwise "scatterplot3d" by default.
 #' @param ... optional arguments passed to the first call of \code{contour}.
-#' @author Yann Richet, IRSN
+#' @author Yann Richet, ASNR

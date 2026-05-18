@@ -390,5 +390,5 @@ sectionview3d(branin, col='red', add=TRUE)
 \code{\link{sectionview.glm}} for a section plot, and \code{\link{sectionview3d.glm}} for a 2D section plot.
 }
 \author{
-Yann Richet, IRSN
+Yann Richet, ASNR
 }

@@ -98,7 +98,7 @@ R_zeroin2 <- function(f, ax, bx, fa, fb, Tol, Maxit) {
 #' @param max.rec maximal number of recursive level before failure (stop).
 #' @param ... additional named or unnamed arguments to be passed to f.
 #' @export
-#' @author Yann Richet, IRSN
+#' @author Yann Richet, ASNR
 #' @examples
 #' f=function(x) {cat("f");1-exp(x)}; f(root(f,lower=-1,upper=2))
 #' f=function(x) {cat("f");exp(x)-1}; f(root(f,lower=-1,upper=2))

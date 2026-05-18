@@ -42,5 +42,5 @@ o.s = optim.stop( par=15, fn,lower=-20,upper=20,method='L-BFGS-B',fn.stop=0.1)
 #check o.s$value == 0.1 && o.s$counts < o$counts
 }
 \author{
-Yann Richet, IRSN
+Yann Richet, ASNR
 }
