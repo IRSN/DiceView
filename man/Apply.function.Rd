@@ -4,14 +4,7 @@
 \alias{Apply.function}
 \title{Apply Functions Over Array Margins, using custom vectorization (possibly using parallel)}
 \usage{
-Apply.function(
-  FUN,
-  X,
-  MARGIN = 1,
-  .combine = c,
-  .lapply = parallel::mclapply,
-  ...
-)
+Apply.function(FUN, X, MARGIN = 1, .combine = c, .lapply = safe_mclapply, ...)
 }
 \arguments{
 \item{FUN}{function to apply on X}

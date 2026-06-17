@@ -12,7 +12,7 @@ roots(
   split = "seq",
   split.size = 11,
   tol = .Machine$double.eps^0.25,
-  .lapply = parallel::mclapply,
+  .lapply = safe_mclapply,
   ...
 )
 }
