@@ -125,6 +125,10 @@ parview_render <- function(df, n_pred, refColumnDim, col_fun, col_points,
 #'   or a list(mean=...,se=...).
 #' @param vectorized is fun vectorized?
 #' @param n_points number of space-filling (LHS) points to sample for evaluation.
+#' @param col_fun base color for the prediction color scale (HSV saturation ramp from
+#'   white to this color, matching the \code{contourview} policy).
+#' @param col shorthand alias for both \code{col_fun} and \code{col_points}; overridden
+#'   by the individual arguments if both are supplied.
 #' @param Xlim a matrix (2 x D) or vector \code{c(lo, hi)} giving input ranges.
 #' @param Xlab optional character vector of axis labels for inputs.
 #' @param ylab optional string label for the output axis.

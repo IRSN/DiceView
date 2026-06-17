@@ -118,6 +118,12 @@ or a list(mean=...,se=...).}
 
 \item{Xlim}{optional input bounds matrix (2 x D); defaults to design range.}
 
+\item{col_fun}{base color for the prediction color scale (HSV saturation ramp from
+white to this color, matching the \code{contourview} policy).}
+
+\item{col}{shorthand alias for both \code{col_fun} and \code{col_points}; overridden
+by the individual arguments if both are supplied.}
+
 \item{Xlab}{optional character vector of axis labels for inputs.}
 
 \item{ylab}{optional string label for the output axis.}
