@@ -254,16 +254,15 @@ branin <- function(x) {
 }
 
 maxWorkers <- function() {
+    # Cap to 2 under any R CMD check (env var set by --as-cran, or CheckExEnv in search path)
     chk <- Sys.getenv("_R_CHECK_LIMIT_CORES_", "")
-    if (nzchar(chk) && chk == "TRUE") {
-        return(2)
-    } else {
-        if (Sys.info()[["sysname"]] == "Windows") {
-            return(1) #parallel::detectCores() - 1)
-        } else {
-            return(parallel::detectCores())
-        }
+    if ((nzchar(chk) && chk == "TRUE") || ("CheckExEnv" %in% search())) {
+        return(2L)
     }
+    if (Sys.info()[["sysname"]] == "Windows") {
+        return(1L)
+    }
+    parallel::detectCores()
 }
 
 #' @title Fork-safe parallel lapply
