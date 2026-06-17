@@ -277,13 +277,13 @@ maxWorkers <- function() {
 #' @param ... optional arguments to FUN
 #' @param mc.cores number of cores (default: \code{getOption("mc.cores", parallel::detectCores())})
 #' @return list of results, like \code{lapply}
-#' @importFrom parallel mclapply detectCores
+#' @importFrom parallel mclapply
 #' @export
 #' @examples
 #' safe_mclapply(1:4, function(i) i^2)
 #' # nested call falls back to lapply automatically:
 #' outer <- safe_mclapply(1:2, function(i) safe_mclapply(1:3, function(j) i*j))
-safe_mclapply <- function(X, FUN, ..., mc.cores = getOption("mc.cores", parallel::detectCores())) {
+safe_mclapply <- function(X, FUN, ..., mc.cores = getOption("mc.cores", maxWorkers())) {
     depth <- getOption(".DiceView_parallel_depth", 0L)
     if (depth > 0L || mc.cores <= 1L)
         return(lapply(X, FUN, ...))

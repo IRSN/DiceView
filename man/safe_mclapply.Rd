@@ -4,12 +4,7 @@
 \alias{safe_mclapply}
 \title{Fork-safe parallel lapply}
 \usage{
-safe_mclapply(
-  X,
-  FUN,
-  ...,
-  mc.cores = getOption("mc.cores", parallel::detectCores())
-)
+safe_mclapply(X, FUN, ..., mc.cores = getOption("mc.cores", maxWorkers()))
 }
 \arguments{
 \item{X}{a vector (atomic or list)}
