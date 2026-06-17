@@ -386,8 +386,6 @@ sectionview3d(branin, col='red', add=TRUE)
 \code{\link{sectionview.WarpKriging}} for a section plot, and \code{\link{sectionview3d.WarpKriging}} for a 2D section plot.
 
 \code{\link{sectionview.glm}} for a section plot, and \code{\link{sectionview3d.glm}} for a 2D section plot.
-
-\code{\link{sectionview.glm}} for a section plot, and \code{\link{sectionview3d.glm}} for a 2D section plot.
 }
 \author{
 Yann Richet, ASNR

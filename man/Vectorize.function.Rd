@@ -4,13 +4,7 @@
 \alias{Vectorize.function}
 \title{Vectorize a multidimensional Function}
 \usage{
-Vectorize.function(
-  fun,
-  dim,
-  .combine = rbind,
-  .lapply = parallel::mclapply,
-  ...
-)
+Vectorize.function(fun, dim, .combine = rbind, .lapply = safe_mclapply, ...)
 }
 \arguments{
 \item{fun}{'dim'-dimensional function to Vectorize}

@@ -20,9 +20,9 @@ Maintainer: Yann Richet <yann.richet@asnr.fr>
 Description: View 2D/3D sections, contour plots, mesh of excursion sets for computer experiments designs, surrogates or test functions.
 Depends: methods, utils, stats, grDevices, graphics
 Imports: DiceDesign, R.cache, geometry, scatterplot3d, parallel, foreach
-Suggests: rlibkriging, DiceKriging, DiceEval, rgl, arrangements
+Suggests: rlibkriging, DiceKriging, DiceEval, rgl, arrangements, parallelPlot
 License: GPL-3
 URL: https://github.com/IRSN/DiceView
 Repository: CRAN
-RoxygenNote: 7.3.3
 Encoding: UTF-8
+Config/roxygen2/version: 8.0.0
