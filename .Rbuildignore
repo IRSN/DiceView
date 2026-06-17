@@ -4,3 +4,4 @@
 ^.github$
 ^man-roxygen$
 ^doc$
+^\.claude$
