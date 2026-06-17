@@ -85,9 +85,9 @@ optims <- function(pars,fn,fn.NaN=NaN,fn.stop=NA,.apply="mclapply",pars.eps=1E-5
                        FUN=function(x0){
                            try(optim.stop(par=x0,fn=fn, fn.stop=fn.stop,fn.NaN=fn.NaN, control=control,...))})
         else if (.apply=="mclapply")
-            O = parallel::mclapply(X=as.list(as.data.frame(t(pars))),
-                                   FUN=function(x0){
-                                       try(optim.stop(par=x0,fn=fn, fn.stop=fn.stop,fn.NaN=fn.NaN, control=control,...))})
+            O = safe_mclapply(X=as.list(as.data.frame(t(pars))),
+                              FUN=function(x0){
+                                  try(optim.stop(par=x0,fn=fn, fn.stop=fn.stop,fn.NaN=fn.NaN, control=control,...))})
         else if (.apply=="foreach") {
             i.o = NULL
             O = foreach::foreach(i.o = 1:nrow(pars),.errorhandling = "remove") %dopar% { return(

@@ -326,7 +326,7 @@ are_in.mesh = function(X,mesh) {
     #apply(X,1,is_in.mesh,mesh)
     #unlist(foreach(i = 1:nrow(X)) %dopar% {is_in.mesh(X[i,],mesh)})
     X.list = lapply(seq_len(nrow(X)), function(i) X[i,])
-    array(unlist(parallel::mclapply(X.list,is_in.mesh,mesh)))
+    array(unlist(safe_mclapply(X.list,is_in.mesh,mesh)))
 }
 
 #' @title Extract points of mesh which belong to the mesh triangulation (may not contain all points)

@@ -265,3 +265,29 @@ maxWorkers <- function() {
         }
     }
 }
+
+#' @title Fork-safe parallel lapply
+#' @description Drop-in replacement for \code{parallel::mclapply} that prevents deadlocks from
+#' nested fork calls. Uses an R option (\code{.DiceView_parallel_depth}) inherited by forked
+#' children to detect nesting and fall back to \code{lapply} in that case.
+#' This avoids the classic pipe deadlock where a forked worker tries to fork grandchildren
+#' while the parent is still waiting on pipes.
+#' @param X a vector (atomic or list)
+#' @param FUN the function to be applied to each element of X
+#' @param ... optional arguments to FUN
+#' @param mc.cores number of cores (default: \code{getOption("mc.cores", parallel::detectCores())})
+#' @return list of results, like \code{lapply}
+#' @importFrom parallel mclapply detectCores
+#' @export
+#' @examples
+#' safe_mclapply(1:4, function(i) i^2)
+#' # nested call falls back to lapply automatically:
+#' outer <- safe_mclapply(1:2, function(i) safe_mclapply(1:3, function(j) i*j))
+safe_mclapply <- function(X, FUN, ..., mc.cores = getOption("mc.cores", parallel::detectCores())) {
+    depth <- getOption(".DiceView_parallel_depth", 0L)
+    if (depth > 0L || mc.cores <= 1L)
+        return(lapply(X, FUN, ...))
+    options(.DiceView_parallel_depth = depth + 1L)
+    on.exit(options(.DiceView_parallel_depth = depth), add = TRUE)
+    parallel::mclapply(X, FUN, ..., mc.cores = mc.cores)
+}

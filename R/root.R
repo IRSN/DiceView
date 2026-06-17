@@ -285,7 +285,7 @@ root <- function(f, lower, upper, maxerror_f = 1e-07,
 #' f=function(x)exp(1000*x)-1;
 #' f(roots(f,interval=c(-1,2)))
 roots = function (f, vectorized=FALSE, interval, maxerror_f = 1e-07, split = "seq", split.size = 11,
-          tol = .Machine$double.eps^0.25, .lapply = parallel::mclapply, ...) {
+          tol = .Machine$double.eps^0.25, .lapply = safe_mclapply, ...) {
     lower = min(interval)
     upper = max(interval)
 
@@ -535,7 +535,7 @@ roots_mesh = function (f, vectorized = FALSE, intervals, mesh.type = "seq", mesh
   }
 
   if (num_workers>1)
-      r = do.call(rbind,parallel::mclapply(X = 1:nrow(ridges), FUN = function(ridge_i,...) {
+      r = do.call(rbind,safe_mclapply(X = 1:nrow(ridges), FUN = function(ridge_i,...) {
         root_fun( y = ridge.y[ridges[ridge_i,]],
                   X = ridge.points[ridges[ridge_i,], , drop = FALSE],
                   maxerror_f,tol)

@@ -20,7 +20,7 @@
 #' X = matrix(runif(10),ncol=2)
 #' f = function(X) X[1]/X[2]
 #' apply(X,1,f) == Apply.function(f,X)
-Apply.function <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclapply, ...) {
+Apply.function <- function(FUN, X, MARGIN=1, .combine=c, .lapply=safe_mclapply, ...) {
     if (MARGIN==2) return(FUN, X=t(Apply.function(t(X), MARGIN=1, .combine=.combine, .lapply=.lapply,...)))
     if (MARGIN != 1) stop("Do not (yet) support MARGIN != 1")
 
@@ -49,7 +49,7 @@ Apply.function <- function(FUN, X, MARGIN=1, .combine=c, .lapply=parallel::mclap
 #'
 #' f3 = function(x)list(mean=x[1]+x[2],se=x[1]*x[2]); f3(1:10); F3 = Vectorize.function(f3,2);
 #' F3(cbind(1:10,11:20));
-Vectorize.function = function(fun, dim, .combine=rbind, .lapply=parallel::mclapply, ...) {
+Vectorize.function = function(fun, dim, .combine=rbind, .lapply=safe_mclapply, ...) {
     function(X,...) {
         if (!is.matrix(X)) X = matrix(X,ncol=dim)
         Apply.function(fun,X, .combine=.combine, .lapply=.lapply,...)
