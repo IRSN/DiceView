@@ -9,37 +9,58 @@
 \alias{parview.glm}
 \alias{parview.list}
 \alias{parview}
-\title{Interactive parallel coordinates view of a prediction model or function.}
+\title{Parallel coordinates view of a prediction model or function.}
 \usage{
 \method{parview}{`function`}(
   fun,
   vectorized = FALSE,
   n_points = 500,
   Xlim = c(0, 1),
+  col_fun = if (!is.null(col)) col else "blue",
+  col = NULL,
   Xlab = NULL,
   ylab = "y",
+  engine = "parallelPlot",
   ...
 )
 
-\method{parview}{matrix}(X, y, Xlab = NULL, ylab = NULL, ...)
+\method{parview}{matrix}(
+  X,
+  y,
+  col_fun = if (!is.null(col)) col else "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col = NULL,
+  Xlab = NULL,
+  ylab = NULL,
+  engine = "parallelPlot",
+  ...
+)
 
 \method{parview}{Kriging}(
   Kriging_model,
   n_points = 500,
+  col_fun = if (!is.null(col)) col else "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col = NULL,
   conf_level = 0.95,
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  engine = "parallelPlot",
   ...
 )
 
 \method{parview}{WarpKriging}(
   WarpKriging_model,
   n_points = 500,
+  col_fun = if (!is.null(col)) col else "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col = NULL,
   conf_level = 0.95,
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  engine = "parallelPlot",
   ...
 )
 
@@ -47,29 +68,41 @@
   km_model,
   type = "UK",
   n_points = 500,
+  col_fun = if (!is.null(col)) col else "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col = NULL,
   conf_level = 0.95,
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  engine = "parallelPlot",
   ...
 )
 
 \method{parview}{glm}(
   glm_model,
   n_points = 500,
+  col_fun = if (!is.null(col)) col else "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col = NULL,
   conf_level = 0.95,
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  engine = "parallelPlot",
   ...
 )
 
 \method{parview}{list}(
   modelFit_model,
   n_points = 500,
+  col_fun = if (!is.null(col)) col else "blue",
+  col_points = if (!is.null(col)) col else "red",
+  col = NULL,
   Xlab = NULL,
   ylab = NULL,
   Xlim = NULL,
+  engine = "parallelPlot",
   ...
 )
 
@@ -89,11 +122,15 @@ or a list(mean=...,se=...).}
 
 \item{ylab}{optional string label for the output axis.}
 
+\item{engine}{rendering engine: \code{"parallelPlot"} or \code{"base"}.}
+
 \item{...}{arguments of the relevant \code{parview.*} method.}
 
 \item{X}{the matrix of input design.}
 
 \item{y}{the array of output values.}
+
+\item{col_points}{color of observed design points.}
 
 \item{Kriging_model}{an object of class \code{"Kriging"}.}
 
@@ -110,56 +147,64 @@ or a list(mean=...,se=...).}
 \item{modelFit_model}{an object returned by \code{DiceEval::modelFit}.}
 }
 \description{
-Renders an interactive parallel coordinates chart (via the
-  \pkg{parallelPlot} package) showing all input dimensions and the output
-  simultaneously.  Lines are colored by the output value, making it easy to
-  identify which input regions drive high or low responses.
+Renders a parallel coordinates chart showing all input dimensions
+  and the output simultaneously.  Lines are colored by the output value (viridis
+  palette), making it easy to identify which input regions drive high or low
+  responses.
 
   For model-based methods (\code{km}, \code{Kriging}, \code{WarpKriging},
   \code{glm}, \code{list}) a space-filling LHS prediction grid is displayed
-  together with the observed design points.  Kriging-based methods also add
-  \code{y_low} / \code{y_up} axes for the predictive confidence interval.
+  together with the observed design points (in \code{col_points} color).
+  Kriging-based methods also add \code{y_low} / \code{y_up} axes for the
+  predictive confidence interval.
+
+  Two rendering engines are available via the \code{engine} argument:
+  \describe{
+    \item{\code{"parallelPlot"}}{Interactive htmlwidget (default), requires the
+      \pkg{parallelPlot} package.}
+    \item{\code{"base"}}{Static base-R plot, no extra dependency.}
+  }
 }
 \examples{
-parview(branin, Xlim = rbind(c(0, 0), c(1, 1)))
+parview(branin, Xlim = rbind(c(0, 0), c(1, 1)), engine = "base")
 X <- matrix(runif(15 * 2), ncol = 2)
 y <- apply(X, 1, branin)
-parview(X, y)
+parview(X, y, engine = "base")
 if (requireNamespace("rlibkriging")) { library(rlibkriging)
   X <- matrix(runif(15 * 2), ncol = 2)
   y <- apply(X, 1, branin)
   model <- Kriging(X = X, y = as.matrix(y), kernel = "matern3_2")
-  parview(model)
+  parview(model, engine = "base")
 }
 if (requireNamespace("rlibkriging")) { library(rlibkriging)
   X <- matrix(runif(15 * 2), ncol = 2)
   y <- apply(X, 1, branin) + 5 * rnorm(15)
   model <- WarpKriging(y = y, X = X, warping = c("affine", "affine"), kernel = "matern3_2")
-  parview(model)
+  parview(model, engine = "base")
 }
 if (requireNamespace("DiceKriging")) { library(DiceKriging)
   X <- matrix(runif(15 * 2), ncol = 2)
   y <- apply(X, 1, branin)
   model <- km(design = X, response = y, covtype = "matern3_2")
-  parview(model)
+  parview(model, engine = "base")
 }
 x1 <- rnorm(15); x2 <- rnorm(15)
 y <- x1 + x2^2 + rnorm(15)
 model <- glm(y ~ x1 + I(x2^2))
-parview(model)
+parview(model, engine = "base")
 if (requireNamespace("DiceEval")) { library(DiceEval)
   X <- matrix(runif(15 * 2), ncol = 2)
   y <- apply(X, 1, branin)
   model <- modelFit(X, y, type = "StepLinear")
-  parview(model)
+  parview(model, engine = "base")
 }
-## Simple function
-parview(branin, Xlim = rbind(c(0, 0), c(1, 1)))
+## Static base-R plot
+parview(branin, Xlim = rbind(c(0, 0), c(1, 1)), engine = "base")
 
 ## Design points only
 X <- matrix(runif(30 * 2), ncol = 2)
 y <- apply(X, 1, branin)
-parview(X, y)
+parview(X, y, engine = "base")
 }
 \seealso{
 \code{\link{sectionview.function}} for 1D section plots.
