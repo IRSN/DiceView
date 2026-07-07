@@ -159,6 +159,10 @@ sectionview.matrix <- function(X, y,
                                title = NULL, title_sep = " | ",
                                add = FALSE,
                                ...) {
+    # default center to the design centroid when not specified, so that
+    # D>1 designs do not crash later (e.g. in scale()) with a NULL center
+    if (is.null(center) && !add) center <- colMeans(as.matrix(X))
+
     # setup for center/Xlim/axis/mfrow
     view = getView(1, add, center, if (is.null(Xlim) && !add) apply(X, 2, range) else Xlim, if (is.null(ylim) && !add) ylim <- range(y) else ylim, axis, mfrow)
     D = view$D

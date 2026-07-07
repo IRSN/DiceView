@@ -54,7 +54,11 @@ optim.stop <- function(par, fn, gr=NULL,
 #' @param fn objective function, like in optim().
 #' @param fn.NaN replacement value of fn when returns NaN
 #' @param fn.stop early stopping criterion
-#' @param .apply loop/parallelization backend for multistart ("mclapply", "lapply" or "foreach")
+#' @param .apply loop/parallelization backend for multistart ("mclapply", "lapply" or "foreach").
+#' "mclapply" forks the current R process and is not safe when combined with a threaded BLAS/OpenMP
+#' library (this can deadlock); use \code{options(mc.cores=1)} or set the environment variable
+#' \code{OMP_THREAD_LIMIT=1} to force a fallback to sequential evaluation (see \code{\link{safe_mclapply}}),
+#' or pass \code{.apply="lapply"} to opt out of forking altogether.
 #' @param pars.eps minimal distance between two solutions to be considered different
 #' @param control control parameters for optim()
 #' @param ... additional arguments passed to optim()
@@ -84,10 +88,20 @@ optims <- function(pars,fn,fn.NaN=NaN,fn.stop=NA,.apply="mclapply",pars.eps=1E-5
             O = lapply(X=as.list(as.data.frame(t(pars))),
                        FUN=function(x0){
                            try(optim.stop(par=x0,fn=fn, fn.stop=fn.stop,fn.NaN=fn.NaN, control=control,...))})
-        else if (.apply=="mclapply")
+        else if (.apply=="mclapply") {
+            if (.Platform$OS.type != "windows" &&
+                as.integer(Sys.getenv("OMP_THREAD_LIMIT", "0")) != 1L &&
+                (Sys.getenv("OPENBLAS_NUM_THREADS","1") != "1" ||
+                 Sys.getenv("MKL_NUM_THREADS","1") != "1" ||
+                 Sys.getenv("OMP_NUM_THREADS","1") != "1"))
+                warning("optims(.apply='mclapply') forks the current process: this may deadlock ",
+                        "if BLAS/OpenMP is running with more than one thread. Set OMP_THREAD_LIMIT=1 ",
+                        "(or OMP_NUM_THREADS=1 / OPENBLAS_NUM_THREADS=1 / MKL_NUM_THREADS=1) to auto-degrade ",
+                        "to sequential evaluation, or use .apply='lapply' instead.")
             O = safe_mclapply(X=as.list(as.data.frame(t(pars))),
                               FUN=function(x0){
                                   try(optim.stop(par=x0,fn=fn, fn.stop=fn.stop,fn.NaN=fn.NaN, control=control,...))})
+        }
         else if (.apply=="foreach") {
             i.o = NULL
             O = foreach::foreach(i.o = 1:nrow(pars),.errorhandling = "remove") %dopar% { return(

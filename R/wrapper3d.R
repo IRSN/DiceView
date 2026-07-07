@@ -1,3 +1,19 @@
+#' @title Select/get the 3D engine used by DiceView
+#' @description Public, stable entry point to select (if \code{package} is given) or
+#' auto-detect (if \code{package} is \code{NULL}) the 3D rendering package ("rgl" or
+#' "scatterplot3d") used by DiceView's \code{*3d} functions. This is the documented
+#' replacement for the internal \code{DiceView:::.load3d()}, which is not part of the
+#' public API and should not be relied upon in user scripts.
+#' @param package name of the 3D package to use ("rgl" or "scatterplot3d"), or \code{NULL}
+#' to auto-select the first available one.
+#' @return the name of the selected 3D package, or \code{NULL} (with a warning) if none is available.
+#' @export
+#' @examples
+#' load3d()
+load3d = function(package = NULL) {
+    .load3d(package = package)
+}
+
 #' @importFrom utils installed.packages
 .load3d = function(package = NULL) {
     if (!is.null(package)) { # prefered package defined

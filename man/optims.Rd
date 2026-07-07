@@ -24,7 +24,11 @@ optims(
 
 \item{fn.stop}{early stopping criterion}
 
-\item{.apply}{loop/parallelization backend for multistart ("mclapply", "lapply" or "foreach")}
+\item{.apply}{loop/parallelization backend for multistart ("mclapply", "lapply" or "foreach").
+"mclapply" forks the current R process and is not safe when combined with a threaded BLAS/OpenMP
+library (this can deadlock); use \code{options(mc.cores=1)} or set the environment variable
+\code{OMP_THREAD_LIMIT=1} to force a fallback to sequential evaluation (see \code{\link{safe_mclapply}}),
+or pass \code{.apply="lapply"} to opt out of forking altogether.}
 
 \item{pars.eps}{minimal distance between two solutions to be considered different}
 

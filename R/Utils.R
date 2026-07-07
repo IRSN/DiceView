@@ -262,6 +262,14 @@ maxWorkers <- function() {
     if ((nzchar(chk) && chk == "TRUE") || ("CheckExEnv" %in% search())) {
         return(2L)
     }
+    # Auto-degrade to a single worker (i.e. fall back to lapply-like behaviour in
+    # safe_mclapply()) when the user explicitly restricts OpenMP/BLAS threads via
+    # OMP_THREAD_LIMIT=1: this is commonly set to avoid fork() deadlocks that can
+    # occur when mclapply() forks a process that uses a threaded BLAS.
+    omp_thread_limit <- Sys.getenv("OMP_THREAD_LIMIT", "")
+    if (nzchar(omp_thread_limit) && suppressWarnings(as.integer(omp_thread_limit)) == 1L) {
+        return(1L)
+    }
     parallel::detectCores()
 }
 
