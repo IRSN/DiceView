@@ -70,8 +70,20 @@ Vectorize.function = function(fun, dim, .combine=rbind, .lapply=safe_mclapply, .
 #' F=Memoize.function(f);
 #' F(5); F(6); F(5)
 Memoize.function <- function(fun, suffix=".RcacheDiceView") {
+    # Each call to Memoize.function() gets its own private cache namespace
+    # (.memoize_id), so that two different wrappings never share cache
+    # entries just because they happen to be called with the same argument
+    # value. Without this, loadCache()/saveCache() are keyed only on the raw
+    # call arguments, so e.g. two Memoize.function(fun) wrappers created in a
+    # loop over several models/datasets (each capturing a different `fun`
+    # via lexical scoping, but sharing the same default cache `suffix`) can
+    # silently serve one wrapper's cached result to another wrapper called
+    # with the same argument -- almost always wrong, and can corrupt callers
+    # that assume `fun` is evaluated fresh for their own state (e.g. a
+    # root-finder that assumes it is bisecting a single, consistent function).
+    id <- basename(tempfile(pattern = ""))
     function(...) {
-        arg = list(...)
+        arg = c(list(.memoize_id = id), list(...))
         res <- loadCache(arg, suffix=suffix)
         if (!is.null(res)) {
             # cat("Loaded cached result\n")
